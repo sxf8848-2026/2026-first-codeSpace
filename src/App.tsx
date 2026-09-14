@@ -1,0 +1,1588 @@
+import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  AwesomePanel,
+  AppView,
+  DailyCategoryPanel,
+  DashboardPanel,
+  HabitPanel,
+  InspirationPanel,
+  LoadingScreen,
+  MetaLearningPanel,
+  MonthlyPanel,
+  Sidebar,
+  SummaryBand,
+  TaskComposer,
+  TaskToolbar,
+  VideoInspirationPanel,
+  WeeklyDeliveryPanel,
+  WeeklyPanel,
+  WorkspaceHeader,
+} from "./components/AppSections";
+import { EditDialog, HistoryDialog, SettingsDialog } from "./components/dialogs";
+import { TaskRow } from "./components/TaskRow";
+import { DATA_VERSION } from "./constants";
+import { addDays, dateKey, formatWeekRange, fromDateKey, monthKey, nowStamp, weekKey } from "./date";
+import { useDataHistory } from "./hooks/useDataHistory";
+import {
+  applyDefaultTasks,
+  createAwesomeRecord,
+  createHabit,
+  createInspiration,
+  createMetaLearningAbility,
+  createMonthlyTask,
+  createTask,
+  createVideoInspiration,
+  createWeeklyDelivery,
+  createWeeklyTask,
+  loadDataFromProject,
+  loadPrefs,
+  loadPrefsFromProject,
+  saveDataToProject,
+  savePrefsToProject,
+  seedToday,
+} from "./services/storage";
+import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitCheckForDay } from "./services/habits";
+import { getVisibleInspirations } from "./services/inspirations";
+import { getVisibleMetaLearningAbilities, MetaLearningMasteryFilter } from "./services/metaLearning";
+import {
+  getVideoInspirationChannels,
+  getVisibleVideoInspirations,
+  VideoInspirationChannelFilter,
+} from "./services/videoInspirations";
+import {
+  Filters,
+  AppPrefs,
+  DefaultTask,
+  MonthlyTask,
+  STATUS_DONE,
+  STATUS_IN_PROGRESS,
+  STATUS_TODO,
+  StatusFilter,
+  TagFilter,
+  TagId,
+  TaskDraft,
+  TaskStatus,
+  TodoData,
+  TodoTag,
+  TodoTask,
+  VideoInspirationRecord,
+  WeeklyDelivery,
+  WeeklyTask,
+  AwesomeRecord,
+  Habit,
+  InspirationRecord,
+  MetaLearningAbility,
+  MetaLearningMastery,
+} from "./types";
+
+const blankDraft: TaskDraft = {
+  text: "",
+  status: STATUS_TODO,
+  tag: 0,
+  priority: "medium",
+  description: "",
+};
+
+type ProjectSaveStatus = {
+  state: "idle" | "saved" | "fallback";
+  message: string;
+};
+
+type EditingTaskState = {
+  day: string;
+  task: TodoTask;
+};
+
+type DeliveryFilter = "all" | "pending" | "picked";
+
+type VideoInspirationDraft = {
+  channel: string;
+  title: string;
+  content: string;
+  url: string;
+};
+
+const blankVideoInspirationDraft: VideoInspirationDraft = {
+  channel: "",
+  title: "",
+  content: "",
+  url: "",
+};
+
+type HabitDraft = {
+  name: string;
+  note: string;
+};
+
+const blankHabitDraft: HabitDraft = {
+  name: "",
+  note: "",
+};
+
+type MetaLearningDraft = {
+  name: string;
+  summary: string;
+  usage: string;
+  mastery: MetaLearningMastery;
+};
+
+const blankMetaLearningDraft: MetaLearningDraft = {
+  name: "",
+  summary: "",
+  usage: "",
+  mastery: "learning",
+};
+
+export function App() {
+  const [data, setData] = useState<TodoData | null>(null);
+  const [prefs, setPrefs] = useState<AppPrefs>(() => loadPrefs());
+  const [storageReady, setStorageReady] = useState(false);
+  const [projectSaveStatus, setProjectSaveStatus] = useState<ProjectSaveStatus>({
+    state: "idle",
+    message: "正在连接项目文件存储",
+  });
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [habitDate, setHabitDate] = useState(() => new Date());
+  const [activeView, setActiveView] = useState<AppView>("dashboard");
+  const [draft, setDraft] = useState<TaskDraft>(blankDraft);
+  const [filters, setFilters] = useState<Filters>({
+    status: "all",
+    priority: "all",
+    tag: -1,
+    query: "",
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [weeklyDraft, setWeeklyDraft] = useState("");
+  const [editingWeeklyTaskId, setEditingWeeklyTaskId] = useState<string | null>(null);
+  const [weeklyEditText, setWeeklyEditText] = useState("");
+  const [awesomeDraft, setAwesomeDraft] = useState("");
+  const [editingAwesomeRecordId, setEditingAwesomeRecordId] = useState<string | null>(null);
+  const [awesomeEditText, setAwesomeEditText] = useState("");
+  const [monthlyDraft, setMonthlyDraft] = useState({ text: "", description: "" });
+  const [editingMonthlyTaskId, setEditingMonthlyTaskId] = useState<string | null>(null);
+  const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
+  const [deliveryDraft, setDeliveryDraft] = useState({ name: "", platform: "", note: "" });
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
+  const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
+  const [deliveryEditDraft, setDeliveryEditDraft] = useState({ name: "", platform: "", note: "" });
+  const [habitDraft, setHabitDraft] = useState<HabitDraft>(blankHabitDraft);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [habitEditDraft, setHabitEditDraft] = useState<HabitDraft>(blankHabitDraft);
+  const [inspirationDraft, setInspirationDraft] = useState({ title: "", body: "" });
+  const [inspirationQuery, setInspirationQuery] = useState("");
+  const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
+  const [inspirationEditDraft, setInspirationEditDraft] = useState({ title: "", body: "" });
+  const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
+  const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
+  const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
+  const [editingVideoInspirationId, setEditingVideoInspirationId] = useState<string | null>(null);
+  const [videoInspirationEditDraft, setVideoInspirationEditDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
+  const [metaLearningDraft, setMetaLearningDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
+  const [metaLearningQuery, setMetaLearningQuery] = useState("");
+  const [metaLearningMasteryFilter, setMetaLearningMasteryFilter] = useState<MetaLearningMasteryFilter>("all");
+  const [editingMetaLearningId, setEditingMetaLearningId] = useState<string | null>(null);
+  const [metaLearningEditDraft, setMetaLearningEditDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
+  const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const dataHistory = useDataHistory();
+
+  const theme = prefs.theme;
+  const tags = prefs.tags;
+  const defaultTasks = prefs.defaultTasks;
+  const currentDay = dateKey(currentDate);
+  const currentWeek = weekKey(currentDate);
+  const currentMonth = monthKey(currentDate);
+  const todayDate = new Date();
+  const todayDay = dateKey(todayDate);
+  const habitDay = dateKey(habitDate);
+  const todayMonth = monthKey(todayDate);
+  const todayDeliveryWeek = weekKey(todayDate);
+  const deliveryDate = new Date();
+  const currentDeliveryWeek = weekKey(deliveryDate);
+  const activeData = data ?? emptyData;
+  const allTasks = activeData.todos[currentDay] ?? [];
+  const todayTasks = activeData.todos[todayDay] ?? [];
+  const weeklyTasks = activeData.weeklyTodos[currentWeek] ?? [];
+  const awesomeRecords = activeData.awesomeRecords[currentDay] ?? [];
+  const monthlyTasks = activeData.monthlyTodos[currentMonth] ?? [];
+  const todayMonthlyTasks = activeData.monthlyTodos[todayMonth] ?? [];
+  const deliveryTasks = activeData.weeklyDeliveries[currentDeliveryWeek] ?? [];
+  const todayDeliveryTasks = activeData.weeklyDeliveries[todayDeliveryWeek] ?? [];
+  const weekRange = formatWeekRange(currentDate);
+  const deliveryWeekRange = formatWeekRange(deliveryDate);
+  const visibleTasks = useMemo(() => allTasks.filter((task) => matchesFilters(task, filters)), [allTasks, filters]);
+  const visibleDeliveryTasks = useMemo(
+    () => deliveryTasks.filter((task) => matchesDeliveryFilter(task, deliveryFilter)),
+    [deliveryTasks, deliveryFilter],
+  );
+  const doneCount = allTasks.filter((task) => task.status === STATUS_DONE).length;
+  const progress = allTasks.length ? Math.round((doneCount / allTasks.length) * 100) : 0;
+  const pendingDeliveryCount = deliveryTasks.filter((task) => !task.picked).length;
+  const todayDoneCount = todayTasks.filter((task) => task.status === STATUS_DONE).length;
+  const todayProgress = todayTasks.length ? Math.round((todayDoneCount / todayTasks.length) * 100) : 0;
+  const todayInProgressCount = todayTasks.filter((task) => task.status === STATUS_IN_PROGRESS).length;
+  const todayPendingDeliveryCount = todayDeliveryTasks.filter((task) => !task.picked).length;
+  const todayOpenMonthlyCount = todayMonthlyTasks.filter((task) => !task.done).length;
+  const activeHabits = useMemo(() => activeData.habits.filter((habit) => !habit.archived_at), [activeData.habits]);
+  const habitViews = useMemo(() => getHabitViews(activeData.habits, activeData.habitChecks, habitDay), [activeData.habits, activeData.habitChecks, habitDay]);
+  const todayHabitCompletion = useMemo(
+    () => getHabitCompletion(activeData.habits, activeData.habitChecks, todayDay),
+    [activeData.habits, activeData.habitChecks, todayDay],
+  );
+  const canEditHabitDay = habitDay <= todayDay;
+  const dashboardTasks = useMemo(
+    () => todayTasks.filter((task) => task.status !== STATUS_DONE).slice(0, 6),
+    [todayTasks],
+  );
+  const visibleInspirations = useMemo(
+    () => getVisibleInspirations(activeData.inspirations, inspirationQuery),
+    [activeData.inspirations, inspirationQuery],
+  );
+  const videoInspirationChannels = useMemo(
+    () => getVideoInspirationChannels(activeData.videoInspirations),
+    [activeData.videoInspirations],
+  );
+  const visibleVideoInspirations = useMemo(
+    () => getVisibleVideoInspirations(activeData.videoInspirations, videoInspirationQuery, videoInspirationChannelFilter),
+    [activeData.videoInspirations, videoInspirationChannelFilter, videoInspirationQuery],
+  );
+  const visibleMetaLearningAbilities = useMemo(
+    () => getVisibleMetaLearningAbilities(activeData.metaLearningAbilities, metaLearningQuery, metaLearningMasteryFilter),
+    [activeData.metaLearningAbilities, metaLearningMasteryFilter, metaLearningQuery],
+  );
+  const canUndo = dataHistory.canUndo;
+  const canRedo = dataHistory.canRedo;
+  const canDragTasks = isUnfilteredTaskView(filters);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    if (!storageReady) return;
+    let cancelled = false;
+    savePrefsToProject(prefs).then((result) => {
+      if (cancelled) return;
+      setProjectSaveStatus(
+        result.ok
+          ? { state: "saved", message: "已保存到项目文件" }
+          : { state: "fallback", message: `${result.message}，当前仅暂存到浏览器本地` },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [prefs, storageReady, theme]);
+
+  useEffect(() => {
+    if (!storageReady || !data) return;
+    let cancelled = false;
+    saveDataToProject(data).then((result) => {
+      if (cancelled) return;
+      setProjectSaveStatus(
+        result.ok
+          ? { state: "saved", message: "已保存到项目文件" }
+          : { state: "fallback", message: `${result.message}，当前仅暂存到浏览器本地` },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, storageReady]);
+
+  useEffect(() => {
+    if (canDragTasks) return;
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+  }, [canDragTasks]);
+
+  useEffect(() => {
+    if (videoInspirationChannelFilter === "all" || videoInspirationChannels.includes(videoInspirationChannelFilter)) return;
+    setVideoInspirationChannelFilter("all");
+  }, [videoInspirationChannelFilter, videoInspirationChannels]);
+
+  useEffect(() => {
+    setEditingWeeklyTaskId(null);
+    setWeeklyEditText("");
+  }, [currentWeek]);
+
+  useEffect(() => {
+    setEditingAwesomeRecordId(null);
+    setAwesomeEditText("");
+  }, [currentDay]);
+
+  useEffect(() => {
+    setEditingMonthlyTaskId(null);
+    setMonthlyEditDraft({ text: "", description: "" });
+  }, [currentMonth]);
+
+  useEffect(() => {
+    setEditingHabitId(null);
+    setHabitEditDraft(blankHabitDraft);
+  }, [habitDay]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([loadDataFromProject(), loadPrefsFromProject()]).then(([projectData, projectPrefs]) => {
+      if (cancelled) return;
+      setData(seedToday(projectData, projectPrefs.defaultTasks));
+      dataHistory.resetHistory();
+      setPrefs(projectPrefs);
+      setStorageReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function updateData(updater: (value: TodoData) => TodoData) {
+    if (!data) return;
+    const next = updater(data);
+    if (next === data || JSON.stringify(next) === JSON.stringify(data)) return;
+    dataHistory.pushHistory(data);
+    setData(next);
+  }
+
+  function updatePrefs(updater: (value: AppPrefs) => AppPrefs) {
+    setPrefs((value) => updater(value));
+  }
+
+  function undoData() {
+    if (!data) return;
+    dataHistory.undoData(data, (previous) => {
+      setData(previous);
+      setSelectedId(null);
+      setEditingTask(null);
+      setEditingWeeklyTaskId(null);
+      setWeeklyEditText("");
+      setEditingAwesomeRecordId(null);
+      setAwesomeEditText("");
+      setEditingMonthlyTaskId(null);
+      setMonthlyEditDraft({ text: "", description: "" });
+      setEditingDeliveryId(null);
+      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+      setEditingHabitId(null);
+      setHabitEditDraft(blankHabitDraft);
+      setEditingInspirationId(null);
+      setInspirationEditDraft({ title: "", body: "" });
+      setEditingVideoInspirationId(null);
+      setVideoInspirationEditDraft(blankVideoInspirationDraft);
+      setEditingMetaLearningId(null);
+      setMetaLearningEditDraft(blankMetaLearningDraft);
+    });
+  }
+
+  function redoData() {
+    if (!data) return;
+    dataHistory.redoData(data, (next) => {
+      setData(next);
+      setSelectedId(null);
+      setEditingTask(null);
+      setEditingWeeklyTaskId(null);
+      setWeeklyEditText("");
+      setEditingAwesomeRecordId(null);
+      setAwesomeEditText("");
+      setEditingMonthlyTaskId(null);
+      setMonthlyEditDraft({ text: "", description: "" });
+      setEditingDeliveryId(null);
+      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+      setEditingHabitId(null);
+      setHabitEditDraft(blankHabitDraft);
+      setEditingInspirationId(null);
+      setInspirationEditDraft({ title: "", body: "" });
+      setEditingVideoInspirationId(null);
+      setVideoInspirationEditDraft(blankVideoInspirationDraft);
+      setEditingMetaLearningId(null);
+      setMetaLearningEditDraft(blankMetaLearningDraft);
+    });
+  }
+
+  function changeView(view: AppView) {
+    setActiveView(view);
+    if (view === "dashboard") {
+      updateData((value) => applyDefaultTasks(value, dateKey(new Date()), defaultTasks));
+    }
+    if (view === "daily") {
+      updateData((value) => applyDefaultTasks(value, currentDay, defaultTasks));
+    }
+    if (view === "habits") {
+      setHabitDate(new Date());
+    }
+  }
+
+  function openTodayDaily() {
+    const today = new Date();
+    const nextDay = dateKey(today);
+    setCurrentDate(today);
+    setActiveView("daily");
+    setSelectedId(null);
+    updateData((value) => applyDefaultTasks(value, nextDay, defaultTasks));
+  }
+
+  function openTodayHabits() {
+    setHabitDate(new Date());
+    setActiveView("habits");
+  }
+
+  function setDay(nextDate: Date) {
+    const nextDay = dateKey(nextDate);
+    setCurrentDate(nextDate);
+    setSelectedId(null);
+    updateData((value) => applyDefaultTasks(value, nextDay, defaultTasks));
+  }
+
+  function setMonth(nextDate: Date) {
+    if (Number.isNaN(nextDate.getTime())) return;
+    setCurrentDate(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+    setSelectedId(null);
+  }
+
+  function replaceTasks(day: string, tasks: TodoTask[]) {
+    updateData((value) => {
+      const todos = { ...value.todos };
+      if (tasks.length) {
+        todos[day] = tasks;
+      } else {
+        delete todos[day];
+      }
+      return { ...value, todos };
+    });
+  }
+
+  function replaceWeeklyTasks(week: string, tasks: WeeklyTask[]) {
+    updateData((value) => {
+      const weeklyTodos = { ...value.weeklyTodos };
+      if (tasks.length) {
+        weeklyTodos[week] = tasks;
+      } else {
+        delete weeklyTodos[week];
+      }
+      return { ...value, weeklyTodos };
+    });
+  }
+
+  function replaceAwesomeRecords(day: string, records: AwesomeRecord[]) {
+    updateData((value) => {
+      const awesomeRecords = { ...value.awesomeRecords };
+      if (records.length) {
+        awesomeRecords[day] = records;
+      } else {
+        delete awesomeRecords[day];
+      }
+      return { ...value, awesomeRecords };
+    });
+  }
+
+  function replaceMonthlyTasks(month: string, tasks: MonthlyTask[]) {
+    updateData((value) => {
+      const monthlyTodos = { ...value.monthlyTodos };
+      if (tasks.length) {
+        monthlyTodos[month] = tasks;
+      } else {
+        delete monthlyTodos[month];
+      }
+      return { ...value, monthlyTodos };
+    });
+  }
+
+  function replaceWeeklyDeliveries(week: string, deliveries: WeeklyDelivery[]) {
+    updateData((value) => {
+      const weeklyDeliveries = { ...value.weeklyDeliveries };
+      if (deliveries.length) {
+        weeklyDeliveries[week] = deliveries;
+      } else {
+        delete weeklyDeliveries[week];
+      }
+      return { ...value, weeklyDeliveries };
+    });
+  }
+
+  function replaceHabits(habits: Habit[]) {
+    updateData((value) => ({ ...value, habits }));
+  }
+
+  function replaceInspirations(inspirations: InspirationRecord[]) {
+    updateData((value) => ({ ...value, inspirations }));
+  }
+
+  function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
+    updateData((value) => ({ ...value, videoInspirations }));
+  }
+
+  function replaceMetaLearningAbilities(metaLearningAbilities: MetaLearningAbility[]) {
+    updateData((value) => ({ ...value, metaLearningAbilities }));
+  }
+
+  function handleAdd(event: FormEvent) {
+    event.preventDefault();
+    if (!draft.text.trim()) return;
+    const task = createTask(draft);
+    replaceTasks(currentDay, [task, ...allTasks]);
+    setSelectedId(task.id);
+    setDraft(blankDraft);
+  }
+
+  function addWeeklyTask(event: FormEvent) {
+    event.preventDefault();
+    const text = weeklyDraft.trim();
+    if (!text) return;
+    replaceWeeklyTasks(currentWeek, [...weeklyTasks, createWeeklyTask(text)]);
+    setWeeklyDraft("");
+  }
+
+  function toggleWeeklyTask(taskId: string) {
+    replaceWeeklyTasks(
+      currentWeek,
+      weeklyTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        const done = !task.done;
+        return {
+          ...task,
+          done,
+          done_at: done ? nowStamp() : null,
+        };
+      }),
+    );
+  }
+
+  function startWeeklyEdit(task: WeeklyTask) {
+    setEditingWeeklyTaskId(task.id);
+    setWeeklyEditText(task.text);
+  }
+
+  function saveWeeklyEdit(taskId: string) {
+    const text = weeklyEditText.trim();
+    if (!text) return;
+    replaceWeeklyTasks(
+      currentWeek,
+      weeklyTasks.map((task) => (task.id === taskId ? { ...task, text } : task)),
+    );
+    setEditingWeeklyTaskId(null);
+    setWeeklyEditText("");
+  }
+
+  function deleteWeeklyTask(taskId: string) {
+    const task = weeklyTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    if (!window.confirm(`确定删除本周待办“${task.text}”吗？删除后可以用撤销恢复。`)) return;
+    replaceWeeklyTasks(
+      currentWeek,
+      weeklyTasks.filter((item) => item.id !== taskId),
+    );
+    if (editingWeeklyTaskId === taskId) {
+      setEditingWeeklyTaskId(null);
+      setWeeklyEditText("");
+    }
+  }
+
+  function addAwesomeRecord(event: FormEvent) {
+    event.preventDefault();
+    const text = awesomeDraft.trim();
+    if (!text) return;
+    replaceAwesomeRecords(currentDay, [createAwesomeRecord(text), ...awesomeRecords]);
+    setAwesomeDraft("");
+  }
+
+  function startAwesomeEdit(record: AwesomeRecord) {
+    setEditingAwesomeRecordId(record.id);
+    setAwesomeEditText(record.text);
+  }
+
+  function saveAwesomeEdit(recordId: string) {
+    const text = awesomeEditText.trim();
+    if (!text) return;
+    replaceAwesomeRecords(
+      currentDay,
+      awesomeRecords.map((record) => (record.id === recordId ? { ...record, text } : record)),
+    );
+    setEditingAwesomeRecordId(null);
+    setAwesomeEditText("");
+  }
+
+  function deleteAwesomeRecord(recordId: string) {
+    const record = awesomeRecords.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定删除真棒记录“${record.text}”吗？删除后可以用撤销恢复。`)) return;
+    replaceAwesomeRecords(
+      currentDay,
+      awesomeRecords.filter((item) => item.id !== recordId),
+    );
+    if (editingAwesomeRecordId === recordId) {
+      setEditingAwesomeRecordId(null);
+      setAwesomeEditText("");
+    }
+  }
+
+  function addMonthlyTask(event: FormEvent) {
+    event.preventDefault();
+    const text = monthlyDraft.text.trim();
+    if (!text) return;
+    replaceMonthlyTasks(currentMonth, [createMonthlyTask(text, monthlyDraft.description), ...monthlyTasks]);
+    setMonthlyDraft({ text: "", description: "" });
+  }
+
+  function toggleMonthlyTask(taskId: string) {
+    replaceMonthlyTasks(
+      currentMonth,
+      monthlyTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        const done = !task.done;
+        return {
+          ...task,
+          done,
+          done_at: done ? nowStamp() : null,
+        };
+      }),
+    );
+  }
+
+  function startMonthlyEdit(task: MonthlyTask) {
+    setEditingMonthlyTaskId(task.id);
+    setMonthlyEditDraft({ text: task.text, description: task.description });
+  }
+
+  function saveMonthlyEdit(taskId: string) {
+    const text = monthlyEditDraft.text.trim();
+    if (!text) return;
+    replaceMonthlyTasks(
+      currentMonth,
+      monthlyTasks.map((task) =>
+        task.id === taskId ? { ...task, text, description: monthlyEditDraft.description.trim() } : task,
+      ),
+    );
+    setEditingMonthlyTaskId(null);
+    setMonthlyEditDraft({ text: "", description: "" });
+  }
+
+  function deleteMonthlyTask(taskId: string) {
+    const task = monthlyTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    if (!window.confirm(`确定删除每月待办“${task.text}”吗？删除后可以用撤销恢复。`)) return;
+    replaceMonthlyTasks(
+      currentMonth,
+      monthlyTasks.filter((item) => item.id !== taskId),
+    );
+    if (editingMonthlyTaskId === taskId) {
+      setEditingMonthlyTaskId(null);
+      setMonthlyEditDraft({ text: "", description: "" });
+    }
+  }
+
+  function addWeeklyDelivery(event: FormEvent) {
+    event.preventDefault();
+    const name = deliveryDraft.name.trim();
+    const platform = deliveryDraft.platform.trim();
+    if (!name || !platform) return;
+    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note), ...deliveryTasks]);
+    setDeliveryDraft({ name: "", platform: "", note: "" });
+  }
+
+  function toggleWeeklyDelivery(deliveryId: string) {
+    replaceWeeklyDeliveries(
+      currentDeliveryWeek,
+      deliveryTasks.map((delivery) => {
+        if (delivery.id !== deliveryId) return delivery;
+        const picked = !delivery.picked;
+        return {
+          ...delivery,
+          picked,
+          picked_at: picked ? nowStamp() : null,
+        };
+      }),
+    );
+  }
+
+  function addHabit(event: FormEvent) {
+    event.preventDefault();
+    if (!canEditHabitDay) return;
+    const name = habitDraft.name.trim();
+    if (!name) return;
+    const existingHabit = activeHabits.find((habit) => habit.name.trim().toLowerCase() === name.toLowerCase());
+    if (existingHabit) {
+      updateData((value) => ({ ...value, habitChecks: setHabitCheckForDay(value.habitChecks, habitDay, existingHabit.id, todayDay, true) }));
+      setHabitDraft(blankHabitDraft);
+      return;
+    }
+    replaceHabits([createHabit(name, habitDraft.note), ...activeData.habits]);
+    setHabitDraft(blankHabitDraft);
+  }
+
+  function startHabitEdit(habit: Habit) {
+    setEditingHabitId(habit.id);
+    setHabitEditDraft({ name: habit.name, note: habit.note });
+  }
+
+  function saveHabitEdit(habitId: string) {
+    if (!canEditHabitDay) return;
+    const name = habitEditDraft.name.trim();
+    if (!name) return;
+    replaceHabits(
+      activeData.habits.map((habit) => (habit.id === habitId ? { ...habit, name, note: habitEditDraft.note.trim() } : habit)),
+    );
+    setEditingHabitId(null);
+    setHabitEditDraft(blankHabitDraft);
+  }
+
+  function deleteHabit(habitId: string) {
+    if (!canEditHabitDay) return;
+    const habit = activeData.habits.find((item) => item.id === habitId);
+    if (!habit) return;
+    if (!window.confirm(`确定归档习惯“${habit.name}”吗？历史打卡记录会保留。`)) return;
+    replaceHabits(activeData.habits.map((item) => (item.id === habitId ? { ...item, archived_at: nowStamp() } : item)));
+    if (editingHabitId === habitId) {
+      setEditingHabitId(null);
+      setHabitEditDraft(blankHabitDraft);
+    }
+  }
+
+  function toggleHabit(habitId: string) {
+    if (!canEditHabitDay) return;
+    updateData((value) => ({ ...value, habitChecks: toggleHabitCheckForDay(value.habitChecks, habitDay, habitId, todayDay) }));
+  }
+
+  function addInspiration(event: FormEvent) {
+    event.preventDefault();
+    const title = inspirationDraft.title.trim();
+    if (!title) return;
+    replaceInspirations([createInspiration(title, inspirationDraft.body), ...activeData.inspirations]);
+    setInspirationDraft({ title: "", body: "" });
+  }
+
+  function startInspirationEdit(record: InspirationRecord) {
+    setEditingInspirationId(record.id);
+    setInspirationEditDraft({ title: record.title, body: record.body });
+  }
+
+  function saveInspirationEdit(recordId: string) {
+    const title = inspirationEditDraft.title.trim();
+    if (!title) return;
+    replaceInspirations(
+      activeData.inspirations.map((record) =>
+        record.id === recordId ? { ...record, title, body: inspirationEditDraft.body.trim() } : record,
+      ),
+    );
+    setEditingInspirationId(null);
+    setInspirationEditDraft({ title: "", body: "" });
+  }
+
+  function toggleInspirationPinned(recordId: string) {
+    replaceInspirations(
+      activeData.inspirations.map((record) => (record.id === recordId ? { ...record, pinned: !record.pinned } : record)),
+    );
+  }
+
+  function archiveInspiration(recordId: string) {
+    const record = activeData.inspirations.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档灵感“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceInspirations(activeData.inspirations.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)));
+    if (editingInspirationId === recordId) {
+      setEditingInspirationId(null);
+      setInspirationEditDraft({ title: "", body: "" });
+    }
+  }
+
+  function addVideoInspiration(event: FormEvent) {
+    event.preventDefault();
+    const channel = videoInspirationDraft.channel.trim();
+    const title = videoInspirationDraft.title.trim();
+    if (!channel || !title) return;
+    replaceVideoInspirations([
+      createVideoInspiration(channel, title, videoInspirationDraft.content, videoInspirationDraft.url),
+      ...activeData.videoInspirations,
+    ]);
+    setVideoInspirationDraft(blankVideoInspirationDraft);
+  }
+
+  function startVideoInspirationEdit(record: VideoInspirationRecord) {
+    setEditingVideoInspirationId(record.id);
+    setVideoInspirationEditDraft({
+      channel: record.channel,
+      title: record.title,
+      content: record.content,
+      url: record.url,
+    });
+  }
+
+  function saveVideoInspirationEdit(recordId: string) {
+    const channel = videoInspirationEditDraft.channel.trim();
+    const title = videoInspirationEditDraft.title.trim();
+    if (!channel || !title) return;
+    replaceVideoInspirations(
+      activeData.videoInspirations.map((record) =>
+        record.id === recordId
+          ? {
+              ...record,
+              channel,
+              title,
+              content: videoInspirationEditDraft.content.trim(),
+              url: videoInspirationEditDraft.url.trim(),
+            }
+          : record,
+      ),
+    );
+    setEditingVideoInspirationId(null);
+    setVideoInspirationEditDraft(blankVideoInspirationDraft);
+  }
+
+  function toggleVideoInspirationPinned(recordId: string) {
+    replaceVideoInspirations(
+      activeData.videoInspirations.map((record) => (record.id === recordId ? { ...record, pinned: !record.pinned } : record)),
+    );
+  }
+
+  function archiveVideoInspiration(recordId: string) {
+    const record = activeData.videoInspirations.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档视频灵感“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceVideoInspirations(
+      activeData.videoInspirations.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
+    );
+    if (editingVideoInspirationId === recordId) {
+      setEditingVideoInspirationId(null);
+      setVideoInspirationEditDraft(blankVideoInspirationDraft);
+    }
+  }
+
+  function addMetaLearningAbility(event: FormEvent) {
+    event.preventDefault();
+    const name = metaLearningDraft.name.trim();
+    if (!name) return;
+    replaceMetaLearningAbilities([
+      createMetaLearningAbility(name, metaLearningDraft.summary, metaLearningDraft.usage, metaLearningDraft.mastery),
+      ...activeData.metaLearningAbilities,
+    ]);
+    setMetaLearningDraft(blankMetaLearningDraft);
+  }
+
+  function startMetaLearningEdit(record: MetaLearningAbility) {
+    setEditingMetaLearningId(record.id);
+    setMetaLearningEditDraft({
+      name: record.name,
+      summary: record.summary,
+      usage: record.usage,
+      mastery: record.mastery,
+    });
+  }
+
+  function saveMetaLearningEdit(recordId: string) {
+    const name = metaLearningEditDraft.name.trim();
+    if (!name) return;
+    replaceMetaLearningAbilities(
+      activeData.metaLearningAbilities.map((record) =>
+        record.id === recordId
+          ? {
+              ...record,
+              name,
+              summary: metaLearningEditDraft.summary.trim(),
+              usage: metaLearningEditDraft.usage.trim(),
+              mastery: metaLearningEditDraft.mastery,
+            }
+          : record,
+      ),
+    );
+    setEditingMetaLearningId(null);
+    setMetaLearningEditDraft(blankMetaLearningDraft);
+  }
+
+  function archiveMetaLearningAbility(recordId: string) {
+    const record = activeData.metaLearningAbilities.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档学习能力“${record.name}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceMetaLearningAbilities(
+      activeData.metaLearningAbilities.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
+    );
+    if (editingMetaLearningId === recordId) {
+      setEditingMetaLearningId(null);
+      setMetaLearningEditDraft(blankMetaLearningDraft);
+    }
+  }
+
+  function startWeeklyDeliveryEdit(delivery: WeeklyDelivery) {
+    setEditingDeliveryId(delivery.id);
+    setDeliveryEditDraft({ name: delivery.name, platform: delivery.platform, note: delivery.note });
+  }
+
+  function saveWeeklyDeliveryEdit(deliveryId: string) {
+    const name = deliveryEditDraft.name.trim();
+    const platform = deliveryEditDraft.platform.trim();
+    if (!name || !platform) return;
+    replaceWeeklyDeliveries(
+      currentDeliveryWeek,
+      deliveryTasks.map((delivery) =>
+        delivery.id === deliveryId ? { ...delivery, name, platform, note: deliveryEditDraft.note.trim() } : delivery,
+      ),
+    );
+    setEditingDeliveryId(null);
+    setDeliveryEditDraft({ name: "", platform: "", note: "" });
+  }
+
+  function deleteWeeklyDelivery(deliveryId: string) {
+    const delivery = deliveryTasks.find((item) => item.id === deliveryId);
+    if (!delivery) return;
+    if (!window.confirm(`确定删除快递“${delivery.name}”吗？删除后可以用撤销恢复。`)) return;
+    replaceWeeklyDeliveries(
+      currentDeliveryWeek,
+      deliveryTasks.filter((item) => item.id !== deliveryId),
+    );
+    if (editingDeliveryId === deliveryId) {
+      setEditingDeliveryId(null);
+      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+    }
+  }
+
+  function carryOverWeeklyDeliveries() {
+    const previousWeek = weekKey(addDays(deliveryDate, -7));
+    const existing = new Set(deliveryTasks.map((delivery) => deliveryKey(delivery)));
+    const carried = (activeData.weeklyDeliveries[previousWeek] ?? [])
+      .filter((delivery) => !delivery.picked && !existing.has(deliveryKey(delivery)))
+      .map((delivery) => createWeeklyDelivery(delivery.name, delivery.platform, delivery.note));
+    if (!carried.length) return;
+    replaceWeeklyDeliveries(currentDeliveryWeek, [...carried, ...deliveryTasks]);
+  }
+
+  function toggleTask(taskId: string) {
+    replaceTasks(
+      currentDay,
+      allTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        const done = task.status !== STATUS_DONE;
+        return {
+          ...task,
+          status: done ? STATUS_DONE : STATUS_TODO,
+          done_at: done ? nowStamp() : null,
+        };
+      }),
+    );
+    setSelectedId(taskId);
+  }
+
+  function toggleTodayTask(taskId: string) {
+    replaceTasks(
+      todayDay,
+      todayTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        const done = task.status !== STATUS_DONE;
+        return {
+          ...task,
+          status: done ? STATUS_DONE : STATUS_TODO,
+          done_at: done ? nowStamp() : null,
+        };
+      }),
+    );
+    setSelectedId(taskId);
+  }
+
+  function startTodayTask(taskId: string) {
+    replaceTasks(
+      todayDay,
+      todayTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: STATUS_IN_PROGRESS,
+              done_at: null,
+            }
+          : task,
+      ),
+    );
+    setSelectedId(taskId);
+  }
+
+  function saveTask(task: TodoTask) {
+    if (!editingTask) return;
+    const sourceDay = editingTask.day;
+    const sourceTasks = activeData.todos[sourceDay] ?? [];
+    replaceTasks(sourceDay, sourceTasks.map((item) => (item.id === task.id ? task : item)));
+    setEditingTask(null);
+  }
+
+  function deleteTask(taskId: string) {
+    const task = allTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    if (!window.confirm(`确定删除“${task.text}”吗？删除后可以用撤销恢复。`)) return;
+    replaceTasks(
+      currentDay,
+      allTasks.filter((task) => task.id !== taskId),
+    );
+    if (selectedId === taskId) setSelectedId(null);
+  }
+
+  function moveSelected(delta: number) {
+    if (!selectedId) return;
+    const index = allTasks.findIndex((task) => task.id === selectedId);
+    const nextIndex = index + delta;
+    if (index < 0 || nextIndex < 0 || nextIndex >= allTasks.length) return;
+    const next = [...allTasks];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    replaceTasks(currentDay, next);
+  }
+
+  function startTaskDrag(event: DragEvent<HTMLElement>, taskId: string) {
+    if (!canDragTasks) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", taskId);
+    setDraggedTaskId(taskId);
+    setDragOverTaskId(null);
+    setSelectedId(taskId);
+  }
+
+  function enterTaskDropTarget(taskId: string) {
+    if (!canDragTasks || !draggedTaskId || draggedTaskId === taskId) return;
+    setDragOverTaskId(taskId);
+  }
+
+  function hoverTaskDropTarget(event: DragEvent<HTMLElement>, taskId: string) {
+    if (!canDragTasks || !draggedTaskId || draggedTaskId === taskId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverTaskId(taskId);
+  }
+
+  function leaveTaskDropTarget(event: DragEvent<HTMLElement>, taskId: string) {
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+    setDragOverTaskId((value) => (value === taskId ? null : value));
+  }
+
+  function dropTaskOnTarget(event: DragEvent<HTMLElement>, targetTaskId: string) {
+    if (!canDragTasks) return;
+    event.preventDefault();
+    const sourceTaskId = draggedTaskId ?? event.dataTransfer.getData("text/plain");
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+    if (!sourceTaskId || sourceTaskId === targetTaskId) return;
+    moveTaskBefore(sourceTaskId, targetTaskId);
+  }
+
+  function endTaskDrag() {
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+  }
+
+  function moveTaskBefore(sourceTaskId: string, targetTaskId: string) {
+    const sourceIndex = allTasks.findIndex((task) => task.id === sourceTaskId);
+    const targetIndex = allTasks.findIndex((task) => task.id === targetTaskId);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+    const next = [...allTasks];
+    const [movedTask] = next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, movedTask);
+    replaceTasks(currentDay, next);
+    setSelectedId(sourceTaskId);
+  }
+
+  function carryOver() {
+    if (!data) return;
+    const previousDay = dateKey(addDays(currentDate, -1));
+    const existing = new Set(allTasks.map((task) => task.text));
+    const carried = (data.todos[previousDay] ?? [])
+      .filter((task) => task.status !== STATUS_DONE && !existing.has(task.text))
+      .map((task) =>
+        createTask({
+          text: task.text,
+          description: task.description,
+          tag: task.tag,
+          priority: task.priority,
+          status: STATUS_TODO,
+        }),
+      );
+    if (!carried.length) return;
+    replaceTasks(currentDay, [...carried, ...allTasks]);
+  }
+
+  function clearDone() {
+    const doneTasks = allTasks.filter((task) => task.status === STATUS_DONE);
+    if (!doneTasks.length) return;
+    if (!window.confirm(`确定清除 ${doneTasks.length} 个已完成事项吗？清除后可以用撤销恢复。`)) return;
+    replaceTasks(
+      currentDay,
+      allTasks.filter((task) => task.status !== STATUS_DONE),
+    );
+  }
+
+  function addTag(name: string, tone: TodoTag["tone"]) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const nextId = Math.max(0, ...tags.map((tag) => tag.id)) + 1;
+    updatePrefs((value) => ({
+      ...value,
+      tags: [...value.tags, { id: nextId, name: trimmed, tone }],
+    }));
+  }
+
+  function updateTag(updatedTag: TodoTag) {
+    const name = updatedTag.name.trim() || "未命名";
+    updatePrefs((value) => ({
+      ...value,
+      tags: value.tags.map((tag) => (tag.id === updatedTag.id ? { ...updatedTag, name } : tag)),
+    }));
+  }
+
+  function deleteTag(tagId: TagId) {
+    if (tagId === 0) return;
+    const tag = tags.find((item) => item.id === tagId);
+    if (!tag) return;
+    if (!window.confirm(`确定删除标签“${tag.name}”吗？已有任务和默认任务会改为“未分类”。`)) return;
+    updatePrefs((value) => ({
+      ...value,
+      tags: value.tags.filter((item) => item.id !== tagId),
+      defaultTasks: value.defaultTasks.map((task) => (task.tag === tagId ? { ...task, tag: 0 } : task)),
+    }));
+    updateData((value) => ({
+      ...value,
+      todos: Object.fromEntries(
+        Object.entries(value.todos).map(([day, tasks]) => [
+          day,
+          tasks.map((task) => (task.tag === tagId ? { ...task, tag: 0 } : task)),
+        ]),
+      ),
+    }));
+    setDraft((value) => (value.tag === tagId ? { ...value, tag: 0 } : value));
+  }
+
+  function addDefaultTask(task: DefaultTask) {
+    const text = task.text.trim();
+    if (!text) return;
+    const normalizedTask = { ...task, text };
+    updatePrefs((value) => ({
+      ...value,
+      defaultTasks: [...value.defaultTasks, normalizedTask],
+    }));
+    updateData((value) => {
+      const today = dateKey(new Date());
+      const todayTasks = value.todos[today] ?? [];
+      if (todayTasks.some((item) => item.text.trim() === text)) return value;
+      return {
+        ...value,
+        todos: {
+          ...value.todos,
+          [today]: [
+            ...todayTasks,
+            createTask({
+              text,
+              tag: normalizedTask.tag,
+              priority: normalizedTask.priority,
+              status: STATUS_TODO,
+              description: "",
+            }),
+          ],
+        },
+      };
+    });
+  }
+
+  function updateDefaultTask(index: number, task: DefaultTask) {
+    updatePrefs((value) => ({
+      ...value,
+      defaultTasks: value.defaultTasks.map((item, itemIndex) =>
+        itemIndex === index ? { ...task, text: task.text.trim() || item.text } : item,
+      ),
+    }));
+  }
+
+  function deleteDefaultTask(index: number) {
+    updatePrefs((value) => ({
+      ...value,
+      defaultTasks: value.defaultTasks.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isFormField(event.target)) return;
+
+      if (isUndoRedoShortcut(event)) {
+        event.preventDefault();
+        if (event.key.toLowerCase() === "z" && !event.shiftKey) {
+          undoData();
+        } else {
+          redoData();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "ArrowUp") {
+        event.preventDefault();
+        moveSelected(-1);
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "ArrowDown") {
+        event.preventDefault();
+        moveSelected(1);
+        return;
+      }
+
+      if (event.key === "Delete" && selectedId) {
+        event.preventDefault();
+        deleteTask(selectedId);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
+  const tagCounts = useMemo(() => {
+    const counts = new Map<TagFilter, number>([[-1, allTasks.length]]);
+    for (const tag of tags) counts.set(tag.id, allTasks.filter((task) => task.tag === tag.id).length);
+    return counts;
+  }, [allTasks, tags]);
+
+  const historyDays = useMemo(
+    () =>
+      Array.from(new Set([...Object.keys(activeData.todos), ...Object.keys(activeData.awesomeRecords)]))
+        .filter((day) => activeData.todos[day]?.length || activeData.awesomeRecords[day]?.length)
+        .sort()
+        .reverse(),
+    [activeData],
+  );
+
+  if (!storageReady || !data) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <main className="app-shell">
+      <Sidebar
+        activeView={activeView}
+        dashboardCount={dashboardTasks.length + todayPendingDeliveryCount}
+        dailyCount={todayTasks.length}
+        monthlyCount={monthlyTasks.length}
+        deliveryCount={todayPendingDeliveryCount}
+        onViewChange={changeView}
+        onShowHistory={() => setShowHistory(true)}
+        onShowSettings={() => setShowSettings(true)}
+      />
+
+      <section className="workspace">
+        {activeView === "dashboard" ? (
+          <DashboardPanel
+            today={todayDate}
+            saveStatus={projectSaveStatus}
+            doneCount={todayDoneCount}
+            totalCount={todayTasks.length}
+            progress={todayProgress}
+            inProgressCount={todayInProgressCount}
+            pendingDeliveryCount={todayPendingDeliveryCount}
+            openMonthlyCount={todayOpenMonthlyCount}
+            habitDoneCount={todayHabitCompletion.done}
+            habitTotalCount={todayHabitCompletion.total}
+            tasks={dashboardTasks}
+            tags={tags}
+            onToggleTask={toggleTodayTask}
+            onStartTask={startTodayTask}
+            onOpenDaily={openTodayDaily}
+            onOpenHabits={openTodayHabits}
+          />
+        ) : activeView === "habits" ? (
+          <HabitPanel
+            currentDate={habitDate}
+            selectedDay={habitDay}
+            todayDay={todayDay}
+            canEditSelectedDate={canEditHabitDay}
+            habits={habitViews}
+            draft={habitDraft}
+            editingHabitId={editingHabitId}
+            editingDraft={habitEditDraft}
+            saveStatus={projectSaveStatus}
+            onSetDate={setHabitDate}
+            onDraftChange={setHabitDraft}
+            onAdd={addHabit}
+            onToggle={toggleHabit}
+            onStartEdit={startHabitEdit}
+            onEditDraftChange={setHabitEditDraft}
+            onSaveEdit={saveHabitEdit}
+            onCancelEdit={() => {
+              setEditingHabitId(null);
+              setHabitEditDraft(blankHabitDraft);
+            }}
+            onArchive={deleteHabit}
+          />
+        ) : activeView === "daily" ? (
+          <>
+            <WorkspaceHeader
+              currentDate={currentDate}
+              theme={theme}
+              onSetDate={setDay}
+              onToggleTheme={() => updatePrefs((value) => ({ ...value, theme: theme === "dark" ? "light" : "dark" }))}
+            />
+            <SummaryBand doneCount={doneCount} total={allTasks.length} progress={progress} saveStatus={projectSaveStatus} />
+            <WeeklyPanel
+              weekRange={weekRange}
+              tasks={weeklyTasks}
+              draft={weeklyDraft}
+              editingTaskId={editingWeeklyTaskId}
+              editingText={weeklyEditText}
+              onDraftChange={setWeeklyDraft}
+              onAdd={addWeeklyTask}
+              onToggle={toggleWeeklyTask}
+              onStartEdit={startWeeklyEdit}
+              onEditTextChange={setWeeklyEditText}
+              onSaveEdit={saveWeeklyEdit}
+              onCancelEdit={() => {
+                setEditingWeeklyTaskId(null);
+                setWeeklyEditText("");
+              }}
+              onDelete={deleteWeeklyTask}
+            />
+            <TaskComposer draft={draft} tags={tags} onDraftChange={setDraft} onSubmit={handleAdd} />
+            <TaskToolbar
+              filters={filters}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onCarryOver={carryOver}
+              onClearDone={clearDone}
+              onUndo={undoData}
+              onRedo={redoData}
+              onFiltersChange={setFilters}
+            />
+
+            <section className="daily-task-board">
+              <DailyCategoryPanel filters={filters} tags={tags} tagCounts={tagCounts} onTagChange={(tag) => setFilters({ ...filters, tag })} />
+              <section className="task-list" aria-label="任务列表">
+                {visibleTasks.length ? (
+                  visibleTasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      tags={tags}
+                      selected={selectedId === task.id}
+                      onSelect={() => setSelectedId(task.id)}
+                      onToggle={() => toggleTask(task.id)}
+                      onEdit={() => setEditingTask({ day: currentDay, task })}
+                      onDelete={() => deleteTask(task.id)}
+                      draggable={canDragTasks}
+                      dragging={draggedTaskId === task.id}
+                      dragOver={dragOverTaskId === task.id}
+                      onDragStart={(event) => startTaskDrag(event, task.id)}
+                      onDragEnter={() => enterTaskDropTarget(task.id)}
+                      onDragOver={(event) => hoverTaskDropTarget(event, task.id)}
+                      onDragLeave={(event) => leaveTaskDropTarget(event, task.id)}
+                      onDrop={(event) => dropTaskOnTarget(event, task.id)}
+                      onDragEnd={endTaskDrag}
+                    />
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <strong>{allTasks.length ? "没有匹配的任务" : "今天还没有任务"}</strong>
+                    <span>{allTasks.length ? "试试换个筛选条件或搜索词" : "从上面的输入框写下第一件事"}</span>
+                  </div>
+                )}
+              </section>
+            </section>
+
+            <AwesomePanel
+              records={awesomeRecords}
+              draft={awesomeDraft}
+              editingRecordId={editingAwesomeRecordId}
+              editingText={awesomeEditText}
+              onDraftChange={setAwesomeDraft}
+              onAdd={addAwesomeRecord}
+              onStartEdit={startAwesomeEdit}
+              onEditTextChange={setAwesomeEditText}
+              onSaveEdit={saveAwesomeEdit}
+              onCancelEdit={() => {
+                setEditingAwesomeRecordId(null);
+                setAwesomeEditText("");
+              }}
+              onDelete={deleteAwesomeRecord}
+            />
+          </>
+        ) : activeView === "monthly" ? (
+          <MonthlyPanel
+            currentDate={currentDate}
+            monthValue={currentMonth}
+            tasks={monthlyTasks}
+            draft={monthlyDraft}
+            editingTaskId={editingMonthlyTaskId}
+            editingDraft={monthlyEditDraft}
+            saveStatus={projectSaveStatus}
+            onSetMonth={setMonth}
+            onDraftChange={setMonthlyDraft}
+            onAdd={addMonthlyTask}
+            onToggle={toggleMonthlyTask}
+            onStartEdit={startMonthlyEdit}
+            onEditDraftChange={setMonthlyEditDraft}
+            onSaveEdit={saveMonthlyEdit}
+            onCancelEdit={() => {
+              setEditingMonthlyTaskId(null);
+              setMonthlyEditDraft({ text: "", description: "" });
+            }}
+            onDelete={deleteMonthlyTask}
+          />
+        ) : activeView === "inspiration" ? (
+          <InspirationPanel
+            records={visibleInspirations}
+            draft={inspirationDraft}
+            query={inspirationQuery}
+            editingRecordId={editingInspirationId}
+            editingDraft={inspirationEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setInspirationDraft}
+            onAdd={addInspiration}
+            onQueryChange={setInspirationQuery}
+            onTogglePinned={toggleInspirationPinned}
+            onStartEdit={startInspirationEdit}
+            onEditDraftChange={setInspirationEditDraft}
+            onSaveEdit={saveInspirationEdit}
+            onCancelEdit={() => {
+              setEditingInspirationId(null);
+              setInspirationEditDraft({ title: "", body: "" });
+            }}
+            onArchive={archiveInspiration}
+          />
+        ) : activeView === "videoInspiration" ? (
+          <VideoInspirationPanel
+            records={visibleVideoInspirations}
+            channels={videoInspirationChannels}
+            draft={videoInspirationDraft}
+            query={videoInspirationQuery}
+            channelFilter={videoInspirationChannelFilter}
+            editingRecordId={editingVideoInspirationId}
+            editingDraft={videoInspirationEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setVideoInspirationDraft}
+            onAdd={addVideoInspiration}
+            onQueryChange={setVideoInspirationQuery}
+            onChannelFilterChange={setVideoInspirationChannelFilter}
+            onTogglePinned={toggleVideoInspirationPinned}
+            onStartEdit={startVideoInspirationEdit}
+            onEditDraftChange={setVideoInspirationEditDraft}
+            onSaveEdit={saveVideoInspirationEdit}
+            onCancelEdit={() => {
+              setEditingVideoInspirationId(null);
+              setVideoInspirationEditDraft(blankVideoInspirationDraft);
+            }}
+            onArchive={archiveVideoInspiration}
+          />
+        ) : activeView === "metaLearning" ? (
+          <MetaLearningPanel
+            records={visibleMetaLearningAbilities}
+            draft={metaLearningDraft}
+            query={metaLearningQuery}
+            masteryFilter={metaLearningMasteryFilter}
+            editingRecordId={editingMetaLearningId}
+            editingDraft={metaLearningEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setMetaLearningDraft}
+            onAdd={addMetaLearningAbility}
+            onQueryChange={setMetaLearningQuery}
+            onMasteryFilterChange={setMetaLearningMasteryFilter}
+            onStartEdit={startMetaLearningEdit}
+            onEditDraftChange={setMetaLearningEditDraft}
+            onSaveEdit={saveMetaLearningEdit}
+            onCancelEdit={() => {
+              setEditingMetaLearningId(null);
+              setMetaLearningEditDraft(blankMetaLearningDraft);
+            }}
+            onArchive={archiveMetaLearningAbility}
+          />
+        ) : (
+          <WeeklyDeliveryPanel
+            weekRange={deliveryWeekRange}
+            tasks={deliveryTasks}
+            visibleTasks={visibleDeliveryTasks}
+            filter={deliveryFilter}
+            draft={deliveryDraft}
+            editingTaskId={editingDeliveryId}
+            editingDraft={deliveryEditDraft}
+            saveStatus={projectSaveStatus}
+            onFilterChange={setDeliveryFilter}
+            onDraftChange={setDeliveryDraft}
+            onAdd={addWeeklyDelivery}
+            onCarryOver={carryOverWeeklyDeliveries}
+            onToggle={toggleWeeklyDelivery}
+            onStartEdit={startWeeklyDeliveryEdit}
+            onEditDraftChange={setDeliveryEditDraft}
+            onSaveEdit={saveWeeklyDeliveryEdit}
+            onCancelEdit={() => {
+              setEditingDeliveryId(null);
+              setDeliveryEditDraft({ name: "", platform: "", note: "" });
+            }}
+            onDelete={deleteWeeklyDelivery}
+          />
+        )}
+      </section>
+
+      {editingTask && <EditDialog task={editingTask.task} tags={tags} onClose={() => setEditingTask(null)} onSave={saveTask} />}
+      {showHistory && (
+        <HistoryDialog
+          days={historyDays}
+          data={data}
+          onClose={() => setShowHistory(false)}
+          onJump={(day) => {
+            setDay(fromDateKey(day));
+            setShowHistory(false);
+          }}
+        />
+      )}
+      {showSettings && (
+        <SettingsDialog
+          tags={tags}
+          defaultTasks={defaultTasks}
+          onClose={() => setShowSettings(false)}
+          onAddTag={addTag}
+          onUpdateTag={updateTag}
+          onDeleteTag={deleteTag}
+          onAddDefaultTask={addDefaultTask}
+          onUpdateDefaultTask={updateDefaultTask}
+          onDeleteDefaultTask={deleteDefaultTask}
+        />
+      )}
+    </main>
+  );
+}
+
+const emptyData: TodoData = {
+  version: DATA_VERSION,
+  todos: {},
+  weeklyTodos: {},
+  awesomeRecords: {},
+  monthlyTodos: {},
+  weeklyDeliveries: {},
+  habits: [],
+  habitChecks: {},
+  inspirations: [],
+  metaLearningAbilities: [],
+  videoInspirations: [],
+  default_applied: [],
+};
+
+function matchesFilters(task: TodoTask, filters: Filters): boolean {
+  if (filters.status !== "all" && String(task.status) !== filters.status) return false;
+  if (filters.priority !== "all" && task.priority !== filters.priority) return false;
+  if (filters.tag !== -1 && task.tag !== filters.tag) return false;
+  const query = filters.query.trim().toLowerCase();
+  if (query && !`${task.text} ${task.description}`.toLowerCase().includes(query)) return false;
+  return true;
+}
+
+function isUnfilteredTaskView(filters: Filters): boolean {
+  return filters.status === "all" && filters.priority === "all" && filters.tag === -1 && !filters.query.trim();
+}
+
+function matchesDeliveryFilter(delivery: WeeklyDelivery, filter: DeliveryFilter): boolean {
+  if (filter === "pending") return !delivery.picked;
+  if (filter === "picked") return delivery.picked;
+  return true;
+}
+
+function deliveryKey(delivery: Pick<WeeklyDelivery, "name" | "platform">): string {
+  return `${delivery.name.trim().toLowerCase()}::${delivery.platform.trim().toLowerCase()}`;
+}
+
+function isUndoRedoShortcut(event: KeyboardEvent): boolean {
+  const key = event.key.toLowerCase();
+  const modifier = event.ctrlKey || event.metaKey;
+  return modifier && (key === "y" || key === "z");
+}
+
+function isFormField(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable;
+}

@@ -1,0 +1,5 @@
+﻿# 本项目仅使用 Python 标准库，无需额外依赖
+# 此文件用于声明 Python 版本要求
+
+# Python >= 3.10
+# tkinter (Python 自带)
