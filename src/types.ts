@@ -103,6 +103,15 @@ export type VideoInspirationRecord = {
   archived_at?: string | null;
 };
 
+export type WorkExperienceRecord = {
+  id: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  created_at: string;
+  archived_at?: string | null;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -115,6 +124,7 @@ export type TodoData = {
   inspirations: InspirationRecord[];
   metaLearningAbilities: MetaLearningAbility[];
   videoInspirations: VideoInspirationRecord[];
+  workExperiences: WorkExperienceRecord[];
   default_applied: string[];
 };
 

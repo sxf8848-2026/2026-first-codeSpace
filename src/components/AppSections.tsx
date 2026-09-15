@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
+  BriefcaseBusiness,
   Flame,
   History,
   LayoutDashboard,
@@ -54,10 +55,20 @@ import {
   VideoInspirationRecord,
   WeeklyDelivery,
   WeeklyTask,
+  WorkExperienceRecord,
 } from "../types";
 import { Segmented, TagButton } from "./Controls";
 
-export type AppView = "dashboard" | "habits" | "daily" | "monthly" | "delivery" | "inspiration" | "videoInspiration" | "metaLearning";
+export type AppView =
+  | "dashboard"
+  | "habits"
+  | "daily"
+  | "monthly"
+  | "delivery"
+  | "inspiration"
+  | "videoInspiration"
+  | "metaLearning"
+  | "workExperience";
 
 type SaveStatus = {
   state: "idle" | "saved" | "fallback";
@@ -150,6 +161,10 @@ export function Sidebar({
           <GraduationCap size={16} />
           <span>元学习力</span>
         </button>
+        <button className={activeView === "workExperience" ? "active" : ""} onClick={() => onViewChange("workExperience")}>
+          <BriefcaseBusiness size={16} />
+          <span>工作经验</span>
+        </button>
       </nav>
 
       <button className="side-action secondary" onClick={onShowSettings}>
@@ -157,6 +172,142 @@ export function Sidebar({
         设置
       </button>
     </aside>
+  );
+}
+
+export function WorkExperiencePanel({
+  records,
+  draft,
+  query,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onTogglePinned,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onArchive,
+}: {
+  records: WorkExperienceRecord[];
+  draft: { title: string; body: string };
+  query: string;
+  editingRecordId: string | null;
+  editingDraft: { title: string; body: string };
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: { title: string; body: string }) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onTogglePinned: (recordId: string) => void;
+  onStartEdit: (record: WorkExperienceRecord) => void;
+  onEditDraftChange: (draft: { title: string; body: string }) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onArchive: (recordId: string) => void;
+}) {
+  return (
+    <>
+      <header className="topbar inspiration-topbar">
+        <div>
+          <div className="eyebrow">
+            <BriefcaseBusiness size={16} />
+            工作经验
+          </div>
+          <h1>经验复盘库</h1>
+        </div>
+      </header>
+
+      <section className="inspiration-summary">
+        <div>
+          <span>当前展示</span>
+          <strong>{records.length} 条</strong>
+        </div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">
+          {saveStatus.message}
+        </div>
+      </section>
+
+      <section className="inspiration-panel" aria-label="工作经验">
+        <form className="inspiration-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="经验标题" />
+          <textarea value={draft.body} onChange={(event) => onDraftChange({ ...draft, body: event.target.value })} placeholder="正文，可不填" />
+          <button className="primary-button" type="submit">
+            <Plus size={18} />
+            添加
+          </button>
+        </form>
+
+        <div className="inspiration-toolbar">
+          <div className="search-box">
+            <Search size={16} />
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题或正文" />
+          </div>
+        </div>
+
+        <div className="inspiration-list">
+          {records.length ? (
+            records.map((record) => (
+              <article className={`inspiration-item ${record.pinned ? "pinned" : ""}`} key={record.id}>
+                {editingRecordId === record.id ? (
+                  <div className="inspiration-edit">
+                    <input
+                      value={editingDraft.title}
+                      onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) onSaveEdit(record.id);
+                        if (event.key === "Escape") onCancelEdit();
+                      }}
+                      autoFocus
+                    />
+                    <textarea
+                      value={editingDraft.body}
+                      onChange={(event) => onEditDraftChange({ ...editingDraft, body: event.target.value })}
+                      placeholder="正文，可不填"
+                    />
+                  </div>
+                ) : (
+                  <div className="inspiration-content">
+                    <div className="inspiration-title-line">
+                      {record.pinned && <Pin size={15} />}
+                      <strong title={record.title}>{record.title}</strong>
+                    </div>
+                    {record.body && <p>{record.body}</p>}
+                    <small>{formatRecordStamp(record.created_at)}</small>
+                  </div>
+                )}
+                <div className="inspiration-actions">
+                  {editingRecordId === record.id ? (
+                    <>
+                      <button onClick={() => onSaveEdit(record.id)}>保存</button>
+                      <button onClick={onCancelEdit} title="取消编辑">
+                        <X size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => onTogglePinned(record.id)} title={record.pinned ? "取消置顶" : "置顶工作经验"}>
+                        {record.pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                      </button>
+                      <button onClick={() => onStartEdit(record)} title="编辑工作经验">
+                        <Pencil size={16} />
+                      </button>
+                      <button className="danger" onClick={() => onArchive(record.id)} title="归档工作经验">
+                        <Archive size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="inspiration-empty">{query.trim() ? "没有匹配的工作经验" : "还没有工作经验"}</div>
+          )}
+        </div>
+      </section>
+    </>
   );
 }
 

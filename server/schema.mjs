@@ -19,6 +19,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.inspirations)) return false;
   if (!Array.isArray(payload.metaLearningAbilities)) return false;
   if (!Array.isArray(payload.videoInspirations)) return false;
+  if (!Array.isArray(payload.workExperiences)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -26,6 +27,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.inspirations.every(isValidInspiration)) return false;
   if (!payload.metaLearningAbilities.every(isValidMetaLearningAbility)) return false;
   if (!payload.videoInspirations.every(isValidVideoInspiration)) return false;
+  if (!payload.workExperiences.every(isValidWorkExperience)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -162,6 +164,17 @@ function isValidVideoInspiration(record) {
   if (!isNonEmptyString(record.title)) return false;
   if (typeof record.content !== "string") return false;
   if (typeof record.url !== "string") return false;
+  if (typeof record.pinned !== "boolean") return false;
+  if (typeof record.created_at !== "string") return false;
+  if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
+  return true;
+}
+
+function isValidWorkExperience(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (typeof record.body !== "string") return false;
   if (typeof record.pinned !== "boolean") return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;

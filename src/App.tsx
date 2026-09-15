@@ -14,6 +14,7 @@ import {
   TaskComposer,
   TaskToolbar,
   VideoInspirationPanel,
+  WorkExperiencePanel,
   WeeklyDeliveryPanel,
   WeeklyPanel,
   WorkspaceHeader,
@@ -34,6 +35,7 @@ import {
   createVideoInspiration,
   createWeeklyDelivery,
   createWeeklyTask,
+  createWorkExperience,
   loadDataFromProject,
   loadPrefs,
   loadPrefsFromProject,
@@ -50,6 +52,7 @@ import {
   getVisibleVideoInspirations,
   VideoInspirationChannelFilter,
 } from "./services/videoInspirations";
+import { getVisibleWorkExperiences } from "./services/workExperiences";
 import {
   Filters,
   AppPrefs,
@@ -74,6 +77,7 @@ import {
   InspirationRecord,
   MetaLearningAbility,
   MetaLearningMastery,
+  WorkExperienceRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -185,6 +189,10 @@ export function App() {
   const [metaLearningMasteryFilter, setMetaLearningMasteryFilter] = useState<MetaLearningMasteryFilter>("all");
   const [editingMetaLearningId, setEditingMetaLearningId] = useState<string | null>(null);
   const [metaLearningEditDraft, setMetaLearningEditDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
+  const [workExperienceDraft, setWorkExperienceDraft] = useState({ title: "", body: "" });
+  const [workExperienceQuery, setWorkExperienceQuery] = useState("");
+  const [editingWorkExperienceId, setEditingWorkExperienceId] = useState<string | null>(null);
+  const [workExperienceEditDraft, setWorkExperienceEditDraft] = useState({ title: "", body: "" });
   const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
   const [showDailyHistory, setShowDailyHistory] = useState(false);
   const [showMonthlyHistory, setShowMonthlyHistory] = useState(false);
@@ -254,6 +262,10 @@ export function App() {
   const visibleMetaLearningAbilities = useMemo(
     () => getVisibleMetaLearningAbilities(activeData.metaLearningAbilities, metaLearningQuery, metaLearningMasteryFilter),
     [activeData.metaLearningAbilities, metaLearningMasteryFilter, metaLearningQuery],
+  );
+  const visibleWorkExperiences = useMemo(
+    () => getVisibleWorkExperiences(activeData.workExperiences, workExperienceQuery),
+    [activeData.workExperiences, workExperienceQuery],
   );
   const canUndo = dataHistory.canUndo;
   const canRedo = dataHistory.canRedo;
@@ -513,6 +525,10 @@ export function App() {
 
   function replaceMetaLearningAbilities(metaLearningAbilities: MetaLearningAbility[]) {
     updateData((value) => ({ ...value, metaLearningAbilities }));
+  }
+
+  function replaceWorkExperiences(workExperiences: WorkExperienceRecord[]) {
+    updateData((value) => ({ ...value, workExperiences }));
   }
 
   function handleAdd(event: FormEvent) {
@@ -897,6 +913,48 @@ export function App() {
     if (editingMetaLearningId === recordId) {
       setEditingMetaLearningId(null);
       setMetaLearningEditDraft(blankMetaLearningDraft);
+    }
+  }
+
+  function addWorkExperience(event: FormEvent) {
+    event.preventDefault();
+    const title = workExperienceDraft.title.trim();
+    if (!title) return;
+    replaceWorkExperiences([createWorkExperience(title, workExperienceDraft.body), ...activeData.workExperiences]);
+    setWorkExperienceDraft({ title: "", body: "" });
+  }
+
+  function startWorkExperienceEdit(record: WorkExperienceRecord) {
+    setEditingWorkExperienceId(record.id);
+    setWorkExperienceEditDraft({ title: record.title, body: record.body });
+  }
+
+  function saveWorkExperienceEdit(recordId: string) {
+    const title = workExperienceEditDraft.title.trim();
+    if (!title) return;
+    replaceWorkExperiences(
+      activeData.workExperiences.map((record) =>
+        record.id === recordId ? { ...record, title, body: workExperienceEditDraft.body.trim() } : record,
+      ),
+    );
+    setEditingWorkExperienceId(null);
+    setWorkExperienceEditDraft({ title: "", body: "" });
+  }
+
+  function toggleWorkExperiencePinned(recordId: string) {
+    replaceWorkExperiences(
+      activeData.workExperiences.map((record) => (record.id === recordId ? { ...record, pinned: !record.pinned } : record)),
+    );
+  }
+
+  function archiveWorkExperience(recordId: string) {
+    const record = activeData.workExperiences.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档工作经验“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceWorkExperiences(activeData.workExperiences.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)));
+    if (editingWorkExperienceId === recordId) {
+      setEditingWorkExperienceId(null);
+      setWorkExperienceEditDraft({ title: "", body: "" });
     }
   }
 
@@ -1478,6 +1536,27 @@ export function App() {
             }}
             onArchive={archiveMetaLearningAbility}
           />
+        ) : activeView === "workExperience" ? (
+          <WorkExperiencePanel
+            records={visibleWorkExperiences}
+            draft={workExperienceDraft}
+            query={workExperienceQuery}
+            editingRecordId={editingWorkExperienceId}
+            editingDraft={workExperienceEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setWorkExperienceDraft}
+            onAdd={addWorkExperience}
+            onQueryChange={setWorkExperienceQuery}
+            onTogglePinned={toggleWorkExperiencePinned}
+            onStartEdit={startWorkExperienceEdit}
+            onEditDraftChange={setWorkExperienceEditDraft}
+            onSaveEdit={saveWorkExperienceEdit}
+            onCancelEdit={() => {
+              setEditingWorkExperienceId(null);
+              setWorkExperienceEditDraft({ title: "", body: "" });
+            }}
+            onArchive={archiveWorkExperience}
+          />
         ) : (
           <WeeklyDeliveryPanel
             weekRange={deliveryWeekRange}
@@ -1563,6 +1642,7 @@ const emptyData: TodoData = {
   inspirations: [],
   metaLearningAbilities: [],
   videoInspirations: [],
+  workExperiences: [],
   default_applied: [],
 };
 

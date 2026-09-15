@@ -84,9 +84,18 @@ const validVideoInspiration = {
   archived_at: null,
 };
 
+const validWorkExperience = {
+  id: "work-experience-1",
+  title: "需求评审经验",
+  body: "提前列出风险点和验收口径",
+  pinned: false,
+  created_at: "2026-09-15T08:30:00.000Z",
+  archived_at: null,
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 14,
+    version: 15,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -111,6 +120,7 @@ function makeTodosPayload(overrides = {}) {
     inspirations: [validInspiration],
     metaLearningAbilities: [validMetaLearningAbility],
     videoInspirations: [validVideoInspiration],
+    workExperiences: [validWorkExperience],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -502,6 +512,58 @@ test("rejects video inspiration with invalid archived_at type", () => {
     isValidTodosPayload(
       makeTodosPayload({
         videoInspirations: [{ ...validVideoInspiration, archived_at: false }],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects todos payload without workExperiences", () => {
+  const payload = makeTodosPayload();
+  delete payload.workExperiences;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects empty work experience title", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [{ ...validWorkExperience, title: " " }],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects work experience with missing body", () => {
+  const record = { ...validWorkExperience };
+  delete record.body;
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [record],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects work experience with invalid pinned type", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [{ ...validWorkExperience, pinned: "yes" }],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects work experience with invalid archived_at type", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [{ ...validWorkExperience, archived_at: false }],
       }),
     ),
     false,

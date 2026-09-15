@@ -4,6 +4,7 @@ import { normalizeHabit } from "./habits";
 import { normalizeInspirations } from "./inspirations";
 import { normalizeMetaLearningAbilities } from "./metaLearning";
 import { normalizeVideoInspirations } from "./videoInspirations";
+import { normalizeWorkExperiences } from "./workExperiences";
 import {
   AppPrefs,
   AwesomeRecord,
@@ -25,6 +26,7 @@ import {
   VideoInspirationRecord,
   WeeklyDelivery,
   WeeklyTask,
+  WorkExperienceRecord,
 } from "../types";
 
 const TODOS_KEY = "daily-todo.todos.v1";
@@ -52,6 +54,7 @@ const initialData: TodoData = {
   inspirations: [],
   metaLearningAbilities: [],
   videoInspirations: [],
+  workExperiences: [],
   default_applied: [],
 };
 
@@ -283,6 +286,17 @@ export function createVideoInspiration(channel: string, title: string, content: 
   };
 }
 
+export function createWorkExperience(title: string, body: string): WorkExperienceRecord {
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    body: body.trim(),
+    pinned: false,
+    created_at: nowStamp(),
+    archived_at: null,
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -331,6 +345,11 @@ export function normalizeData(raw: unknown): TodoData {
   );
   const videoInspirations: TodoData["videoInspirations"] = normalizeVideoInspirations(
     value.videoInspirations,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
+  const workExperiences: TodoData["workExperiences"] = normalizeWorkExperiences(
+    value.workExperiences,
     () => crypto.randomUUID(),
     nowStamp,
   );
@@ -420,6 +439,7 @@ export function normalizeData(raw: unknown): TodoData {
     inspirations,
     metaLearningAbilities,
     videoInspirations,
+    workExperiences,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -437,7 +457,8 @@ function hasTasks(data: TodoData): boolean {
     Object.values(data.habitChecks).some((checks) => Object.values(checks).some(Boolean)) ||
     data.inspirations.length > 0 ||
     data.metaLearningAbilities.length > 0 ||
-    data.videoInspirations.length > 0
+    data.videoInspirations.length > 0 ||
+    data.workExperiences.length > 0
   );
 }
 

@@ -13,6 +13,44 @@
 
 ---
 
+## [15.0.0] - 2026-09-15
+
+### 改了什么
+
+- 新增左侧“工作经验”独立菜单，作为轻量的工作经验复盘库。
+- 工作经验支持标题和正文输入，默认展示未归档记录。
+- 列表支持搜索、置顶/取消置顶、编辑和归档，排序为置顶优先、创建时间从新到旧。
+- 新增 `workExperiences` 数据字段，并将 `TodoData.version` 升级到 `15`。
+- 前端归一化、本地保存、localStorage 兜底和后端 `/api/todos` 校验同步支持工作经验数据。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/storage.ts`
+- `src/services/workExperiences.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/storage.test.mjs`
+- `tests-web/workExperiences.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，89/89。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 第一版不做分类、标签、日期分组、历史查询、回收站或统计页。
+- 旧数据缺少 `workExperiences` 时会自动补为空数组。
+- 修改后端默认数据和校验后，需要重启 `npm run dev` 才能加载新的本地 API 代码。
+
 ## [14.2.0] - 2026-09-15
 
 ### 改了什么
