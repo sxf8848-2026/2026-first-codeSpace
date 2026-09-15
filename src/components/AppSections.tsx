@@ -274,7 +274,7 @@ export function WorkExperiencePanel({
                       {record.pinned && <Pin size={15} />}
                       <strong title={record.title}>{record.title}</strong>
                     </div>
-                    {record.body && <p>{record.body}</p>}
+                    {record.body && <p className="work-experience-body">{record.body}</p>}
                     <small>{formatRecordStamp(record.created_at)}</small>
                   </div>
                 )}
