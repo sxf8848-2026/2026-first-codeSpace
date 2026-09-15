@@ -88,6 +88,7 @@ const validWorkExperience = {
   id: "work-experience-1",
   title: "需求评审经验",
   body: "提前列出风险点和验收口径",
+  month: "2026-09",
   pinned: false,
   created_at: "2026-09-15T08:30:00.000Z",
   archived_at: null,
@@ -95,7 +96,7 @@ const validWorkExperience = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 15,
+    version: 16,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -542,6 +543,30 @@ test("rejects work experience with missing body", () => {
     isValidTodosPayload(
       makeTodosPayload({
         workExperiences: [record],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects work experience with missing month", () => {
+  const record = { ...validWorkExperience };
+  delete record.month;
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [record],
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects work experience with invalid month", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [{ ...validWorkExperience, month: "2026-9" }],
       }),
     ),
     false,

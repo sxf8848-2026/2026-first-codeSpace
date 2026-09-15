@@ -13,6 +13,43 @@
 
 ---
 
+## [16.0.0] - 2026-09-15
+
+### 改了什么
+
+- 工作经验新增“所属月份”字段，新增和编辑时都可以选择月份。
+- 工作经验列表展示所属月份，并支持按月份筛选；默认仍展示全部月份。
+- 月份筛选选项会从未归档工作经验中自动汇总，并按月份倒序展示。
+- 搜索和月份筛选可同时生效，排序仍保持置顶优先、创建时间从新到旧。
+- 数据版本升级到 `16`，旧工作经验会按 `created_at` 自动补齐所属月份。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/storage.ts`
+- `src/services/workExperiences.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/workExperiences.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，94/94。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 第一版只做月份筛选，不按月份分组展示。
+- 新增工作经验默认属于当前月份；页面默认筛选为“全部月份”。
+- 修改后端默认数据和校验后，需要重启 `npm run dev` 才能加载新的本地 API 代码。
+
 ## [15.0.1] - 2026-09-15
 
 ### 改了什么

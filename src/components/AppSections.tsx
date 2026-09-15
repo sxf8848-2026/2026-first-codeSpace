@@ -35,6 +35,7 @@ import { addDays, dayLabel, formatDisplayDate, formatMonthTitle, fromDateKey, fr
 import type { HabitView } from "../services/habits";
 import { META_LEARNING_MASTERY_OPTIONS, MetaLearningMasteryFilter, metaLearningMasteryLabel } from "../services/metaLearning";
 import { VideoInspirationChannelFilter } from "../services/videoInspirations";
+import { WorkExperienceMonthFilter } from "../services/workExperiences";
 import {
   AwesomeRecord,
   Filters,
@@ -177,14 +178,17 @@ export function Sidebar({
 
 export function WorkExperiencePanel({
   records,
+  months,
   draft,
   query,
+  monthFilter,
   editingRecordId,
   editingDraft,
   saveStatus,
   onDraftChange,
   onAdd,
   onQueryChange,
+  onMonthFilterChange,
   onTogglePinned,
   onStartEdit,
   onEditDraftChange,
@@ -193,17 +197,20 @@ export function WorkExperiencePanel({
   onArchive,
 }: {
   records: WorkExperienceRecord[];
-  draft: { title: string; body: string };
+  months: string[];
+  draft: { title: string; body: string; month: string };
   query: string;
+  monthFilter: WorkExperienceMonthFilter;
   editingRecordId: string | null;
-  editingDraft: { title: string; body: string };
+  editingDraft: { title: string; body: string; month: string };
   saveStatus: SaveStatus;
-  onDraftChange: (draft: { title: string; body: string }) => void;
+  onDraftChange: (draft: { title: string; body: string; month: string }) => void;
   onAdd: (event: FormEvent) => void;
   onQueryChange: (query: string) => void;
+  onMonthFilterChange: (month: WorkExperienceMonthFilter) => void;
   onTogglePinned: (recordId: string) => void;
   onStartEdit: (record: WorkExperienceRecord) => void;
-  onEditDraftChange: (draft: { title: string; body: string }) => void;
+  onEditDraftChange: (draft: { title: string; body: string; month: string }) => void;
   onSaveEdit: (recordId: string) => void;
   onCancelEdit: () => void;
   onArchive: (recordId: string) => void;
@@ -233,6 +240,7 @@ export function WorkExperiencePanel({
       <section className="inspiration-panel" aria-label="工作经验">
         <form className="inspiration-composer" onSubmit={onAdd}>
           <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="经验标题" />
+          <input type="month" value={draft.month} onChange={(event) => onDraftChange({ ...draft, month: event.target.value })} />
           <textarea value={draft.body} onChange={(event) => onDraftChange({ ...draft, body: event.target.value })} placeholder="正文，可不填" />
           <button className="primary-button" type="submit">
             <Plus size={18} />
@@ -245,6 +253,14 @@ export function WorkExperiencePanel({
             <Search size={16} />
             <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题或正文" />
           </div>
+          <select value={monthFilter} onChange={(event) => onMonthFilterChange(event.target.value as WorkExperienceMonthFilter)}>
+            <option value="all">全部月份</option>
+            {months.map((month) => (
+              <option value={month} key={month}>
+                {month}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="inspiration-list">
@@ -267,6 +283,7 @@ export function WorkExperiencePanel({
                       onChange={(event) => onEditDraftChange({ ...editingDraft, body: event.target.value })}
                       placeholder="正文，可不填"
                     />
+                    <input type="month" value={editingDraft.month} onChange={(event) => onEditDraftChange({ ...editingDraft, month: event.target.value })} />
                   </div>
                 ) : (
                   <div className="inspiration-content">
@@ -275,7 +292,9 @@ export function WorkExperiencePanel({
                       <strong title={record.title}>{record.title}</strong>
                     </div>
                     {record.body && <p className="work-experience-body">{record.body}</p>}
-                    <small>{formatRecordStamp(record.created_at)}</small>
+                    <small>
+                      {record.month} · {formatRecordStamp(record.created_at)}
+                    </small>
                   </div>
                 )}
                 <div className="inspiration-actions">

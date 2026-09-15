@@ -286,11 +286,12 @@ export function createVideoInspiration(channel: string, title: string, content: 
   };
 }
 
-export function createWorkExperience(title: string, body: string): WorkExperienceRecord {
+export function createWorkExperience(title: string, body: string, month: string): WorkExperienceRecord {
   return {
     id: crypto.randomUUID(),
     title: title.trim(),
     body: body.trim(),
+    month,
     pinned: false,
     created_at: nowStamp(),
     archived_at: null,

@@ -52,7 +52,7 @@ import {
   getVisibleVideoInspirations,
   VideoInspirationChannelFilter,
 } from "./services/videoInspirations";
-import { getVisibleWorkExperiences } from "./services/workExperiences";
+import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
 import {
   Filters,
   AppPrefs,
@@ -189,10 +189,11 @@ export function App() {
   const [metaLearningMasteryFilter, setMetaLearningMasteryFilter] = useState<MetaLearningMasteryFilter>("all");
   const [editingMetaLearningId, setEditingMetaLearningId] = useState<string | null>(null);
   const [metaLearningEditDraft, setMetaLearningEditDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
-  const [workExperienceDraft, setWorkExperienceDraft] = useState({ title: "", body: "" });
+  const [workExperienceDraft, setWorkExperienceDraft] = useState(() => ({ title: "", body: "", month: monthKey(new Date()) }));
   const [workExperienceQuery, setWorkExperienceQuery] = useState("");
+  const [workExperienceMonthFilter, setWorkExperienceMonthFilter] = useState<WorkExperienceMonthFilter>("all");
   const [editingWorkExperienceId, setEditingWorkExperienceId] = useState<string | null>(null);
-  const [workExperienceEditDraft, setWorkExperienceEditDraft] = useState({ title: "", body: "" });
+  const [workExperienceEditDraft, setWorkExperienceEditDraft] = useState(() => ({ title: "", body: "", month: monthKey(new Date()) }));
   const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
   const [showDailyHistory, setShowDailyHistory] = useState(false);
   const [showMonthlyHistory, setShowMonthlyHistory] = useState(false);
@@ -263,9 +264,10 @@ export function App() {
     () => getVisibleMetaLearningAbilities(activeData.metaLearningAbilities, metaLearningQuery, metaLearningMasteryFilter),
     [activeData.metaLearningAbilities, metaLearningMasteryFilter, metaLearningQuery],
   );
+  const workExperienceMonths = useMemo(() => getWorkExperienceMonths(activeData.workExperiences), [activeData.workExperiences]);
   const visibleWorkExperiences = useMemo(
-    () => getVisibleWorkExperiences(activeData.workExperiences, workExperienceQuery),
-    [activeData.workExperiences, workExperienceQuery],
+    () => getVisibleWorkExperiences(activeData.workExperiences, workExperienceQuery, workExperienceMonthFilter),
+    [activeData.workExperiences, workExperienceMonthFilter, workExperienceQuery],
   );
   const canUndo = dataHistory.canUndo;
   const canRedo = dataHistory.canRedo;
@@ -920,13 +922,13 @@ export function App() {
     event.preventDefault();
     const title = workExperienceDraft.title.trim();
     if (!title) return;
-    replaceWorkExperiences([createWorkExperience(title, workExperienceDraft.body), ...activeData.workExperiences]);
-    setWorkExperienceDraft({ title: "", body: "" });
+    replaceWorkExperiences([createWorkExperience(title, workExperienceDraft.body, workExperienceDraft.month), ...activeData.workExperiences]);
+    setWorkExperienceDraft({ title: "", body: "", month: monthKey(new Date()) });
   }
 
   function startWorkExperienceEdit(record: WorkExperienceRecord) {
     setEditingWorkExperienceId(record.id);
-    setWorkExperienceEditDraft({ title: record.title, body: record.body });
+    setWorkExperienceEditDraft({ title: record.title, body: record.body, month: record.month });
   }
 
   function saveWorkExperienceEdit(recordId: string) {
@@ -934,11 +936,11 @@ export function App() {
     if (!title) return;
     replaceWorkExperiences(
       activeData.workExperiences.map((record) =>
-        record.id === recordId ? { ...record, title, body: workExperienceEditDraft.body.trim() } : record,
+        record.id === recordId ? { ...record, title, body: workExperienceEditDraft.body.trim(), month: workExperienceEditDraft.month } : record,
       ),
     );
     setEditingWorkExperienceId(null);
-    setWorkExperienceEditDraft({ title: "", body: "" });
+    setWorkExperienceEditDraft({ title: "", body: "", month: monthKey(new Date()) });
   }
 
   function toggleWorkExperiencePinned(recordId: string) {
@@ -954,7 +956,7 @@ export function App() {
     replaceWorkExperiences(activeData.workExperiences.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)));
     if (editingWorkExperienceId === recordId) {
       setEditingWorkExperienceId(null);
-      setWorkExperienceEditDraft({ title: "", body: "" });
+      setWorkExperienceEditDraft({ title: "", body: "", month: monthKey(new Date()) });
     }
   }
 
@@ -1539,21 +1541,24 @@ export function App() {
         ) : activeView === "workExperience" ? (
           <WorkExperiencePanel
             records={visibleWorkExperiences}
+            months={workExperienceMonths}
             draft={workExperienceDraft}
             query={workExperienceQuery}
+            monthFilter={workExperienceMonthFilter}
             editingRecordId={editingWorkExperienceId}
             editingDraft={workExperienceEditDraft}
             saveStatus={projectSaveStatus}
             onDraftChange={setWorkExperienceDraft}
             onAdd={addWorkExperience}
             onQueryChange={setWorkExperienceQuery}
+            onMonthFilterChange={setWorkExperienceMonthFilter}
             onTogglePinned={toggleWorkExperiencePinned}
             onStartEdit={startWorkExperienceEdit}
             onEditDraftChange={setWorkExperienceEditDraft}
             onSaveEdit={saveWorkExperienceEdit}
             onCancelEdit={() => {
               setEditingWorkExperienceId(null);
-              setWorkExperienceEditDraft({ title: "", body: "" });
+              setWorkExperienceEditDraft({ title: "", body: "", month: monthKey(new Date()) });
             }}
             onArchive={archiveWorkExperience}
           />

@@ -107,6 +107,7 @@ export type WorkExperienceRecord = {
   id: string;
   title: string;
   body: string;
+  month: string;
   pinned: boolean;
   created_at: string;
   archived_at?: string | null;
