@@ -268,7 +268,7 @@ export function WorkExperiencePanel({
             records.map((record) => (
               <article className={`inspiration-item ${record.pinned ? "pinned" : ""}`} key={record.id}>
                 {editingRecordId === record.id ? (
-                  <div className="inspiration-edit">
+                  <div className="inspiration-edit work-experience-edit">
                     <input
                       value={editingDraft.title}
                       onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })}
@@ -284,7 +284,12 @@ export function WorkExperiencePanel({
                       placeholder="正文，必填"
                       required
                     />
-                    <input type="month" value={editingDraft.month} onChange={(event) => onEditDraftChange({ ...editingDraft, month: event.target.value })} />
+                    <input
+                      className="work-experience-edit-month"
+                      type="month"
+                      value={editingDraft.month}
+                      onChange={(event) => onEditDraftChange({ ...editingDraft, month: event.target.value })}
+                    />
                   </div>
                 ) : (
                   <div className="inspiration-content">

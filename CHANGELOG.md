@@ -13,6 +13,29 @@
 
 ---
 
+## [16.0.2] - 2026-09-15
+
+### 改了什么
+
+- 缩短编辑工作经验时的月份选择框宽度，避免占用一整行。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，95/95。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 仅调整工作经验编辑状态下的月份选择框，不影响新增表单和其他页面。
+
 ## [16.0.1] - 2026-09-15
 
 ### 改了什么

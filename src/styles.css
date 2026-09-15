@@ -1304,6 +1304,11 @@ h1 {
   min-height: 120px;
 }
 
+.work-experience-edit-month {
+  width: 180px;
+  max-width: 100%;
+}
+
 .inspiration-actions {
   display: flex;
   align-items: flex-start;
