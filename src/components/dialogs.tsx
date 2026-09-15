@@ -1,9 +1,9 @@
 import { Plus, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { PRIORITIES, TAG_TONES } from "../constants";
-import { formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
-import { DailyHistoryEntry, MonthlyHistoryEntry } from "../services/history";
-import { DefaultTask, Priority, TagId, TodoTag, TodoTask } from "../types";
+import { addMonths, dateKey, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey, monthKey } from "../date";
+import { DailyHistoryEntry, getDailyHistoryCalendarDays, getDailyHistoryDetail, MonthlyHistoryEntry } from "../services/history";
+import { DefaultTask, Priority, TagId, TodoData, TodoTag, TodoTask } from "../types";
 
 export function EditDialog({
   task,
@@ -81,6 +81,8 @@ export function HistoryDialog({
   emptyTitle,
   emptyText,
   dailyEntries,
+  dailyData,
+  initialDailyDay,
   monthlyEntries,
   onClose,
   onDailyJump,
@@ -90,12 +92,113 @@ export function HistoryDialog({
   emptyTitle: string;
   emptyText: string;
   dailyEntries?: DailyHistoryEntry[];
+  dailyData?: Pick<TodoData, "todos" | "awesomeRecords">;
+  initialDailyDay?: string;
   monthlyEntries?: MonthlyHistoryEntry[];
   onClose: () => void;
   onDailyJump?: (day: string) => void;
   onMonthlyJump?: (month: string) => void;
 }) {
   const entries = dailyEntries ?? monthlyEntries ?? [];
+  const [selectedDay, setSelectedDay] = useState(initialDailyDay ?? dailyEntries?.[0]?.day ?? dateKey(new Date()));
+  const [calendarMonth, setCalendarMonth] = useState(monthKey(fromDateKey(selectedDay)));
+
+  if (dailyEntries && dailyData) {
+    const calendarDays = getDailyHistoryCalendarDays(dailyData, calendarMonth);
+    const detail = getDailyHistoryDetail(dailyData, selectedDay);
+
+    function setVisibleMonth(date: Date, nextSelectedDay = dateKey(date)) {
+      setCalendarMonth(monthKey(date));
+      setSelectedDay(nextSelectedDay);
+    }
+
+    return (
+      <div className="dialog-backdrop" role="presentation" onClick={onClose}>
+        <section className="dialog history-dialog daily-history-dialog" onClick={(event) => event.stopPropagation()}>
+          <header>
+            <strong>{title}</strong>
+            <button type="button" className="icon-button compact" onClick={onClose}>
+              <X size={18} />
+            </button>
+          </header>
+          <div className="daily-history-layout">
+            <section className="daily-history-calendar" aria-label="每日历史日历">
+              <div className="daily-history-calendar-head">
+                <strong>{formatMonthTitle(fromMonthKey(calendarMonth))}</strong>
+                <div>
+                  <button type="button" className="icon-button compact" onClick={() => setVisibleMonth(addMonths(fromMonthKey(calendarMonth), -1))}>
+                    上月
+                  </button>
+                  <button type="button" className="icon-button compact" onClick={() => setVisibleMonth(new Date())}>
+                    本月
+                  </button>
+                  <button type="button" className="icon-button compact" onClick={() => setVisibleMonth(addMonths(fromMonthKey(calendarMonth), 1))}>
+                    下月
+                  </button>
+                </div>
+              </div>
+              <div className="daily-history-weekdays" aria-hidden="true">
+                {["一", "二", "三", "四", "五", "六", "日"].map((weekday) => (
+                  <span key={weekday}>{weekday}</span>
+                ))}
+              </div>
+              <div className="daily-history-grid">
+                {calendarDays.map((day) => (
+                  <button
+                    type="button"
+                    className={`daily-history-day ${day.inMonth ? "" : "outside"} ${day.hasData ? "has-data" : ""} ${
+                      day.day === selectedDay ? "selected" : ""
+                    }`}
+                    key={day.day}
+                    onClick={() => setSelectedDay(day.day)}
+                  >
+                    <span>{fromDateKey(day.day).getDate()}</span>
+                    {day.hasData && (
+                      <small>
+                        {day.doneCount}/{day.totalCount}
+                      </small>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="daily-history-detail" aria-label="每日历史详情">
+              <div className="daily-history-detail-head">
+                <div>
+                  <span>{formatDisplayDate(fromDateKey(selectedDay))}</span>
+                  <strong>
+                    {detail.doneCount}/{detail.totalCount} · 真棒 {detail.awesomeCount}
+                  </strong>
+                </div>
+                <button type="button" className="text-button" onClick={() => onDailyJump?.(selectedDay)}>
+                  跳转到这一天
+                </button>
+              </div>
+
+              <DailyHistoryTaskGroup title="进行中" tasks={detail.inProgressTasks} emptyText="这一天没有进行中的任务" />
+              <DailyHistoryTaskGroup title="未完成" tasks={detail.todoTasks} emptyText="这一天没有未完成任务" />
+              <DailyHistoryTaskGroup title="已完成" tasks={detail.doneTasks} emptyText="这一天还没有完成项" />
+
+              <div className="daily-history-detail-section">
+                <strong>真棒记录</strong>
+                {detail.awesomeRecords.length ? (
+                  <ul>
+                    {detail.awesomeRecords.map((record) => (
+                      <li key={record.id}>{record.text}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span>这一天还没有真棒记录</span>
+                )}
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="dialog-backdrop" role="presentation" onClick={onClose}>
       <section className="dialog history-dialog" onClick={(event) => event.stopPropagation()}>
@@ -136,6 +239,26 @@ export function HistoryDialog({
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function DailyHistoryTaskGroup({ title, tasks, emptyText }: { title: string; tasks: TodoTask[]; emptyText: string }) {
+  return (
+    <div className="daily-history-detail-section">
+      <strong>{title}</strong>
+      {tasks.length ? (
+        <ul>
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <span>{task.text}</span>
+              {task.description && <small>{task.description}</small>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span>{emptyText}</span>
+      )}
     </div>
   );
 }

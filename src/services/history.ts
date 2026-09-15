@@ -1,6 +1,7 @@
-import type { TodoData } from "../types";
+import type { TodoData, TodoTask } from "../types";
 
 const HISTORY_STATUS_DONE = 0;
+const HISTORY_STATUS_IN_PROGRESS = 2;
 
 export type DailyHistoryEntry = {
   day: string;
@@ -8,6 +9,18 @@ export type DailyHistoryEntry = {
   totalCount: number;
   awesomeCount: number;
   summary: string;
+};
+
+export type DailyHistoryCalendarDay = DailyHistoryEntry & {
+  inMonth: boolean;
+  hasData: boolean;
+};
+
+export type DailyHistoryDetail = DailyHistoryEntry & {
+  todoTasks: TodoTask[];
+  inProgressTasks: TodoTask[];
+  doneTasks: TodoTask[];
+  awesomeRecords: TodoData["awesomeRecords"][string];
 };
 
 export type MonthlyHistoryEntry = {
@@ -47,6 +60,58 @@ export function getDailyHistoryEntries(data: Pick<TodoData, "todos" | "awesomeRe
     });
 }
 
+export function getDailyHistoryCalendarDays(data: Pick<TodoData, "todos" | "awesomeRecords">, month: string): DailyHistoryCalendarDay[] {
+  const entriesByDay = new Map(getDailyHistoryEntries(data).map((entry) => [entry.day, entry]));
+  const start = startOfCalendarMonth(month);
+  const targetMonth = month;
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = addDays(start, index);
+    const key = historyDateKey(day);
+    const entry = entriesByDay.get(key);
+
+    return {
+      day: key,
+      doneCount: entry?.doneCount ?? 0,
+      totalCount: entry?.totalCount ?? 0,
+      awesomeCount: entry?.awesomeCount ?? 0,
+      summary: entry?.summary ?? "这一天还没有记录",
+      inMonth: historyMonthKey(day) === targetMonth,
+      hasData: Boolean(entry),
+    };
+  });
+}
+
+export function getDailyHistoryDetail(data: Pick<TodoData, "todos" | "awesomeRecords">, day: string): DailyHistoryDetail {
+  const tasks = data.todos[day] ?? [];
+  const awesomeRecords = data.awesomeRecords[day] ?? [];
+  const doneTasks = tasks.filter((task) => task.status === HISTORY_STATUS_DONE);
+  const inProgressTasks = tasks.filter((task) => task.status === HISTORY_STATUS_IN_PROGRESS);
+  const todoTasks = tasks.filter((task) => task.status !== HISTORY_STATUS_DONE && task.status !== HISTORY_STATUS_IN_PROGRESS);
+  const summary =
+    doneTasks
+      .slice(0, 3)
+      .map((task) => task.text)
+      .join("、") ||
+    awesomeRecords
+      .slice(0, 3)
+      .map((record) => record.text)
+      .join("、") ||
+    "这一天还没有完成项";
+
+  return {
+    day,
+    doneCount: doneTasks.length,
+    totalCount: tasks.length,
+    awesomeCount: awesomeRecords.length,
+    summary,
+    todoTasks,
+    inProgressTasks,
+    doneTasks,
+    awesomeRecords,
+  };
+}
+
 export function getMonthlyHistoryEntries(data: Pick<TodoData, "monthlyTodos">): MonthlyHistoryEntry[] {
   return Object.entries(data.monthlyTodos)
     .filter(([, tasks]) => tasks.length > 0)
@@ -66,4 +131,30 @@ export function getMonthlyHistoryEntries(data: Pick<TodoData, "monthlyTodos">): 
         summary,
       };
     });
+}
+
+function startOfCalendarMonth(month: string): Date {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const firstDay = new Date(year, monthNumber - 1, 1);
+  const offset = (firstDay.getDay() + 6) % 7;
+  return addDays(firstDay, -offset);
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function historyDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function historyMonthKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
 }

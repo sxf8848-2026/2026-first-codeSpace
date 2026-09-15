@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getDailyHistoryEntries, getMonthlyHistoryEntries } from "../src/services/history.ts";
+import {
+  getDailyHistoryCalendarDays,
+  getDailyHistoryDetail,
+  getDailyHistoryEntries,
+  getMonthlyHistoryEntries,
+} from "../src/services/history.ts";
 
 const baseTask = {
   id: "task-1",
@@ -56,6 +61,75 @@ test("daily history summarizes completed tasks before awesome records", () => {
   assert.equal(entry.totalCount, 2);
   assert.equal(entry.awesomeCount, 1);
   assert.equal(entry.summary, "读书");
+});
+
+test("daily history calendar builds a stable monday-first grid with data marks", () => {
+  const days = getDailyHistoryCalendarDays(
+    {
+      todos: {
+        "2026-09-15": [{ ...baseTask, text: "读书", status: 0 }],
+      },
+      awesomeRecords: {},
+    },
+    "2026-09",
+  );
+
+  assert.equal(days.length, 42);
+  assert.equal(days[0].day, "2026-08-31");
+  assert.equal(days[0].inMonth, false);
+  assert.equal(days[15].day, "2026-09-15");
+  assert.equal(days[15].hasData, true);
+  assert.equal(days[15].doneCount, 1);
+});
+
+test("daily history calendar includes adjacent month days outside the active month", () => {
+  const days = getDailyHistoryCalendarDays(
+    {
+      todos: {},
+      awesomeRecords: {
+        "2026-08-31": [{ id: "awesome-1", text: "周末复盘", created_at: "2026-08-31T00:00:00.000Z" }],
+      },
+    },
+    "2026-09",
+  );
+
+  assert.equal(days[41].day, "2026-10-11");
+  assert.equal(days[41].inMonth, false);
+  assert.equal(days[0].day, "2026-08-31");
+  assert.equal(days[0].inMonth, false);
+  assert.equal(days[0].hasData, true);
+});
+
+test("daily history detail groups tasks and keeps awesome records", () => {
+  const detail = getDailyHistoryDetail(
+    {
+      todos: {
+        "2026-09-12": [
+          { ...baseTask, id: "task-1", text: "读书", status: 0 },
+          { ...baseTask, id: "task-2", text: "写作", status: 2 },
+          { ...baseTask, id: "task-3", text: "运动", status: 1 },
+        ],
+      },
+      awesomeRecords: {
+        "2026-09-12": [{ id: "awesome-1", text: "完成复盘", created_at: "2026-09-12T00:00:00.000Z" }],
+      },
+    },
+    "2026-09-12",
+  );
+
+  assert.deepEqual(
+    detail.doneTasks.map((task) => task.text),
+    ["读书"],
+  );
+  assert.deepEqual(
+    detail.inProgressTasks.map((task) => task.text),
+    ["写作"],
+  );
+  assert.deepEqual(
+    detail.todoTasks.map((task) => task.text),
+    ["运动"],
+  );
+  assert.equal(detail.awesomeRecords.length, 1);
 });
 
 test("monthly history only includes months with tasks sorted newest first", () => {

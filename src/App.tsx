@@ -1512,6 +1512,8 @@ export function App() {
           emptyTitle="还没有每日历史记录"
           emptyText="添加每日待办或真棒记录后，这里会出现历史日期"
           dailyEntries={dailyHistoryEntries}
+          dailyData={activeData}
+          initialDailyDay={currentDay}
           onClose={() => setShowDailyHistory(false)}
           onDailyJump={(day) => {
             setDay(fromDateKey(day));

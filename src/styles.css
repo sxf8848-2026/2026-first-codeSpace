@@ -2063,7 +2063,12 @@ textarea:focus {
 }
 
 .history-dialog {
+  width: min(980px, 100%);
   max-height: min(680px, calc(100vh - 36px));
+}
+
+.daily-history-dialog {
+  max-height: min(780px, calc(100vh - 36px));
 }
 
 .settings-dialog {
@@ -2128,8 +2133,143 @@ textarea:focus {
   white-space: nowrap;
 }
 
+.daily-history-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.1fr);
+  gap: 14px;
+  min-height: 480px;
+}
+
+.daily-history-calendar,
+.daily-history-detail {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-subtle);
+}
+
+.daily-history-calendar-head,
+.daily-history-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.daily-history-calendar-head > div {
+  display: flex;
+  gap: 6px;
+}
+
+.daily-history-calendar-head .icon-button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.daily-history-weekdays,
+.daily-history-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.daily-history-weekdays span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.daily-history-day {
+  display: grid;
+  place-items: center;
+  min-height: 54px;
+  padding: 6px 4px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.daily-history-day.outside {
+  color: var(--muted);
+  opacity: 0.56;
+}
+
+.daily-history-day.has-data {
+  border-color: color-mix(in srgb, var(--green) 52%, var(--border));
+  background: color-mix(in srgb, var(--green) 10%, var(--panel));
+}
+
+.daily-history-day.selected {
+  color: var(--text);
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 2px var(--blue);
+  opacity: 1;
+}
+
+.daily-history-day span {
+  font-weight: 800;
+}
+
+.daily-history-day small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.daily-history-detail {
+  overflow: auto;
+}
+
+.daily-history-detail-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.daily-history-detail-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.daily-history-detail-head span,
+.daily-history-detail-section > span {
+  color: var(--muted);
+}
+
+.daily-history-detail-section {
+  display: grid;
+  gap: 8px;
+}
+
+.daily-history-detail-section ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.daily-history-detail-section li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.daily-history-detail-section li small {
+  color: var(--muted);
+}
+
 @media (max-width: 980px) {
   .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-history-layout {
     grid-template-columns: 1fr;
   }
 
