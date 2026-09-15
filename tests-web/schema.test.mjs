@@ -549,6 +549,17 @@ test("rejects work experience with missing body", () => {
   );
 });
 
+test("rejects work experience with empty body", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        workExperiences: [{ ...validWorkExperience, body: " " }],
+      }),
+    ),
+    false,
+  );
+});
+
 test("rejects work experience with missing month", () => {
   const record = { ...validWorkExperience };
   delete record.month;

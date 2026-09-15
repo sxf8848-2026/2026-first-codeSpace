@@ -174,7 +174,7 @@ function isValidWorkExperience(record) {
   if (!isPlainObject(record)) return false;
   if (!isNonEmptyString(record.id)) return false;
   if (!isNonEmptyString(record.title)) return false;
-  if (typeof record.body !== "string") return false;
+  if (!isNonEmptyString(record.body)) return false;
   if (!isMonthKey(record.month)) return false;
   if (typeof record.pinned !== "boolean") return false;
   if (typeof record.created_at !== "string") return false;

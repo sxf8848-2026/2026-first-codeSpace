@@ -238,10 +238,10 @@ export function WorkExperiencePanel({
       </section>
 
       <section className="inspiration-panel" aria-label="工作经验">
-        <form className="inspiration-composer" onSubmit={onAdd}>
+        <form className="inspiration-composer work-experience-composer" onSubmit={onAdd}>
           <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="经验标题" />
           <input type="month" value={draft.month} onChange={(event) => onDraftChange({ ...draft, month: event.target.value })} />
-          <textarea value={draft.body} onChange={(event) => onDraftChange({ ...draft, body: event.target.value })} placeholder="正文，可不填" />
+          <textarea value={draft.body} onChange={(event) => onDraftChange({ ...draft, body: event.target.value })} placeholder="正文，必填" required />
           <button className="primary-button" type="submit">
             <Plus size={18} />
             添加
@@ -281,7 +281,8 @@ export function WorkExperiencePanel({
                     <textarea
                       value={editingDraft.body}
                       onChange={(event) => onEditDraftChange({ ...editingDraft, body: event.target.value })}
-                      placeholder="正文，可不填"
+                      placeholder="正文，必填"
+                      required
                     />
                     <input type="month" value={editingDraft.month} onChange={(event) => onEditDraftChange({ ...editingDraft, month: event.target.value })} />
                   </div>

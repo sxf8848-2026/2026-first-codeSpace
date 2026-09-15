@@ -13,6 +13,34 @@
 
 ---
 
+## [16.0.1] - 2026-09-15
+
+### 改了什么
+
+- 优化工作经验新增表单布局：月份选择器变窄，正文输入区加长。
+- 工作经验正文改为必填，新增、编辑和后端写入校验都会拒绝空正文。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `server/schema.mjs`
+- `tests-web/schema.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，95/95。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 现有正文为空的工作经验需要补充正文后再保存。
+- 修改后端校验后，需要重启 `npm run dev` 才能加载新的本地 API 代码。
+
 ## [16.0.0] - 2026-09-15
 
 ### 改了什么

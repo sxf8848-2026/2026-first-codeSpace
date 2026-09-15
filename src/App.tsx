@@ -921,8 +921,9 @@ export function App() {
   function addWorkExperience(event: FormEvent) {
     event.preventDefault();
     const title = workExperienceDraft.title.trim();
-    if (!title) return;
-    replaceWorkExperiences([createWorkExperience(title, workExperienceDraft.body, workExperienceDraft.month), ...activeData.workExperiences]);
+    const body = workExperienceDraft.body.trim();
+    if (!title || !body) return;
+    replaceWorkExperiences([createWorkExperience(title, body, workExperienceDraft.month), ...activeData.workExperiences]);
     setWorkExperienceDraft({ title: "", body: "", month: monthKey(new Date()) });
   }
 
@@ -933,10 +934,11 @@ export function App() {
 
   function saveWorkExperienceEdit(recordId: string) {
     const title = workExperienceEditDraft.title.trim();
-    if (!title) return;
+    const body = workExperienceEditDraft.body.trim();
+    if (!title || !body) return;
     replaceWorkExperiences(
       activeData.workExperiences.map((record) =>
-        record.id === recordId ? { ...record, title, body: workExperienceEditDraft.body.trim(), month: workExperienceEditDraft.month } : record,
+        record.id === recordId ? { ...record, title, body, month: workExperienceEditDraft.month } : record,
       ),
     );
     setEditingWorkExperienceId(null);

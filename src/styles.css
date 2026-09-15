@@ -1215,6 +1215,10 @@ h1 {
   resize: vertical;
 }
 
+.work-experience-composer {
+  grid-template-columns: minmax(220px, 0.8fr) 180px minmax(360px, 1.4fr) auto;
+}
+
 .inspiration-toolbar {
   display: flex;
   justify-content: flex-end;
