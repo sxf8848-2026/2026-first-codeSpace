@@ -21,7 +21,7 @@ import {
 import { EditDialog, HistoryDialog, SettingsDialog } from "./components/dialogs";
 import { TaskRow } from "./components/TaskRow";
 import { DATA_VERSION } from "./constants";
-import { addDays, dateKey, formatWeekRange, fromDateKey, monthKey, nowStamp, weekKey } from "./date";
+import { addDays, dateKey, formatWeekRange, fromDateKey, fromMonthKey, monthKey, nowStamp, weekKey } from "./date";
 import { useDataHistory } from "./hooks/useDataHistory";
 import {
   applyDefaultTasks,
@@ -42,6 +42,7 @@ import {
   seedToday,
 } from "./services/storage";
 import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitCheckForDay } from "./services/habits";
+import { getDailyHistoryEntries, getMonthlyHistoryEntries } from "./services/history";
 import { getVisibleInspirations } from "./services/inspirations";
 import { getVisibleMetaLearningAbilities, MetaLearningMasteryFilter } from "./services/metaLearning";
 import {
@@ -185,7 +186,8 @@ export function App() {
   const [editingMetaLearningId, setEditingMetaLearningId] = useState<string | null>(null);
   const [metaLearningEditDraft, setMetaLearningEditDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
   const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showDailyHistory, setShowDailyHistory] = useState(false);
+  const [showMonthlyHistory, setShowMonthlyHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const dataHistory = useDataHistory();
 
@@ -1232,14 +1234,8 @@ export function App() {
     return counts;
   }, [allTasks, tags]);
 
-  const historyDays = useMemo(
-    () =>
-      Array.from(new Set([...Object.keys(activeData.todos), ...Object.keys(activeData.awesomeRecords)]))
-        .filter((day) => activeData.todos[day]?.length || activeData.awesomeRecords[day]?.length)
-        .sort()
-        .reverse(),
-    [activeData],
-  );
+  const dailyHistoryEntries = useMemo(() => getDailyHistoryEntries(activeData), [activeData]);
+  const monthlyHistoryEntries = useMemo(() => getMonthlyHistoryEntries(activeData), [activeData]);
 
   if (!storageReady || !data) {
     return <LoadingScreen />;
@@ -1254,7 +1250,6 @@ export function App() {
         monthlyCount={monthlyTasks.length}
         deliveryCount={todayPendingDeliveryCount}
         onViewChange={changeView}
-        onShowHistory={() => setShowHistory(true)}
         onShowSettings={() => setShowSettings(true)}
       />
 
@@ -1309,6 +1304,7 @@ export function App() {
               theme={theme}
               onSetDate={setDay}
               onToggleTheme={() => updatePrefs((value) => ({ ...value, theme: theme === "dark" ? "light" : "dark" }))}
+              onShowHistory={() => setShowDailyHistory(true)}
             />
             <SummaryBand doneCount={doneCount} total={allTasks.length} progress={progress} saveStatus={projectSaveStatus} />
             <WeeklyPanel
@@ -1402,6 +1398,7 @@ export function App() {
             editingDraft={monthlyEditDraft}
             saveStatus={projectSaveStatus}
             onSetMonth={setMonth}
+            onShowHistory={() => setShowMonthlyHistory(true)}
             onDraftChange={setMonthlyDraft}
             onAdd={addMonthlyTask}
             onToggle={toggleMonthlyTask}
@@ -1509,14 +1506,29 @@ export function App() {
       </section>
 
       {editingTask && <EditDialog task={editingTask.task} tags={tags} onClose={() => setEditingTask(null)} onSave={saveTask} />}
-      {showHistory && (
+      {showDailyHistory && (
         <HistoryDialog
-          days={historyDays}
-          data={data}
-          onClose={() => setShowHistory(false)}
-          onJump={(day) => {
+          title="每日历史查询"
+          emptyTitle="还没有每日历史记录"
+          emptyText="添加每日待办或真棒记录后，这里会出现历史日期"
+          dailyEntries={dailyHistoryEntries}
+          onClose={() => setShowDailyHistory(false)}
+          onDailyJump={(day) => {
             setDay(fromDateKey(day));
-            setShowHistory(false);
+            setShowDailyHistory(false);
+          }}
+        />
+      )}
+      {showMonthlyHistory && (
+        <HistoryDialog
+          title="每月历史查询"
+          emptyTitle="还没有每月历史记录"
+          emptyText="添加每月待办后，这里会出现历史月份"
+          monthlyEntries={monthlyHistoryEntries}
+          onClose={() => setShowMonthlyHistory(false)}
+          onMonthlyJump={(month) => {
+            setMonth(fromMonthKey(month));
+            setShowMonthlyHistory(false);
           }}
         />
       )}

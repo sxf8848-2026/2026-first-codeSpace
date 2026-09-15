@@ -13,6 +13,37 @@
 
 ---
 
+## [14.1.0] - 2026-09-15
+
+### 改了什么
+
+- 为“每日待办”页面顶部新增“历史查询”入口，按有内容的日期展示历史列表并支持点击跳转。
+- 为“每月待办”页面顶部新增“历史查询”入口，按有月待办的月份展示历史列表并支持点击跳转。
+- 移除左侧栏底部旧“历史回顾”按钮，避免和页面内历史查询重复。
+- 新增历史列表纯逻辑，直接基于现有 `todos`、`awesomeRecords`、`monthlyTodos` 派生，不新增数据字段，不升级数据版本。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/dialogs.tsx`
+- `src/services/history.ts`
+- `tests-web/history.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，76/76。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 第一版不提供关键词搜索、完成状态筛选或日期范围筛选。
+- 每周快递、灵感记录、视频灵感、元学习力暂不增加历史查询。
+- 普通沙箱运行 `npm run test` 和 `npm run build` 时仍可能遇到 Windows `spawn EPERM`，提升权限重跑后验证通过。
+
 ## [14.0.0] - 2026-09-14
 
 ### 改了什么

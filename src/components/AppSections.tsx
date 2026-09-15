@@ -91,7 +91,6 @@ export function Sidebar({
   monthlyCount,
   deliveryCount,
   onViewChange,
-  onShowHistory,
   onShowSettings,
 }: {
   activeView: AppView;
@@ -100,7 +99,6 @@ export function Sidebar({
   monthlyCount: number;
   deliveryCount: number;
   onViewChange: (view: AppView) => void;
-  onShowHistory: () => void;
   onShowSettings: () => void;
 }) {
   return (
@@ -154,10 +152,6 @@ export function Sidebar({
         </button>
       </nav>
 
-      <button className="side-action" onClick={onShowHistory}>
-        <History size={17} />
-        历史回顾
-      </button>
       <button className="side-action secondary" onClick={onShowSettings}>
         <Settings size={17} />
         设置
@@ -1034,11 +1028,13 @@ export function WorkspaceHeader({
   theme,
   onSetDate,
   onToggleTheme,
+  onShowHistory,
 }: {
   currentDate: Date;
   theme: "light" | "dark";
   onSetDate: (date: Date) => void;
   onToggleTheme: () => void;
+  onShowHistory: () => void;
 }) {
   return (
     <header className="topbar">
@@ -1055,6 +1051,10 @@ export function WorkspaceHeader({
         </button>
         <button className="text-button" onClick={() => onSetDate(new Date())}>
           今天
+        </button>
+        <button className="text-button" onClick={onShowHistory}>
+          <History size={16} />
+          历史查询
         </button>
         <button className="icon-button" onClick={() => onSetDate(addDays(currentDate, 1))} title="后一天">
           <ChevronRight size={18} />
@@ -1306,6 +1306,7 @@ export function MonthlyPanel({
   editingDraft,
   saveStatus,
   onSetMonth,
+  onShowHistory,
   onDraftChange,
   onAdd,
   onToggle,
@@ -1323,6 +1324,7 @@ export function MonthlyPanel({
   editingDraft: { text: string; description: string };
   saveStatus: SaveStatus;
   onSetMonth: (date: Date) => void;
+  onShowHistory: () => void;
   onDraftChange: (draft: { text: string; description: string }) => void;
   onAdd: (event: FormEvent) => void;
   onToggle: (taskId: string) => void;
@@ -1349,6 +1351,10 @@ export function MonthlyPanel({
           </button>
           <button className="text-button" onClick={() => onSetMonth(new Date())}>
             本月
+          </button>
+          <button className="text-button" onClick={onShowHistory}>
+            <History size={16} />
+            历史查询
           </button>
           <button className="text-button" onClick={() => onSetMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}>
             下一月

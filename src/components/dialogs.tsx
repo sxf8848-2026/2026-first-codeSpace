@@ -1,8 +1,9 @@
 import { Plus, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { PRIORITIES, TAG_TONES } from "../constants";
-import { formatDisplayDate, fromDateKey } from "../date";
-import { DefaultTask, Priority, STATUS_DONE, TagId, TodoData, TodoTag, TodoTask } from "../types";
+import { formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
+import { DailyHistoryEntry, MonthlyHistoryEntry } from "../services/history";
+import { DefaultTask, Priority, TagId, TodoTag, TodoTask } from "../types";
 
 export function EditDialog({
   task,
@@ -76,49 +77,61 @@ export function EditDialog({
 }
 
 export function HistoryDialog({
-  days,
-  data,
+  title,
+  emptyTitle,
+  emptyText,
+  dailyEntries,
+  monthlyEntries,
   onClose,
-  onJump,
+  onDailyJump,
+  onMonthlyJump,
 }: {
-  days: string[];
-  data: TodoData;
+  title: string;
+  emptyTitle: string;
+  emptyText: string;
+  dailyEntries?: DailyHistoryEntry[];
+  monthlyEntries?: MonthlyHistoryEntry[];
   onClose: () => void;
-  onJump: (day: string) => void;
+  onDailyJump?: (day: string) => void;
+  onMonthlyJump?: (month: string) => void;
 }) {
+  const entries = dailyEntries ?? monthlyEntries ?? [];
   return (
     <div className="dialog-backdrop" role="presentation" onClick={onClose}>
       <section className="dialog history-dialog" onClick={(event) => event.stopPropagation()}>
         <header>
-          <strong>历史回顾</strong>
+          <strong>{title}</strong>
           <button type="button" className="icon-button compact" onClick={onClose}>
             <X size={18} />
           </button>
         </header>
         <div className="history-list">
-          {days.length ? (
-            days.map((day) => {
-              const tasks = data.todos[day] ?? [];
-              const records = data.awesomeRecords[day] ?? [];
-              const done = tasks.filter((task) => task.status === STATUS_DONE);
-              const summary = done
-                .slice(0, 3)
-                .map((task) => task.text)
-                .join("、") || records.slice(0, 3).map((record) => record.text).join("、") || "这一天还没有完成项";
-              return (
-                <button className="history-card" key={day} onClick={() => onJump(day)}>
-                  <span>{formatDisplayDate(fromDateKey(day))}</span>
+          {entries.length ? (
+            dailyEntries ? (
+              dailyEntries.map((entry) => (
+                <button className="history-card" key={entry.day} onClick={() => onDailyJump?.(entry.day)}>
+                  <span>{formatDisplayDate(fromDateKey(entry.day))}</span>
                   <strong>
-                    {done.length}/{tasks.length} · 真棒 {records.length}
+                    {entry.doneCount}/{entry.totalCount} · 真棒 {entry.awesomeCount}
                   </strong>
-                  <small>{summary}</small>
+                  <small>{entry.summary}</small>
                 </button>
-              );
-            })
+              ))
+            ) : (
+              monthlyEntries?.map((entry) => (
+                <button className="history-card" key={entry.month} onClick={() => onMonthlyJump?.(entry.month)}>
+                  <span>{formatMonthTitle(fromMonthKey(entry.month))}</span>
+                  <strong>
+                    {entry.doneCount}/{entry.totalCount}
+                  </strong>
+                  <small>{entry.summary}</small>
+                </button>
+              ))
+            )
           ) : (
             <div className="empty-state">
-              <strong>还没有历史记录</strong>
-              <span>完成几件事后这里会变得有意思</span>
+              <strong>{emptyTitle}</strong>
+              <span>{emptyText}</span>
             </div>
           )}
         </div>
