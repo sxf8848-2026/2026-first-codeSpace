@@ -287,14 +287,13 @@ export function WorkExperiencePanel({
                   </div>
                 ) : (
                   <div className="inspiration-content">
-                    <div className="inspiration-title-line">
+                    <div className="inspiration-title-line work-experience-title-line">
                       {record.pinned && <Pin size={15} />}
                       <strong title={record.title}>{record.title}</strong>
+                      <span className="work-experience-month">{record.month}</span>
                     </div>
                     {record.body && <p className="work-experience-body">{record.body}</p>}
-                    <small>
-                      {record.month} · {formatRecordStamp(record.created_at)}
-                    </small>
+                    <small>{formatRecordStamp(record.created_at)}</small>
                   </div>
                 )}
                 <div className="inspiration-actions">

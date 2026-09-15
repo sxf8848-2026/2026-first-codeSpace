@@ -1279,6 +1279,17 @@ h1 {
   font-weight: 800;
 }
 
+.work-experience-title-line {
+  align-items: baseline;
+}
+
+.work-experience-month {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .inspiration-content small {
   color: var(--faint);
   font-size: 12px;
