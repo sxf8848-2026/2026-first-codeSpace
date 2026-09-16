@@ -1636,6 +1636,7 @@ export function WeeklyDeliveryPanel({
   onFilterChange,
   onDraftChange,
   onAdd,
+  onShowHistory,
   onCarryOver,
   onToggle,
   onStartEdit,
@@ -1655,6 +1656,7 @@ export function WeeklyDeliveryPanel({
   onFilterChange: (filter: "all" | "pending" | "picked") => void;
   onDraftChange: (draft: { name: string; platform: string; note: string }) => void;
   onAdd: (event: FormEvent) => void;
+  onShowHistory: () => void;
   onCarryOver: () => void;
   onToggle: (taskId: string) => void;
   onStartEdit: (task: WeeklyDelivery) => void;
@@ -1675,6 +1677,10 @@ export function WeeklyDeliveryPanel({
           </div>
           <h1>{weekRange}</h1>
         </div>
+        <button className="text-button" onClick={onShowHistory}>
+          <History size={16} />
+          历史查询
+        </button>
       </header>
 
       <section className="delivery-summary">

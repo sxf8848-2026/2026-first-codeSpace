@@ -30,6 +30,14 @@ export type MonthlyHistoryEntry = {
   summary: string;
 };
 
+export type WeeklyDeliveryHistoryEntry = {
+  week: string;
+  pendingCount: number;
+  pickedCount: number;
+  totalCount: number;
+  summary: string;
+};
+
 export function getDailyHistoryEntries(data: Pick<TodoData, "todos" | "awesomeRecords">): DailyHistoryEntry[] {
   return Array.from(new Set([...Object.keys(data.todos), ...Object.keys(data.awesomeRecords)]))
     .filter((day) => (data.todos[day]?.length ?? 0) > 0 || (data.awesomeRecords[day]?.length ?? 0) > 0)
@@ -128,6 +136,28 @@ export function getMonthlyHistoryEntries(data: Pick<TodoData, "monthlyTodos">): 
         month,
         doneCount: done.length,
         totalCount: tasks.length,
+        summary,
+      };
+    });
+}
+
+export function getWeeklyDeliveryHistoryEntries(data: Pick<TodoData, "weeklyDeliveries">): WeeklyDeliveryHistoryEntry[] {
+  return Object.entries(data.weeklyDeliveries)
+    .filter(([, deliveries]) => deliveries.length > 0)
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([week, deliveries]) => {
+      const pending = deliveries.filter((delivery) => !delivery.picked);
+      const summary =
+        deliveries
+          .slice(0, 3)
+          .map((delivery) => delivery.name)
+          .join("、") || "这一周还没有快递记录";
+
+      return {
+        week,
+        pendingCount: pending.length,
+        pickedCount: deliveries.length - pending.length,
+        totalCount: deliveries.length,
         summary,
       };
     });

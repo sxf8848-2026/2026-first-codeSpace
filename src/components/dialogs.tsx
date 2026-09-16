@@ -1,8 +1,14 @@
 import { Plus, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { PRIORITIES, TAG_TONES } from "../constants";
-import { addMonths, dateKey, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey, monthKey } from "../date";
-import { DailyHistoryEntry, getDailyHistoryCalendarDays, getDailyHistoryDetail, MonthlyHistoryEntry } from "../services/history";
+import { addMonths, dateKey, formatDisplayDate, formatMonthTitle, formatWeekRange, fromDateKey, fromMonthKey, monthKey } from "../date";
+import {
+  DailyHistoryEntry,
+  getDailyHistoryCalendarDays,
+  getDailyHistoryDetail,
+  MonthlyHistoryEntry,
+  WeeklyDeliveryHistoryEntry,
+} from "../services/history";
 import { DefaultTask, Priority, TagId, TodoData, TodoTag, TodoTask } from "../types";
 
 export function EditDialog({
@@ -84,9 +90,11 @@ export function HistoryDialog({
   dailyData,
   initialDailyDay,
   monthlyEntries,
+  deliveryEntries,
   onClose,
   onDailyJump,
   onMonthlyJump,
+  onDeliveryJump,
 }: {
   title: string;
   emptyTitle: string;
@@ -95,11 +103,13 @@ export function HistoryDialog({
   dailyData?: Pick<TodoData, "todos" | "awesomeRecords">;
   initialDailyDay?: string;
   monthlyEntries?: MonthlyHistoryEntry[];
+  deliveryEntries?: WeeklyDeliveryHistoryEntry[];
   onClose: () => void;
   onDailyJump?: (day: string) => void;
   onMonthlyJump?: (month: string) => void;
+  onDeliveryJump?: (week: string) => void;
 }) {
-  const entries = dailyEntries ?? monthlyEntries ?? [];
+  const entries = dailyEntries ?? monthlyEntries ?? deliveryEntries ?? [];
   const [selectedDay, setSelectedDay] = useState(initialDailyDay ?? dailyEntries?.[0]?.day ?? dateKey(new Date()));
   const [calendarMonth, setCalendarMonth] = useState(monthKey(fromDateKey(selectedDay)));
 
@@ -220,12 +230,22 @@ export function HistoryDialog({
                   <small>{entry.summary}</small>
                 </button>
               ))
-            ) : (
+            ) : monthlyEntries ? (
               monthlyEntries?.map((entry) => (
                 <button className="history-card" key={entry.month} onClick={() => onMonthlyJump?.(entry.month)}>
                   <span>{formatMonthTitle(fromMonthKey(entry.month))}</span>
                   <strong>
                     {entry.doneCount}/{entry.totalCount}
+                  </strong>
+                  <small>{entry.summary}</small>
+                </button>
+              ))
+            ) : (
+              deliveryEntries?.map((entry) => (
+                <button className="history-card" key={entry.week} onClick={() => onDeliveryJump?.(entry.week)}>
+                  <span>{formatWeekRange(fromDateKey(entry.week))}</span>
+                  <strong>
+                    {entry.pendingCount}/{entry.totalCount} 未取 · {entry.pickedCount} 已取
                   </strong>
                   <small>{entry.summary}</small>
                 </button>

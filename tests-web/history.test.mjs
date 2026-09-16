@@ -5,6 +5,7 @@ import {
   getDailyHistoryDetail,
   getDailyHistoryEntries,
   getMonthlyHistoryEntries,
+  getWeeklyDeliveryHistoryEntries,
 } from "../src/services/history.ts";
 
 const baseTask = {
@@ -25,6 +26,16 @@ const baseMonthlyTask = {
   done: false,
   created_at: "2026-09-01T00:00:00.000Z",
   done_at: null,
+};
+
+const baseWeeklyDelivery = {
+  id: "delivery-1",
+  name: "默认快递",
+  platform: "淘宝",
+  note: "",
+  picked: false,
+  created_at: "2026-09-01T00:00:00.000Z",
+  picked_at: null,
 };
 
 test("daily history only includes days with todos or awesome records sorted newest first", () => {
@@ -160,4 +171,35 @@ test("monthly history reports progress and task summary", () => {
   assert.equal(entry.doneCount, 1);
   assert.equal(entry.totalCount, 2);
   assert.equal(entry.summary, "完成课程、整理预算");
+});
+
+test("weekly delivery history only includes weeks with deliveries sorted newest first", () => {
+  const entries = getWeeklyDeliveryHistoryEntries({
+    weeklyDeliveries: {
+      "2026-09-07": [{ ...baseWeeklyDelivery, name: "纸巾" }],
+      "2026-09-14": [],
+      "2026-09-21": [{ ...baseWeeklyDelivery, name: "书" }],
+    },
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => entry.week),
+    ["2026-09-21", "2026-09-07"],
+  );
+});
+
+test("weekly delivery history reports pending progress and summary", () => {
+  const [entry] = getWeeklyDeliveryHistoryEntries({
+    weeklyDeliveries: {
+      "2026-09-07": [
+        { ...baseWeeklyDelivery, id: "delivery-1", name: "纸巾", picked: false },
+        { ...baseWeeklyDelivery, id: "delivery-2", name: "书", picked: true, picked_at: "2026-09-08T00:00:00.000Z" },
+      ],
+    },
+  });
+
+  assert.equal(entry.pendingCount, 1);
+  assert.equal(entry.pickedCount, 1);
+  assert.equal(entry.totalCount, 2);
+  assert.equal(entry.summary, "纸巾、书");
 });

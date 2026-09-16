@@ -13,6 +13,34 @@
 
 ---
 
+## [16.1.0] - 2026-09-16
+
+### 改了什么
+
+- 为“每周快递”页面新增“历史查询”入口。
+- 每周快递历史按有记录的周展示，包含周范围、未取/总数、已取数量和快递摘要。
+- 点击历史周后会切换到对应周查看和维护快递记录。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/dialogs.tsx`
+- `src/services/history.ts`
+- `tests-web/history.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，97/97。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 本次不新增数据结构，不升级 `TodoData.version`，直接基于现有 `weeklyDeliveries` 生成历史列表。
+
 ## [16.0.2] - 2026-09-15
 
 ### 改了什么

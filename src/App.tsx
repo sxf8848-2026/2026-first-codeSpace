@@ -44,7 +44,7 @@ import {
   seedToday,
 } from "./services/storage";
 import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitCheckForDay } from "./services/habits";
-import { getDailyHistoryEntries, getMonthlyHistoryEntries } from "./services/history";
+import { getDailyHistoryEntries, getMonthlyHistoryEntries, getWeeklyDeliveryHistoryEntries } from "./services/history";
 import { getVisibleInspirations } from "./services/inspirations";
 import { getVisibleMetaLearningAbilities, MetaLearningMasteryFilter } from "./services/metaLearning";
 import {
@@ -197,6 +197,8 @@ export function App() {
   const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
   const [showDailyHistory, setShowDailyHistory] = useState(false);
   const [showMonthlyHistory, setShowMonthlyHistory] = useState(false);
+  const [showDeliveryHistory, setShowDeliveryHistory] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState(() => new Date());
   const [showSettings, setShowSettings] = useState(false);
   const dataHistory = useDataHistory();
 
@@ -211,7 +213,6 @@ export function App() {
   const habitDay = dateKey(habitDate);
   const todayMonth = monthKey(todayDate);
   const todayDeliveryWeek = weekKey(todayDate);
-  const deliveryDate = new Date();
   const currentDeliveryWeek = weekKey(deliveryDate);
   const activeData = data ?? emptyData;
   const allTasks = activeData.todos[currentDay] ?? [];
@@ -1298,6 +1299,7 @@ export function App() {
 
   const dailyHistoryEntries = useMemo(() => getDailyHistoryEntries(activeData), [activeData]);
   const monthlyHistoryEntries = useMemo(() => getMonthlyHistoryEntries(activeData), [activeData]);
+  const deliveryHistoryEntries = useMemo(() => getWeeklyDeliveryHistoryEntries(activeData), [activeData]);
 
   if (!storageReady || !data) {
     return <LoadingScreen />;
@@ -1577,6 +1579,7 @@ export function App() {
             onFilterChange={setDeliveryFilter}
             onDraftChange={setDeliveryDraft}
             onAdd={addWeeklyDelivery}
+            onShowHistory={() => setShowDeliveryHistory(true)}
             onCarryOver={carryOverWeeklyDeliveries}
             onToggle={toggleWeeklyDelivery}
             onStartEdit={startWeeklyDeliveryEdit}
@@ -1617,6 +1620,22 @@ export function App() {
           onMonthlyJump={(month) => {
             setMonth(fromMonthKey(month));
             setShowMonthlyHistory(false);
+          }}
+        />
+      )}
+      {showDeliveryHistory && (
+        <HistoryDialog
+          title="每周快递历史查询"
+          emptyTitle="还没有每周快递历史记录"
+          emptyText="添加每周快递后，这里会出现历史周记录"
+          deliveryEntries={deliveryHistoryEntries}
+          onClose={() => setShowDeliveryHistory(false)}
+          onDeliveryJump={(week) => {
+            setDeliveryDate(fromDateKey(week));
+            setDeliveryFilter("all");
+            setEditingDeliveryId(null);
+            setDeliveryEditDraft({ name: "", platform: "", note: "" });
+            setShowDeliveryHistory(false);
           }}
         />
       )}
