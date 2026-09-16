@@ -41,6 +41,7 @@ const validWeeklyDelivery = {
   name: "技术书籍",
   platform: "京东",
   note: "到站后周末去取",
+  purchased_at: "2026-09-13",
   picked: false,
   created_at: "2026-09-13 09:00",
   picked_at: null,
@@ -96,7 +97,7 @@ const validWorkExperience = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 16,
+    version: 17,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -259,6 +260,34 @@ test("rejects weekly delivery with invalid picked type", () => {
       makeTodosPayload({
         weeklyDeliveries: {
           "2026-09-07": [{ ...validWeeklyDelivery, picked: "no" }],
+        },
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects weekly delivery without purchased_at", () => {
+  const delivery = { ...validWeeklyDelivery };
+  delete delivery.purchased_at;
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        weeklyDeliveries: {
+          "2026-09-07": [delivery],
+        },
+      }),
+    ),
+    false,
+  );
+});
+
+test("rejects weekly delivery with invalid purchased_at", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        weeklyDeliveries: {
+          "2026-09-07": [{ ...validWeeklyDelivery, purchased_at: false }],
         },
       }),
     ),

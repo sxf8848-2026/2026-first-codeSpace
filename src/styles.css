@@ -1014,7 +1014,7 @@ h1 {
 
 .delivery-composer {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(180px, 1.2fr) auto;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.8fr) 160px minmax(180px, 1.2fr) auto;
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--border);
@@ -1096,6 +1096,12 @@ h1 {
   line-height: 1.6;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.delivery-purchase-time {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .delivery-meta {

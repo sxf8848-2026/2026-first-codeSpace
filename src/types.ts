@@ -58,6 +58,7 @@ export type WeeklyDelivery = {
   name: string;
   platform: string;
   note: string;
+  purchased_at: string;
   picked: boolean;
   created_at: string;
   picked_at: string | null;

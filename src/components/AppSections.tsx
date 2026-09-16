@@ -1649,18 +1649,18 @@ export function WeeklyDeliveryPanel({
   tasks: WeeklyDelivery[];
   visibleTasks: WeeklyDelivery[];
   filter: "all" | "pending" | "picked";
-  draft: { name: string; platform: string; note: string };
+  draft: { name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
-  editingDraft: { name: string; platform: string; note: string };
+  editingDraft: { name: string; platform: string; note: string; purchased_at: string };
   saveStatus: SaveStatus;
   onFilterChange: (filter: "all" | "pending" | "picked") => void;
-  onDraftChange: (draft: { name: string; platform: string; note: string }) => void;
+  onDraftChange: (draft: { name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
   onShowHistory: () => void;
   onCarryOver: () => void;
   onToggle: (taskId: string) => void;
   onStartEdit: (task: WeeklyDelivery) => void;
-  onEditDraftChange: (draft: { name: string; platform: string; note: string }) => void;
+  onEditDraftChange: (draft: { name: string; platform: string; note: string; purchased_at: string }) => void;
   onSaveEdit: (taskId: string) => void;
   onCancelEdit: () => void;
   onDelete: (taskId: string) => void;
@@ -1700,6 +1700,7 @@ export function WeeklyDeliveryPanel({
         <form className="delivery-composer" onSubmit={onAdd}>
           <input value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="快递名称，例如：书籍" />
           <input value={draft.platform} onChange={(event) => onDraftChange({ ...draft, platform: event.target.value })} placeholder="平台，例如：淘宝 / 京东" />
+          <input type="date" value={draft.purchased_at} onChange={(event) => onDraftChange({ ...draft, purchased_at: event.target.value })} aria-label="购买时间" />
           <input value={draft.note} onChange={(event) => onDraftChange({ ...draft, note: event.target.value })} placeholder="备注，可不填" />
           <button className="primary-button" type="submit">
             <Plus size={18} />
@@ -1753,6 +1754,12 @@ export function WeeklyDeliveryPanel({
                           onChange={(event) => onEditDraftChange({ ...editingDraft, note: event.target.value })}
                           placeholder="备注，可不填"
                         />
+                        <input
+                          type="date"
+                          value={editingDraft.purchased_at}
+                          onChange={(event) => onEditDraftChange({ ...editingDraft, purchased_at: event.target.value })}
+                          aria-label="购买时间"
+                        />
                       </>
                     ) : (
                       <>
@@ -1761,6 +1768,7 @@ export function WeeklyDeliveryPanel({
                           <span className="platform-chip">{task.platform}</span>
                           <span className={task.picked ? "picked-chip" : "pending-chip"}>{task.picked ? "已取" : "未取"}</span>
                         </div>
+                        {task.purchased_at && <small className="delivery-purchase-time">购买时间：{task.purchased_at}</small>}
                         {task.note && <p>{task.note}</p>}
                       </>
                     )}

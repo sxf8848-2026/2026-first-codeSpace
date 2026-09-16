@@ -13,6 +13,40 @@
 
 ---
 
+## [17.0.0] - 2026-09-16
+
+### 改了什么
+
+- 每周快递新增“购买时间”字段，新增和编辑快递时都可以选择购买日期。
+- 快递卡片展示购买时间，方便回看历史购买记录。
+- 数据版本升级到 `17`，旧快递记录会自动补齐空购买时间。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/history.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，99/99。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 购买时间为可选日期；旧数据不会丢失，会显示为空。
+- 修改后端默认数据和校验后，需要重启 `npm run dev` 才能加载新的本地 API 代码。
+
 ## [16.1.0] - 2026-09-16
 
 ### 改了什么

@@ -168,10 +168,10 @@ export function App() {
   const [monthlyDraft, setMonthlyDraft] = useState({ text: "", description: "" });
   const [editingMonthlyTaskId, setEditingMonthlyTaskId] = useState<string | null>(null);
   const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
-  const [deliveryDraft, setDeliveryDraft] = useState({ name: "", platform: "", note: "" });
+  const [deliveryDraft, setDeliveryDraft] = useState({ name: "", platform: "", note: "", purchased_at: "" });
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
-  const [deliveryEditDraft, setDeliveryEditDraft] = useState({ name: "", platform: "", note: "" });
+  const [deliveryEditDraft, setDeliveryEditDraft] = useState({ name: "", platform: "", note: "", purchased_at: "" });
   const [habitDraft, setHabitDraft] = useState<HabitDraft>(blankHabitDraft);
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [habitEditDraft, setHabitEditDraft] = useState<HabitDraft>(blankHabitDraft);
@@ -377,7 +377,7 @@ export function App() {
       setEditingMonthlyTaskId(null);
       setMonthlyEditDraft({ text: "", description: "" });
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
       setEditingHabitId(null);
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
@@ -402,7 +402,7 @@ export function App() {
       setEditingMonthlyTaskId(null);
       setMonthlyEditDraft({ text: "", description: "" });
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
       setEditingHabitId(null);
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
@@ -694,8 +694,8 @@ export function App() {
     const name = deliveryDraft.name.trim();
     const platform = deliveryDraft.platform.trim();
     if (!name || !platform) return;
-    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note), ...deliveryTasks]);
-    setDeliveryDraft({ name: "", platform: "", note: "" });
+    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at), ...deliveryTasks]);
+    setDeliveryDraft({ name: "", platform: "", note: "", purchased_at: "" });
   }
 
   function toggleWeeklyDelivery(deliveryId: string) {
@@ -965,7 +965,7 @@ export function App() {
 
   function startWeeklyDeliveryEdit(delivery: WeeklyDelivery) {
     setEditingDeliveryId(delivery.id);
-    setDeliveryEditDraft({ name: delivery.name, platform: delivery.platform, note: delivery.note });
+    setDeliveryEditDraft({ name: delivery.name, platform: delivery.platform, note: delivery.note, purchased_at: delivery.purchased_at });
   }
 
   function saveWeeklyDeliveryEdit(deliveryId: string) {
@@ -975,11 +975,11 @@ export function App() {
     replaceWeeklyDeliveries(
       currentDeliveryWeek,
       deliveryTasks.map((delivery) =>
-        delivery.id === deliveryId ? { ...delivery, name, platform, note: deliveryEditDraft.note.trim() } : delivery,
+        delivery.id === deliveryId ? { ...delivery, name, platform, note: deliveryEditDraft.note.trim(), purchased_at: deliveryEditDraft.purchased_at } : delivery,
       ),
     );
     setEditingDeliveryId(null);
-    setDeliveryEditDraft({ name: "", platform: "", note: "" });
+    setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
   }
 
   function deleteWeeklyDelivery(deliveryId: string) {
@@ -992,7 +992,7 @@ export function App() {
     );
     if (editingDeliveryId === deliveryId) {
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "" });
+      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
     }
   }
 
@@ -1001,7 +1001,7 @@ export function App() {
     const existing = new Set(deliveryTasks.map((delivery) => deliveryKey(delivery)));
     const carried = (activeData.weeklyDeliveries[previousWeek] ?? [])
       .filter((delivery) => !delivery.picked && !existing.has(deliveryKey(delivery)))
-      .map((delivery) => createWeeklyDelivery(delivery.name, delivery.platform, delivery.note));
+      .map((delivery) => createWeeklyDelivery(delivery.name, delivery.platform, delivery.note, delivery.purchased_at));
     if (!carried.length) return;
     replaceWeeklyDeliveries(currentDeliveryWeek, [...carried, ...deliveryTasks]);
   }
@@ -1587,7 +1587,7 @@ export function App() {
             onSaveEdit={saveWeeklyDeliveryEdit}
             onCancelEdit={() => {
               setEditingDeliveryId(null);
-              setDeliveryEditDraft({ name: "", platform: "", note: "" });
+              setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
             }}
             onDelete={deleteWeeklyDelivery}
           />
@@ -1634,7 +1634,7 @@ export function App() {
             setDeliveryDate(fromDateKey(week));
             setDeliveryFilter("all");
             setEditingDeliveryId(null);
-            setDeliveryEditDraft({ name: "", platform: "", note: "" });
+            setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
             setShowDeliveryHistory(false);
           }}
         />

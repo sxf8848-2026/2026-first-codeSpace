@@ -223,12 +223,13 @@ export function createMonthlyTask(text: string, description: string): MonthlyTas
   };
 }
 
-export function createWeeklyDelivery(name: string, platform: string, note: string): WeeklyDelivery {
+export function createWeeklyDelivery(name: string, platform: string, note: string, purchasedAt = ""): WeeklyDelivery {
   return {
     id: crypto.randomUUID(),
     name: name.trim(),
     platform: platform.trim(),
     note: note.trim(),
+    purchased_at: purchasedAt,
     picked: false,
     created_at: nowStamp(),
     picked_at: null,
@@ -515,6 +516,7 @@ function normalizeWeeklyDelivery(delivery: Partial<WeeklyDelivery>): WeeklyDeliv
     name: typeof delivery.name === "string" ? delivery.name.trim() : "",
     platform: typeof delivery.platform === "string" ? delivery.platform.trim() : "",
     note: typeof delivery.note === "string" ? delivery.note : "",
+    purchased_at: typeof delivery.purchased_at === "string" ? delivery.purchased_at : "",
     picked,
     created_at: typeof delivery.created_at === "string" ? delivery.created_at : nowStamp(),
     picked_at: typeof delivery.picked_at === "string" ? delivery.picked_at : picked ? nowStamp() : null,
