@@ -885,8 +885,7 @@ export function HabitPanel({
   const doneCount = habits.filter((habit) => habit.checked).length;
   const dateState = canEditSelectedDate ? (selectedDay === todayDay ? "今天" : "可补卡") : "未来只读";
   const addButtonText = selectedDay === todayDay ? "添加" : "添加/补卡";
-  const streakLabel = selectedDay === todayDay ? "截至今日已连续完成" : "截至所选日期已连续完成";
-  const completionDayLabel = selectedDay === todayDay ? "今天" : "所选日";
+  const totalLabel = selectedDay === todayDay ? "截至今日累计完成" : "截至所选日期累计完成";
 
   return (
     <>
@@ -981,7 +980,7 @@ export function HabitPanel({
                     <>
                       <strong title={habit.name}>{habit.name}</strong>
                       {habit.note && <p>{habit.note}</p>}
-                      <span>{formatHabitStreakText(habit, streakLabel, completionDayLabel)}</span>
+                      <span>{formatHabitTotalText(habit, totalLabel)}</span>
                     </>
                   )}
                 </div>
@@ -1017,11 +1016,8 @@ export function HabitPanel({
   );
 }
 
-function formatHabitStreakText(habit: HabitView, streakLabel: string, completionDayLabel: string): string {
-  if (habit.checked || habit.streak === 0) {
-    return `${streakLabel} ${habit.streak} 天`;
-  }
-  return `已连续完成 ${habit.streak} 天，${completionDayLabel}完成后变为 ${habit.streak + 1} 天`;
+function formatHabitTotalText(habit: HabitView, totalLabel: string): string {
+  return `${totalLabel} ${habit.totalCompletions} 天`;
 }
 
 export function DashboardPanel({

@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  calculateHabitDisplayStreak,
-  calculateHabitStreak,
+  calculateHabitTotalCompletions,
   getHabitCompletion,
   getHabitViews,
   getVisibleHabits,
@@ -11,9 +10,9 @@ import {
   toggleHabitCheckForDay,
 } from "../src/services/habits.ts";
 
-test("counts habit streak through today", () => {
+test("counts all checked days through the selected day", () => {
   assert.equal(
-    calculateHabitStreak(
+    calculateHabitTotalCompletions(
       {
         "2026-09-11": { reading: true },
         "2026-09-12": { reading: true },
@@ -26,9 +25,9 @@ test("counts habit streak through today", () => {
   );
 });
 
-test("stops habit streak at the first missed day", () => {
+test("keeps cumulative completions after missed days", () => {
   assert.equal(
-    calculateHabitStreak(
+    calculateHabitTotalCompletions(
       {
         "2026-09-10": { reading: true },
         "2026-09-11": { reading: true },
@@ -37,40 +36,40 @@ test("stops habit streak at the first missed day", () => {
       "reading",
       "2026-09-13",
     ),
+    3,
+  );
+});
+
+test("keeps prior cumulative completions when selected day is not checked", () => {
+  assert.equal(
+    calculateHabitTotalCompletions(
+      {
+        "2026-09-12": { reading: true },
+      },
+      "reading",
+      "2026-09-13",
+    ),
     1,
   );
 });
 
-test("returns zero when today is not checked", () => {
+test("does not count a check after the selected day", () => {
   assert.equal(
-    calculateHabitStreak(
-      {
-        "2026-09-12": { reading: true },
-      },
-      "reading",
-      "2026-09-13",
-    ),
-    0,
-  );
-});
-
-test("display streak keeps previous streak when selected day is not checked", () => {
-  assert.equal(
-    calculateHabitDisplayStreak(
+    calculateHabitTotalCompletions(
       {
         "2026-09-11": { reading: true },
-        "2026-09-12": { reading: true },
+        "2026-09-13": { reading: true },
       },
       "reading",
-      "2026-09-13",
+      "2026-09-12",
     ),
-    2,
+    1,
   );
 });
 
-test("display streak adds selected day when it is checked", () => {
+test("counts a selected-day check in cumulative completions", () => {
   assert.equal(
-    calculateHabitDisplayStreak(
+    calculateHabitTotalCompletions(
       {
         "2026-09-11": { reading: true },
         "2026-09-12": { reading: true },
@@ -83,9 +82,9 @@ test("display streak adds selected day when it is checked", () => {
   );
 });
 
-test("uses historical checks for archived habits", () => {
+test("counts historical checks for archived habits", () => {
   assert.equal(
-    calculateHabitStreak(
+    calculateHabitTotalCompletions(
       {
         "2026-09-12": { archivedHabit: true },
         "2026-09-13": { archivedHabit: true },
@@ -118,11 +117,11 @@ test("builds habit views for the selected day", () => {
   );
 
   assert.equal(views[0].checked, true);
-  assert.equal(views[0].streak, 2);
+  assert.equal(views[0].totalCompletions, 2);
   assert.equal(views[0].note, "10min");
 });
 
-test("habit views show carried display streak when selected day is not checked", () => {
+test("habit views keep cumulative completions when selected day is not checked", () => {
   const views = getHabitViews(
     [{ id: "reading", name: "阅读", note: "10min", created_at: "2026-09-12T08:00:00.000Z", archived_at: null }],
     {
@@ -133,21 +132,21 @@ test("habit views show carried display streak when selected day is not checked",
   );
 
   assert.equal(views[0].checked, false);
-  assert.equal(views[0].streak, 2);
+  assert.equal(views[0].totalCompletions, 2);
 });
 
-test("next day inherits active habit and increments streak after check", () => {
+test("next day inherits active habit and increments cumulative completions after check", () => {
   const habits = [{ id: "reading", name: "阅读", note: "10min", created_at: "2026-09-14T08:00:00.000Z", archived_at: null }];
   const inheritedViews = getHabitViews(habits, { "2026-09-14": { reading: true } }, "2026-09-15");
 
   assert.equal(inheritedViews[0].checked, false);
-  assert.equal(inheritedViews[0].streak, 1);
+  assert.equal(inheritedViews[0].totalCompletions, 1);
 
   const checkedTomorrow = setHabitCheckForDay({ "2026-09-14": { reading: true } }, "2026-09-15", "reading", "2026-09-15", true);
   const completedViews = getHabitViews(habits, checkedTomorrow, "2026-09-15");
 
   assert.equal(completedViews[0].checked, true);
-  assert.equal(completedViews[0].streak, 2);
+  assert.equal(completedViews[0].totalCompletions, 2);
 });
 
 test("counts selected-day habit completion", () => {
@@ -219,7 +218,7 @@ test("normalizes old habits without note", () => {
   );
 });
 
-test("historical backfill updates streak for the selected day", () => {
+test("historical backfill updates cumulative completions for the selected day", () => {
   const checks = toggleHabitCheckForDay(
     {
       "2026-09-11": { reading: true },
@@ -230,5 +229,5 @@ test("historical backfill updates streak for the selected day", () => {
     "2026-09-13",
   );
 
-  assert.equal(calculateHabitStreak(checks, "reading", "2026-09-13"), 3);
+  assert.equal(calculateHabitTotalCompletions(checks, "reading", "2026-09-13"), 3);
 });

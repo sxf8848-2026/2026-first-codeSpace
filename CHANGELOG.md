@@ -13,6 +13,32 @@
 
 ---
 
+## [17.1.0] - 2026-09-17
+
+### 改了什么
+
+- 习惯打卡统计由连续完成天数改为累计完成天数；中断打卡不会清零。
+- 查看今天或历史日期时，均统计截至所选日期的全部有效打卡记录。
+- 移除连续天数和“完成后变为 N+1 天”的预测文案。
+
+### 涉及文件
+
+- `src/services/habits.ts`
+- `src/components/AppSections.tsx`
+- `tests-web/habits.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，99/99。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+
+### 注意事项
+
+- 未改变 `habitChecks` 数据结构或数据版本，已有历史打卡和补卡会自动纳入累计统计。
+
 ## [17.0.0] - 2026-09-16
 
 ### 改了什么
