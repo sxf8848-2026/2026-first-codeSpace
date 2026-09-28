@@ -114,6 +114,15 @@ export type WorkExperienceRecord = {
   archived_at?: string | null;
 };
 
+export type DailyReadingRecord = {
+  id: string;
+  title: string;
+  body: string;
+  source: string;
+  created_at: string;
+  archived_at?: string | null;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -127,6 +136,8 @@ export type TodoData = {
   metaLearningAbilities: MetaLearningAbility[];
   videoInspirations: VideoInspirationRecord[];
   workExperiences: WorkExperienceRecord[];
+  dailyReadings: DailyReadingRecord[];
+  dailyReadingCursorId: string | null;
   default_applied: string[];
 };
 

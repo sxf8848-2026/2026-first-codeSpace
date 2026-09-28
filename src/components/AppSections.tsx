@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Archive,
   BriefcaseBusiness,
+  BookOpen,
   Flame,
   History,
   LayoutDashboard,
@@ -57,6 +58,7 @@ import {
   WeeklyDelivery,
   WeeklyTask,
   WorkExperienceRecord,
+  DailyReadingRecord,
 } from "../types";
 import { Segmented, TagButton } from "./Controls";
 
@@ -69,7 +71,8 @@ export type AppView =
   | "inspiration"
   | "videoInspiration"
   | "metaLearning"
-  | "workExperience";
+  | "workExperience"
+  | "dailyReading";
 
 type SaveStatus = {
   state: "idle" | "saved" | "fallback";
@@ -153,6 +156,10 @@ export function Sidebar({
         <button className={activeView === "inspiration" ? "active" : ""} onClick={() => onViewChange("inspiration")}>
           <Lightbulb size={16} />
           <span>灵感记录</span>
+        </button>
+        <button className={activeView === "dailyReading" ? "active" : ""} onClick={() => onViewChange("dailyReading")}>
+          <BookOpen size={16} />
+          <span>每日必读文案</span>
         </button>
         <button className={activeView === "videoInspiration" ? "active" : ""} onClick={() => onViewChange("videoInspiration")}>
           <Video size={16} />
@@ -687,6 +694,149 @@ export type MetaLearningDraft = {
   usage: string;
   mastery: MetaLearningMastery;
 };
+
+export function DailyReadingPanel({
+  records,
+  currentRecord,
+  currentPosition,
+  totalCount,
+  draft,
+  query,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onAdvance,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onArchive,
+}: {
+  records: DailyReadingRecord[];
+  currentRecord: DailyReadingRecord | null;
+  currentPosition: number;
+  totalCount: number;
+  draft: { title: string; body: string; source: string };
+  query: string;
+  editingRecordId: string | null;
+  editingDraft: { title: string; body: string; source: string };
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: { title: string; body: string; source: string }) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onAdvance: () => void;
+  onStartEdit: (record: DailyReadingRecord) => void;
+  onEditDraftChange: (draft: { title: string; body: string; source: string }) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onArchive: (recordId: string) => void;
+}) {
+  return (
+    <>
+      <header className="topbar daily-reading-topbar">
+        <div>
+          <div className="eyebrow">
+            <BookOpen size={16} />
+            每日必读文案
+          </div>
+          <h1>每日必读</h1>
+        </div>
+      </header>
+
+      <section className="daily-reading-summary">
+        <div>
+          <span>当前收录</span>
+          <strong>{totalCount} 条</strong>
+        </div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">
+          {saveStatus.message}
+        </div>
+      </section>
+
+      <section className="daily-reading-current" aria-label="当前必读文案">
+        {currentRecord ? (
+          <>
+            <div className="daily-reading-current-head">
+              <span>当前必读</span>
+              <strong>第 {currentPosition} / {totalCount} 条</strong>
+            </div>
+            <h2>{currentRecord.title}</h2>
+            <p>{currentRecord.body}</p>
+            {currentRecord.source && <small>来源：{currentRecord.source}</small>}
+            <button className="primary-button" onClick={onAdvance}>
+              <Check size={18} />
+              已读，下一条
+            </button>
+          </>
+        ) : (
+          <div className="daily-reading-empty">还没有必读文案，先添加一条吧。</div>
+        )}
+      </section>
+
+      <section className="daily-reading-panel" aria-label="全部必读文案">
+        <form className="daily-reading-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="文案标题" />
+          <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
+          <textarea value={draft.body} onChange={(event) => onDraftChange({ ...draft, body: event.target.value })} placeholder="文案正文，必填" />
+          <button className="primary-button" type="submit">
+            <Plus size={18} />
+            添加
+          </button>
+        </form>
+
+        <div className="daily-reading-toolbar">
+          <div className="search-box">
+            <Search size={16} />
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题、正文或来源" />
+          </div>
+        </div>
+
+        <div className="daily-reading-list">
+          {records.length ? (
+            records.map((record, index) => (
+              <article className="daily-reading-item" key={record.id}>
+                {editingRecordId === record.id ? (
+                  <div className="daily-reading-edit">
+                    <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} autoFocus />
+                    <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                    <textarea value={editingDraft.body} onChange={(event) => onEditDraftChange({ ...editingDraft, body: event.target.value })} placeholder="文案正文，必填" />
+                  </div>
+                ) : (
+                  <div className="daily-reading-content">
+                    <div className="daily-reading-title-line">
+                      <span>{index + 1}</span>
+                      <strong title={record.title}>{record.title}</strong>
+                    </div>
+                    <p>{record.body}</p>
+                    {record.source && <small>来源：{record.source}</small>}
+                  </div>
+                )}
+                <div className="daily-reading-actions">
+                  {editingRecordId === record.id ? (
+                    <>
+                      <button onClick={() => onSaveEdit(record.id)}>保存</button>
+                      <button onClick={onCancelEdit} title="取消编辑"><X size={16} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => onStartEdit(record)} title="编辑必读文案"><Pencil size={16} /></button>
+                      <button className="danger" onClick={() => onArchive(record.id)} title="归档必读文案"><Archive size={16} /></button>
+                    </>
+                  )}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="daily-reading-empty">{query.trim() ? "没有匹配的必读文案" : "还没有必读文案"}</div>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
 
 export function InspirationPanel({
   records,

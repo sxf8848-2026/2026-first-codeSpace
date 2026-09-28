@@ -95,9 +95,18 @@ const validWorkExperience = {
   archived_at: null,
 };
 
+const validDailyReading = {
+  id: "daily-reading-1",
+  title: "保持清醒",
+  body: "把注意力放回当下能做的事情。",
+  source: "个人笔记",
+  created_at: "2026-09-17T08:00:00.000Z",
+  archived_at: null,
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 17,
+    version: 18,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -123,6 +132,8 @@ function makeTodosPayload(overrides = {}) {
     metaLearningAbilities: [validMetaLearningAbility],
     videoInspirations: [validVideoInspiration],
     workExperiences: [validWorkExperience],
+    dailyReadings: [validDailyReading],
+    dailyReadingCursorId: "daily-reading-1",
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -633,6 +644,44 @@ test("rejects work experience with invalid archived_at type", () => {
     ),
     false,
   );
+});
+
+test("rejects todos payload without daily readings", () => {
+  const payload = makeTodosPayload();
+  delete payload.dailyReadings;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects daily reading with empty title", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, title: " " }] })),
+    false,
+  );
+});
+
+test("rejects daily reading with empty body", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, body: " " }] })),
+    false,
+  );
+});
+
+test("rejects daily reading with invalid source", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, source: false }] })),
+    false,
+  );
+});
+
+test("rejects daily reading with invalid archived_at", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, archived_at: false }] })),
+    false,
+  );
+});
+
+test("rejects daily reading cursor with invalid type", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ dailyReadingCursorId: false })), false);
 });
 
 test("validates prefs payload", () => {

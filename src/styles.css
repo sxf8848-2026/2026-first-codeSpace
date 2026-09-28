@@ -1348,6 +1348,156 @@ h1 {
   background: var(--panel-subtle);
 }
 
+.daily-reading-topbar {
+  align-items: flex-start;
+}
+
+.daily-reading-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.daily-reading-summary div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.daily-reading-summary strong {
+  color: var(--ink);
+}
+
+.daily-reading-current,
+.daily-reading-panel {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.daily-reading-current {
+  border-left: 3px solid var(--teal);
+}
+
+.daily-reading-current-head,
+.daily-reading-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.daily-reading-current-head {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.daily-reading-current h2 {
+  margin: 16px 0 10px;
+  font-size: 22px;
+}
+
+.daily-reading-current p,
+.daily-reading-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.75;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.daily-reading-current small,
+.daily-reading-content small {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+}
+
+.daily-reading-current .primary-button {
+  margin-top: 18px;
+}
+
+.daily-reading-composer {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(150px, 0.6fr) minmax(260px, 1.5fr) auto;
+  gap: 12px;
+}
+
+.daily-reading-composer textarea,
+.daily-reading-edit textarea {
+  min-height: 42px;
+}
+
+.daily-reading-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+
+.daily-reading-list {
+  display: grid;
+  gap: 12px;
+}
+
+.daily-reading-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.daily-reading-title-line span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--teal-dark);
+  background: var(--teal-soft);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.daily-reading-title-line strong {
+  color: var(--ink);
+}
+
+.daily-reading-edit {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-reading-actions {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+}
+
+.daily-reading-actions button {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+}
+
+.daily-reading-actions .danger {
+  color: var(--danger);
+}
+
+.daily-reading-empty {
+  padding: 24px;
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+  text-align: center;
+}
+
 .video-inspiration-topbar {
   margin-bottom: 18px;
 }
@@ -2361,6 +2511,7 @@ textarea:focus {
   .delivery-composer,
   .habit-composer,
   .inspiration-composer,
+  .daily-reading-composer,
   .meta-learning-composer,
   .monthly-composer,
   .video-inspiration-composer,
@@ -2376,6 +2527,7 @@ textarea:focus {
   .delivery-summary,
   .habit-summary,
   .inspiration-summary,
+  .daily-reading-summary,
   .meta-learning-summary,
   .monthly-summary,
   .video-inspiration-summary {
@@ -2425,7 +2577,15 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .daily-reading-item {
+    grid-template-columns: 1fr;
+  }
+
   .inspiration-actions {
+    justify-content: flex-end;
+  }
+
+  .daily-reading-actions {
     justify-content: flex-end;
   }
 

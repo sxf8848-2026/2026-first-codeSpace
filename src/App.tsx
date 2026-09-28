@@ -4,6 +4,7 @@ import {
   AppView,
   DailyCategoryPanel,
   DashboardPanel,
+  DailyReadingPanel,
   HabitPanel,
   InspirationPanel,
   LoadingScreen,
@@ -28,6 +29,7 @@ import {
   applyDefaultTasks,
   createAwesomeRecord,
   createHabit,
+  createDailyReading,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -46,6 +48,12 @@ import {
 import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitCheckForDay } from "./services/habits";
 import { getDailyHistoryEntries, getMonthlyHistoryEntries, getWeeklyDeliveryHistoryEntries } from "./services/history";
 import { getVisibleInspirations } from "./services/inspirations";
+import {
+  getCurrentDailyReading,
+  getDailyReadingPosition,
+  getNextDailyReadingId,
+  getVisibleDailyReadings,
+} from "./services/dailyReadings";
 import { getVisibleMetaLearningAbilities, MetaLearningMasteryFilter } from "./services/metaLearning";
 import {
   getVideoInspirationChannels,
@@ -78,6 +86,7 @@ import {
   MetaLearningAbility,
   MetaLearningMastery,
   WorkExperienceRecord,
+  DailyReadingRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -179,6 +188,10 @@ export function App() {
   const [inspirationQuery, setInspirationQuery] = useState("");
   const [editingInspirationId, setEditingInspirationId] = useState<string | null>(null);
   const [inspirationEditDraft, setInspirationEditDraft] = useState({ title: "", body: "" });
+  const [dailyReadingDraft, setDailyReadingDraft] = useState({ title: "", body: "", source: "" });
+  const [dailyReadingQuery, setDailyReadingQuery] = useState("");
+  const [editingDailyReadingId, setEditingDailyReadingId] = useState<string | null>(null);
+  const [dailyReadingEditDraft, setDailyReadingEditDraft] = useState({ title: "", body: "", source: "" });
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -252,6 +265,18 @@ export function App() {
   const visibleInspirations = useMemo(
     () => getVisibleInspirations(activeData.inspirations, inspirationQuery),
     [activeData.inspirations, inspirationQuery],
+  );
+  const visibleDailyReadings = useMemo(
+    () => getVisibleDailyReadings(activeData.dailyReadings, dailyReadingQuery),
+    [activeData.dailyReadings, dailyReadingQuery],
+  );
+  const currentDailyReading = useMemo(
+    () => getCurrentDailyReading(activeData.dailyReadings, activeData.dailyReadingCursorId),
+    [activeData.dailyReadings, activeData.dailyReadingCursorId],
+  );
+  const dailyReadingPosition = useMemo(
+    () => getDailyReadingPosition(activeData.dailyReadings, activeData.dailyReadingCursorId),
+    [activeData.dailyReadings, activeData.dailyReadingCursorId],
   );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -382,6 +407,8 @@ export function App() {
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
       setInspirationEditDraft({ title: "", body: "" });
+      setEditingDailyReadingId(null);
+      setDailyReadingEditDraft({ title: "", body: "", source: "" });
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -407,6 +434,8 @@ export function App() {
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
       setInspirationEditDraft({ title: "", body: "" });
+      setEditingDailyReadingId(null);
+      setDailyReadingEditDraft({ title: "", body: "", source: "" });
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -520,6 +549,10 @@ export function App() {
 
   function replaceInspirations(inspirations: InspirationRecord[]) {
     updateData((value) => ({ ...value, inspirations }));
+  }
+
+  function replaceDailyReadings(dailyReadings: DailyReadingRecord[]) {
+    updateData((value) => ({ ...value, dailyReadings }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -800,6 +833,65 @@ export function App() {
     if (editingInspirationId === recordId) {
       setEditingInspirationId(null);
       setInspirationEditDraft({ title: "", body: "" });
+    }
+  }
+
+  function addDailyReading(event: FormEvent) {
+    event.preventDefault();
+    const title = dailyReadingDraft.title.trim();
+    const body = dailyReadingDraft.body.trim();
+    if (!title || !body) return;
+    const record = createDailyReading(title, body, dailyReadingDraft.source);
+    updateData((value) => ({
+      ...value,
+      dailyReadings: [...value.dailyReadings, record],
+      dailyReadingCursorId: value.dailyReadingCursorId ?? record.id,
+    }));
+    setDailyReadingDraft({ title: "", body: "", source: "" });
+  }
+
+  function startDailyReadingEdit(record: DailyReadingRecord) {
+    setEditingDailyReadingId(record.id);
+    setDailyReadingEditDraft({ title: record.title, body: record.body, source: record.source });
+  }
+
+  function saveDailyReadingEdit(recordId: string) {
+    const title = dailyReadingEditDraft.title.trim();
+    const body = dailyReadingEditDraft.body.trim();
+    if (!title || !body) return;
+    replaceDailyReadings(
+      activeData.dailyReadings.map((record) =>
+        record.id === recordId ? { ...record, title, body, source: dailyReadingEditDraft.source.trim() } : record,
+      ),
+    );
+    setEditingDailyReadingId(null);
+    setDailyReadingEditDraft({ title: "", body: "", source: "" });
+  }
+
+  function advanceDailyReading() {
+    updateData((value) => ({
+      ...value,
+      dailyReadingCursorId: getNextDailyReadingId(value.dailyReadings, value.dailyReadingCursorId),
+    }));
+  }
+
+  function archiveDailyReading(recordId: string) {
+    const record = activeData.dailyReadings.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档必读文案“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    updateData((value) => {
+      const nextCursorId = value.dailyReadingCursorId === recordId
+        ? getNextDailyReadingId(value.dailyReadings, recordId)
+        : value.dailyReadingCursorId;
+      return {
+        ...value,
+        dailyReadings: value.dailyReadings.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
+        dailyReadingCursorId: nextCursorId === recordId ? null : nextCursorId,
+      };
+    });
+    if (editingDailyReadingId === recordId) {
+      setEditingDailyReadingId(null);
+      setDailyReadingEditDraft({ title: "", body: "", source: "" });
     }
   }
 
@@ -1496,6 +1588,30 @@ export function App() {
             }}
             onArchive={archiveInspiration}
           />
+        ) : activeView === "dailyReading" ? (
+          <DailyReadingPanel
+            records={visibleDailyReadings}
+            currentRecord={currentDailyReading}
+            currentPosition={dailyReadingPosition.current}
+            totalCount={dailyReadingPosition.total}
+            draft={dailyReadingDraft}
+            query={dailyReadingQuery}
+            editingRecordId={editingDailyReadingId}
+            editingDraft={dailyReadingEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setDailyReadingDraft}
+            onAdd={addDailyReading}
+            onQueryChange={setDailyReadingQuery}
+            onAdvance={advanceDailyReading}
+            onStartEdit={startDailyReadingEdit}
+            onEditDraftChange={setDailyReadingEditDraft}
+            onSaveEdit={saveDailyReadingEdit}
+            onCancelEdit={() => {
+              setEditingDailyReadingId(null);
+              setDailyReadingEditDraft({ title: "", body: "", source: "" });
+            }}
+            onArchive={archiveDailyReading}
+          />
         ) : activeView === "videoInspiration" ? (
           <VideoInspirationPanel
             records={visibleVideoInspirations}
@@ -1669,6 +1785,8 @@ const emptyData: TodoData = {
   metaLearningAbilities: [],
   videoInspirations: [],
   workExperiences: [],
+  dailyReadings: [],
+  dailyReadingCursorId: null,
   default_applied: [],
 };
 
