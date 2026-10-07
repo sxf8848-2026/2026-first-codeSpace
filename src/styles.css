@@ -1498,6 +1498,144 @@ h1 {
   text-align: center;
 }
 
+.argument-reflection-topbar {
+  align-items: flex-start;
+}
+
+.argument-reflection-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.argument-reflection-summary div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.argument-reflection-summary strong,
+.argument-reflection-heading strong,
+.argument-reflection-field strong {
+  color: var(--ink);
+}
+
+.argument-reflection-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.argument-reflection-composer,
+.argument-reflection-edit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.argument-reflection-composer input,
+.argument-reflection-composer textarea,
+.argument-reflection-edit input,
+.argument-reflection-edit textarea {
+  min-width: 0;
+}
+
+.argument-reflection-composer textarea,
+.argument-reflection-edit textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.argument-reflection-composer textarea,
+.argument-reflection-edit textarea {
+  grid-column: span 2;
+}
+
+.argument-reflection-composer .primary-button {
+  justify-self: start;
+}
+
+.argument-reflection-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.argument-reflection-list {
+  display: grid;
+  gap: 12px;
+}
+
+.argument-reflection-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  background: var(--panel-soft);
+}
+
+.argument-reflection-content {
+  display: grid;
+  gap: 10px;
+}
+
+.argument-reflection-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.argument-reflection-heading time,
+.argument-reflection-content > small {
+  color: var(--muted);
+}
+
+.argument-reflection-field {
+  display: grid;
+  gap: 4px;
+}
+
+.argument-reflection-field p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.argument-reflection-actions {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+}
+
+.argument-reflection-actions button {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+}
+
+.argument-reflection-actions .danger {
+  color: var(--danger);
+}
+
+.argument-reflection-empty {
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+}
+
 .video-inspiration-topbar {
   margin-bottom: 18px;
 }
@@ -2512,6 +2650,8 @@ textarea:focus {
   .habit-composer,
   .inspiration-composer,
   .daily-reading-composer,
+  .argument-reflection-composer,
+  .argument-reflection-edit,
   .meta-learning-composer,
   .monthly-composer,
   .video-inspiration-composer,
@@ -2528,6 +2668,7 @@ textarea:focus {
   .habit-summary,
   .inspiration-summary,
   .daily-reading-summary,
+  .argument-reflection-summary,
   .meta-learning-summary,
   .monthly-summary,
   .video-inspiration-summary {
@@ -2581,11 +2722,19 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .argument-reflection-item {
+    grid-template-columns: 1fr;
+  }
+
   .inspiration-actions {
     justify-content: flex-end;
   }
 
   .daily-reading-actions {
+    justify-content: flex-end;
+  }
+
+  .argument-reflection-actions {
     justify-content: flex-end;
   }
 

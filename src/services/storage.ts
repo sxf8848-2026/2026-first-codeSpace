@@ -6,11 +6,13 @@ import { normalizeMetaLearningAbilities } from "./metaLearning";
 import { normalizeVideoInspirations } from "./videoInspirations";
 import { normalizeWorkExperiences } from "./workExperiences";
 import { normalizeDailyReadings, resolveDailyReadingCursorId } from "./dailyReadings";
+import { normalizeArgumentReflections } from "./argumentReflections";
 import {
   AppPrefs,
   AwesomeRecord,
   DefaultTask,
   DailyReadingRecord,
+  ArgumentReflectionRecord,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -59,6 +61,7 @@ const initialData: TodoData = {
   workExperiences: [],
   dailyReadings: [],
   dailyReadingCursorId: null,
+  argumentReflections: [],
   default_applied: [],
 };
 
@@ -314,6 +317,29 @@ export function createDailyReading(title: string, body: string, source: string):
   };
 }
 
+export function createArgumentReflection(
+  topic: string,
+  occurred_at: string,
+  person: string,
+  event: string,
+  my_response: string,
+  other_response: string,
+  improvement: string,
+): ArgumentReflectionRecord {
+  return {
+    id: crypto.randomUUID(),
+    topic: topic.trim(),
+    occurred_at,
+    person: person.trim(),
+    event: event.trim(),
+    my_response: my_response.trim(),
+    other_response: other_response.trim(),
+    improvement: improvement.trim(),
+    created_at: nowStamp(),
+    archived_at: null,
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -376,6 +402,11 @@ export function normalizeData(raw: unknown): TodoData {
     nowStamp,
   );
   const dailyReadingCursorId = resolveDailyReadingCursorId(dailyReadings, value.dailyReadingCursorId);
+  const argumentReflections: TodoData["argumentReflections"] = normalizeArgumentReflections(
+    value.argumentReflections,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
   const rawTodos =
     value.todos && typeof value.todos === "object"
       ? (value.todos as Record<string, unknown>)
@@ -465,6 +496,7 @@ export function normalizeData(raw: unknown): TodoData {
     workExperiences,
     dailyReadings,
     dailyReadingCursorId,
+    argumentReflections,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -484,7 +516,8 @@ function hasTasks(data: TodoData): boolean {
     data.metaLearningAbilities.length > 0 ||
     data.videoInspirations.length > 0 ||
     data.workExperiences.length > 0 ||
-    data.dailyReadings.length > 0
+    data.dailyReadings.length > 0 ||
+    data.argumentReflections.length > 0
   );
 }
 

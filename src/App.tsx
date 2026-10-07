@@ -1,6 +1,7 @@
 import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AwesomePanel,
+  ArgumentReflectionPanel,
   AppView,
   DailyCategoryPanel,
   DashboardPanel,
@@ -30,6 +31,7 @@ import {
   createAwesomeRecord,
   createHabit,
   createDailyReading,
+  createArgumentReflection,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -61,6 +63,7 @@ import {
   VideoInspirationChannelFilter,
 } from "./services/videoInspirations";
 import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
+import { getVisibleArgumentReflections } from "./services/argumentReflections";
 import {
   Filters,
   AppPrefs,
@@ -87,6 +90,7 @@ import {
   MetaLearningMastery,
   WorkExperienceRecord,
   DailyReadingRecord,
+  ArgumentReflectionRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -147,6 +151,28 @@ const blankMetaLearningDraft: MetaLearningDraft = {
   mastery: "learning",
 };
 
+type ArgumentReflectionDraft = {
+  topic: string;
+  occurred_at: string;
+  person: string;
+  event: string;
+  my_response: string;
+  other_response: string;
+  improvement: string;
+};
+
+function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
+  return {
+    topic: "",
+    occurred_at: toLocalDateTime(new Date()),
+    person: "",
+    event: "",
+    my_response: "",
+    other_response: "",
+    improvement: "",
+  };
+}
+
 export function App() {
   const [data, setData] = useState<TodoData | null>(null);
   const [prefs, setPrefs] = useState<AppPrefs>(() => loadPrefs());
@@ -192,6 +218,10 @@ export function App() {
   const [dailyReadingQuery, setDailyReadingQuery] = useState("");
   const [editingDailyReadingId, setEditingDailyReadingId] = useState<string | null>(null);
   const [dailyReadingEditDraft, setDailyReadingEditDraft] = useState({ title: "", body: "", source: "" });
+  const [argumentReflectionDraft, setArgumentReflectionDraft] = useState<ArgumentReflectionDraft>(createBlankArgumentReflectionDraft);
+  const [argumentReflectionQuery, setArgumentReflectionQuery] = useState("");
+  const [editingArgumentReflectionId, setEditingArgumentReflectionId] = useState<string | null>(null);
+  const [argumentReflectionEditDraft, setArgumentReflectionEditDraft] = useState<ArgumentReflectionDraft>(createBlankArgumentReflectionDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -277,6 +307,10 @@ export function App() {
   const dailyReadingPosition = useMemo(
     () => getDailyReadingPosition(activeData.dailyReadings, activeData.dailyReadingCursorId),
     [activeData.dailyReadings, activeData.dailyReadingCursorId],
+  );
+  const visibleArgumentReflections = useMemo(
+    () => getVisibleArgumentReflections(activeData.argumentReflections, argumentReflectionQuery),
+    [activeData.argumentReflections, argumentReflectionQuery],
   );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -409,6 +443,8 @@ export function App() {
       setInspirationEditDraft({ title: "", body: "" });
       setEditingDailyReadingId(null);
       setDailyReadingEditDraft({ title: "", body: "", source: "" });
+      setEditingArgumentReflectionId(null);
+      setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -436,6 +472,8 @@ export function App() {
       setInspirationEditDraft({ title: "", body: "" });
       setEditingDailyReadingId(null);
       setDailyReadingEditDraft({ title: "", body: "", source: "" });
+      setEditingArgumentReflectionId(null);
+      setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -553,6 +591,10 @@ export function App() {
 
   function replaceDailyReadings(dailyReadings: DailyReadingRecord[]) {
     updateData((value) => ({ ...value, dailyReadings }));
+  }
+
+  function replaceArgumentReflections(argumentReflections: ArgumentReflectionRecord[]) {
+    updateData((value) => ({ ...value, argumentReflections }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -892,6 +934,58 @@ export function App() {
     if (editingDailyReadingId === recordId) {
       setEditingDailyReadingId(null);
       setDailyReadingEditDraft({ title: "", body: "", source: "" });
+    }
+  }
+
+  function addArgumentReflection(event: FormEvent) {
+    event.preventDefault();
+    const draft = argumentReflectionDraft;
+    if (![draft.topic, draft.occurred_at, draft.event, draft.my_response, draft.other_response, draft.improvement].every((value) => value.trim())) return;
+    replaceArgumentReflections([
+      createArgumentReflection(draft.topic, draft.occurred_at, draft.person, draft.event, draft.my_response, draft.other_response, draft.improvement),
+      ...activeData.argumentReflections,
+    ]);
+    setArgumentReflectionDraft(createBlankArgumentReflectionDraft());
+  }
+
+  function startArgumentReflectionEdit(record: ArgumentReflectionRecord) {
+    setEditingArgumentReflectionId(record.id);
+    setArgumentReflectionEditDraft({
+      topic: record.topic,
+      occurred_at: record.occurred_at,
+      person: record.person,
+      event: record.event,
+      my_response: record.my_response,
+      other_response: record.other_response,
+      improvement: record.improvement,
+    });
+  }
+
+  function saveArgumentReflectionEdit(recordId: string) {
+    const draft = argumentReflectionEditDraft;
+    if (![draft.topic, draft.occurred_at, draft.event, draft.my_response, draft.other_response, draft.improvement].every((value) => value.trim())) return;
+    replaceArgumentReflections(activeData.argumentReflections.map((record) => record.id === recordId ? {
+      ...record,
+      topic: draft.topic.trim(),
+      occurred_at: draft.occurred_at,
+      person: draft.person.trim(),
+      event: draft.event.trim(),
+      my_response: draft.my_response.trim(),
+      other_response: draft.other_response.trim(),
+      improvement: draft.improvement.trim(),
+    } : record));
+    setEditingArgumentReflectionId(null);
+    setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
+  }
+
+  function archiveArgumentReflection(recordId: string) {
+    const record = activeData.argumentReflections.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档复盘“${record.topic}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceArgumentReflections(activeData.argumentReflections.map((item) => item.id === recordId ? { ...item, archived_at: nowStamp() } : item));
+    if (editingArgumentReflectionId === recordId) {
+      setEditingArgumentReflectionId(null);
+      setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
     }
   }
 
@@ -1612,6 +1706,26 @@ export function App() {
             }}
             onArchive={archiveDailyReading}
           />
+        ) : activeView === "argumentReflection" ? (
+          <ArgumentReflectionPanel
+            records={visibleArgumentReflections}
+            draft={argumentReflectionDraft}
+            query={argumentReflectionQuery}
+            editingRecordId={editingArgumentReflectionId}
+            editingDraft={argumentReflectionEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setArgumentReflectionDraft}
+            onAdd={addArgumentReflection}
+            onQueryChange={setArgumentReflectionQuery}
+            onStartEdit={startArgumentReflectionEdit}
+            onEditDraftChange={setArgumentReflectionEditDraft}
+            onSaveEdit={saveArgumentReflectionEdit}
+            onCancelEdit={() => {
+              setEditingArgumentReflectionId(null);
+              setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
+            }}
+            onArchive={archiveArgumentReflection}
+          />
         ) : activeView === "videoInspiration" ? (
           <VideoInspirationPanel
             records={visibleVideoInspirations}
@@ -1787,6 +1901,7 @@ const emptyData: TodoData = {
   workExperiences: [],
   dailyReadings: [],
   dailyReadingCursorId: null,
+  argumentReflections: [],
   default_applied: [],
 };
 
@@ -1823,4 +1938,9 @@ function isFormField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tagName = target.tagName.toLowerCase();
   return tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable;
+}
+
+function toLocalDateTime(date: Date): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }

@@ -123,6 +123,19 @@ export type DailyReadingRecord = {
   archived_at?: string | null;
 };
 
+export type ArgumentReflectionRecord = {
+  id: string;
+  topic: string;
+  occurred_at: string;
+  person: string;
+  event: string;
+  my_response: string;
+  other_response: string;
+  improvement: string;
+  created_at: string;
+  archived_at?: string | null;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -138,6 +151,7 @@ export type TodoData = {
   workExperiences: WorkExperienceRecord[];
   dailyReadings: DailyReadingRecord[];
   dailyReadingCursorId: string | null;
+  argumentReflections: ArgumentReflectionRecord[];
   default_applied: string[];
 };
 

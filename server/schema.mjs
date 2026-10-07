@@ -5,6 +5,7 @@ const allowedThemes = new Set(["light", "dark"]);
 const allowedMetaLearningMasteries = new Set(["todo", "learning", "mastered", "skilled"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
+const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export function isValidTodosPayload(payload) {
   if (!isPlainObject(payload)) return false;
@@ -22,6 +23,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.workExperiences)) return false;
   if (!Array.isArray(payload.dailyReadings)) return false;
   if (typeof payload.dailyReadingCursorId !== "string" && payload.dailyReadingCursorId !== null) return false;
+  if (!Array.isArray(payload.argumentReflections)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -31,6 +33,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.videoInspirations.every(isValidVideoInspiration)) return false;
   if (!payload.workExperiences.every(isValidWorkExperience)) return false;
   if (!payload.dailyReadings.every(isValidDailyReading)) return false;
+  if (!payload.argumentReflections.every(isValidArgumentReflection)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -192,6 +195,21 @@ function isValidDailyReading(record) {
   if (!isNonEmptyString(record.title)) return false;
   if (!isNonEmptyString(record.body)) return false;
   if (typeof record.source !== "string") return false;
+  if (typeof record.created_at !== "string") return false;
+  if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
+  return true;
+}
+
+function isValidArgumentReflection(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.topic)) return false;
+  if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
+  if (typeof record.person !== "string") return false;
+  if (!isNonEmptyString(record.event)) return false;
+  if (!isNonEmptyString(record.my_response)) return false;
+  if (!isNonEmptyString(record.other_response)) return false;
+  if (!isNonEmptyString(record.improvement)) return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
   return true;

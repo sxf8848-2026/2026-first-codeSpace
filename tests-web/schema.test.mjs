@@ -104,6 +104,19 @@ const validDailyReading = {
   archived_at: null,
 };
 
+const validArgumentReflection = {
+  id: "argument-reflection-1",
+  topic: "沟通节奏不同",
+  occurred_at: "2026-09-18T20:30",
+  person: "家人",
+  event: "讨论安排时彼此打断。",
+  my_response: "急着解释自己的想法。",
+  other_response: "觉得没有被认真倾听。",
+  improvement: "先复述对方的重点，再表达自己的需求。",
+  created_at: "2026-09-18T20:40:00.000Z",
+  archived_at: null,
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
     version: 18,
@@ -134,6 +147,7 @@ function makeTodosPayload(overrides = {}) {
     workExperiences: [validWorkExperience],
     dailyReadings: [validDailyReading],
     dailyReadingCursorId: "daily-reading-1",
+    argumentReflections: [validArgumentReflection],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -682,6 +696,32 @@ test("rejects daily reading with invalid archived_at", () => {
 
 test("rejects daily reading cursor with invalid type", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ dailyReadingCursorId: false })), false);
+});
+
+test("rejects todos payload without argumentReflections", () => {
+  const payload = makeTodosPayload();
+  delete payload.argumentReflections;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects argument reflection with empty topic", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, topic: " " }] })), false);
+});
+
+test("rejects argument reflection with invalid occurred_at", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, occurred_at: "2026-09-18 20:30" }] })), false);
+});
+
+test("rejects argument reflection with empty reflection content", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, improvement: " " }] })), false);
+});
+
+test("rejects argument reflection with invalid person type", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, person: false }] })), false);
+});
+
+test("rejects argument reflection with invalid archived_at", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, archived_at: false }] })), false);
 });
 
 test("validates prefs payload", () => {

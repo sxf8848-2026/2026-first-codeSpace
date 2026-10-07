@@ -13,6 +13,45 @@
 
 ---
 
+## [19.0.0] - 2026-10-07
+
+### 改了什么
+
+- 新增“吵架整理”独立菜单和“冲突复盘”页面，可记录争执主题、发生时间、涉及对象、争执经过、双方反应及下次改进方式。
+- 支持关键词搜索、编辑和归档；未归档记录按发生时间从新到旧展示，归档后保留原始数据。
+- 数据版本升级到 `19`，旧数据会自动补齐空的 `argumentReflections` 数组。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/argumentReflections.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/argumentReflections.test.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/storage.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，122/122。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- “发生时间”使用本地 `YYYY-MM-DDTHH:mm` 格式；编辑该时间后，列表会按新时间重新排序。
+- 修改本地后端默认数据和校验后，需要重启 `npm run dev` 使 API 进程加载新代码。
+
+---
+
 ## [18.0.0] - 2026-09-28
 
 ### 改了什么

@@ -10,6 +10,7 @@ import {
   History,
   LayoutDashboard,
   Lightbulb,
+  MessagesSquare,
   Moon,
   Pencil,
   Pin,
@@ -59,6 +60,7 @@ import {
   WeeklyTask,
   WorkExperienceRecord,
   DailyReadingRecord,
+  ArgumentReflectionRecord,
 } from "../types";
 import { Segmented, TagButton } from "./Controls";
 
@@ -72,7 +74,8 @@ export type AppView =
   | "videoInspiration"
   | "metaLearning"
   | "workExperience"
-  | "dailyReading";
+  | "dailyReading"
+  | "argumentReflection";
 
 type SaveStatus = {
   state: "idle" | "saved" | "fallback";
@@ -160,6 +163,10 @@ export function Sidebar({
         <button className={activeView === "dailyReading" ? "active" : ""} onClick={() => onViewChange("dailyReading")}>
           <BookOpen size={16} />
           <span>每日必读文案</span>
+        </button>
+        <button className={activeView === "argumentReflection" ? "active" : ""} onClick={() => onViewChange("argumentReflection")}>
+          <MessagesSquare size={16} />
+          <span>吵架整理</span>
         </button>
         <button className={activeView === "videoInspiration" ? "active" : ""} onClick={() => onViewChange("videoInspiration")}>
           <Video size={16} />
@@ -836,6 +843,122 @@ export function DailyReadingPanel({
       </section>
     </>
   );
+}
+
+export function ArgumentReflectionPanel({
+  records,
+  draft,
+  query,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onArchive,
+}: {
+  records: ArgumentReflectionRecord[];
+  draft: ArgumentReflectionDraft;
+  query: string;
+  editingRecordId: string | null;
+  editingDraft: ArgumentReflectionDraft;
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: ArgumentReflectionDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onStartEdit: (record: ArgumentReflectionRecord) => void;
+  onEditDraftChange: (draft: ArgumentReflectionDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onArchive: (recordId: string) => void;
+}) {
+  return (
+    <>
+      <header className="topbar argument-reflection-topbar">
+        <div>
+          <div className="eyebrow">
+            <MessagesSquare size={16} />
+            吵架整理
+          </div>
+          <h1>冲突复盘</h1>
+        </div>
+      </header>
+
+      <section className="argument-reflection-summary">
+        <div><span>当前展示</span><strong>{records.length} 条</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+
+      <section className="argument-reflection-panel" aria-label="吵架整理">
+        <form className="argument-reflection-composer" onSubmit={onAdd}>
+          <input value={draft.topic} onChange={(event) => onDraftChange({ ...draft, topic: event.target.value })} placeholder="争执主题，必填" />
+          <input type="datetime-local" value={draft.occurred_at} onChange={(event) => onDraftChange({ ...draft, occurred_at: event.target.value })} aria-label="发生时间" />
+          <input value={draft.person} onChange={(event) => onDraftChange({ ...draft, person: event.target.value })} placeholder="涉及对象，可不填" />
+          <textarea value={draft.event} onChange={(event) => onDraftChange({ ...draft, event: event.target.value })} placeholder="争执经过，必填" />
+          <textarea value={draft.my_response} onChange={(event) => onDraftChange({ ...draft, my_response: event.target.value })} placeholder="我的反应，必填" />
+          <textarea value={draft.other_response} onChange={(event) => onDraftChange({ ...draft, other_response: event.target.value })} placeholder="对方反应，必填" />
+          <textarea value={draft.improvement} onChange={(event) => onDraftChange({ ...draft, improvement: event.target.value })} placeholder="下次如何改进，必填" />
+          <button className="primary-button" type="submit"><Plus size={18} />添加复盘</button>
+        </form>
+
+        <div className="argument-reflection-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索主题、对象或复盘内容" /></div>
+        </div>
+
+        <div className="argument-reflection-list">
+          {records.length ? records.map((record) => (
+            <article className="argument-reflection-item" key={record.id}>
+              {editingRecordId === record.id ? (
+                <div className="argument-reflection-edit">
+                  <input value={editingDraft.topic} onChange={(event) => onEditDraftChange({ ...editingDraft, topic: event.target.value })} autoFocus />
+                  <input type="datetime-local" value={editingDraft.occurred_at} onChange={(event) => onEditDraftChange({ ...editingDraft, occurred_at: event.target.value })} />
+                  <input value={editingDraft.person} onChange={(event) => onEditDraftChange({ ...editingDraft, person: event.target.value })} placeholder="涉及对象，可不填" />
+                  <textarea value={editingDraft.event} onChange={(event) => onEditDraftChange({ ...editingDraft, event: event.target.value })} placeholder="争执经过，必填" />
+                  <textarea value={editingDraft.my_response} onChange={(event) => onEditDraftChange({ ...editingDraft, my_response: event.target.value })} placeholder="我的反应，必填" />
+                  <textarea value={editingDraft.other_response} onChange={(event) => onEditDraftChange({ ...editingDraft, other_response: event.target.value })} placeholder="对方反应，必填" />
+                  <textarea value={editingDraft.improvement} onChange={(event) => onEditDraftChange({ ...editingDraft, improvement: event.target.value })} placeholder="下次如何改进，必填" />
+                </div>
+              ) : (
+                <div className="argument-reflection-content">
+                  <div className="argument-reflection-heading"><strong>{record.topic}</strong><time>{formatArgumentDateTime(record.occurred_at)}</time></div>
+                  {record.person && <small>涉及对象：{record.person}</small>}
+                  <ReflectionField label="争执经过" value={record.event} />
+                  <ReflectionField label="我的反应" value={record.my_response} />
+                  <ReflectionField label="对方反应" value={record.other_response} />
+                  <ReflectionField label="下次如何改进" value={record.improvement} />
+                </div>
+              )}
+              <div className="argument-reflection-actions">
+                {editingRecordId === record.id ? <><button onClick={() => onSaveEdit(record.id)}>保存</button><button onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <><button onClick={() => onStartEdit(record)} title="编辑复盘"><Pencil size={16} /></button><button className="danger" onClick={() => onArchive(record.id)} title="归档复盘"><Archive size={16} /></button></>}
+              </div>
+            </article>
+          )) : <div className="argument-reflection-empty">{query.trim() ? "没有匹配的复盘记录" : "还没有复盘记录"}</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+type ArgumentReflectionDraft = {
+  topic: string;
+  occurred_at: string;
+  person: string;
+  event: string;
+  my_response: string;
+  other_response: string;
+  improvement: string;
+};
+
+function ReflectionField({ label, value }: { label: string; value: string }) {
+  return <div className="argument-reflection-field"><strong>{label}</strong><p>{value}</p></div>;
+}
+
+function formatArgumentDateTime(value: string): string {
+  return value.replace("T", " ");
 }
 
 export function InspirationPanel({
