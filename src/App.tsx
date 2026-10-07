@@ -154,22 +154,14 @@ const blankMetaLearningDraft: MetaLearningDraft = {
 type ArgumentReflectionDraft = {
   topic: string;
   occurred_at: string;
-  person: string;
-  event: string;
-  my_response: string;
-  other_response: string;
-  improvement: string;
+  content: string;
 };
 
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
     topic: "",
     occurred_at: toLocalDateTime(new Date()),
-    person: "",
-    event: "",
-    my_response: "",
-    other_response: "",
-    improvement: "",
+    content: "",
   };
 }
 
@@ -940,9 +932,9 @@ export function App() {
   function addArgumentReflection(event: FormEvent) {
     event.preventDefault();
     const draft = argumentReflectionDraft;
-    if (![draft.topic, draft.occurred_at, draft.event, draft.my_response, draft.other_response, draft.improvement].every((value) => value.trim())) return;
+    if (![draft.topic, draft.occurred_at, draft.content].every((value) => value.trim())) return;
     replaceArgumentReflections([
-      createArgumentReflection(draft.topic, draft.occurred_at, draft.person, draft.event, draft.my_response, draft.other_response, draft.improvement),
+      createArgumentReflection(draft.topic, draft.occurred_at, draft.content),
       ...activeData.argumentReflections,
     ]);
     setArgumentReflectionDraft(createBlankArgumentReflectionDraft());
@@ -953,26 +945,18 @@ export function App() {
     setArgumentReflectionEditDraft({
       topic: record.topic,
       occurred_at: record.occurred_at,
-      person: record.person,
-      event: record.event,
-      my_response: record.my_response,
-      other_response: record.other_response,
-      improvement: record.improvement,
+      content: record.content,
     });
   }
 
   function saveArgumentReflectionEdit(recordId: string) {
     const draft = argumentReflectionEditDraft;
-    if (![draft.topic, draft.occurred_at, draft.event, draft.my_response, draft.other_response, draft.improvement].every((value) => value.trim())) return;
+    if (![draft.topic, draft.occurred_at, draft.content].every((value) => value.trim())) return;
     replaceArgumentReflections(activeData.argumentReflections.map((record) => record.id === recordId ? {
       ...record,
       topic: draft.topic.trim(),
       occurred_at: draft.occurred_at,
-      person: draft.person.trim(),
-      event: draft.event.trim(),
-      my_response: draft.my_response.trim(),
-      other_response: draft.other_response.trim(),
-      improvement: draft.improvement.trim(),
+      content: draft.content.trim(),
     } : record));
     setEditingArgumentReflectionId(null);
     setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());

@@ -205,11 +205,7 @@ function isValidArgumentReflection(record) {
   if (!isNonEmptyString(record.id)) return false;
   if (!isNonEmptyString(record.topic)) return false;
   if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
-  if (typeof record.person !== "string") return false;
-  if (!isNonEmptyString(record.event)) return false;
-  if (!isNonEmptyString(record.my_response)) return false;
-  if (!isNonEmptyString(record.other_response)) return false;
-  if (!isNonEmptyString(record.improvement)) return false;
+  if (!isNonEmptyString(record.content)) return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
   return true;

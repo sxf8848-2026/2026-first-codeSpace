@@ -884,7 +884,7 @@ export function ArgumentReflectionPanel({
             <MessagesSquare size={16} />
             吵架整理
           </div>
-          <h1>冲突复盘</h1>
+          <h1>吵架复盘</h1>
         </div>
       </header>
 
@@ -897,16 +897,12 @@ export function ArgumentReflectionPanel({
         <form className="argument-reflection-composer" onSubmit={onAdd}>
           <input value={draft.topic} onChange={(event) => onDraftChange({ ...draft, topic: event.target.value })} placeholder="争执主题，必填" />
           <input type="datetime-local" value={draft.occurred_at} onChange={(event) => onDraftChange({ ...draft, occurred_at: event.target.value })} aria-label="发生时间" />
-          <input value={draft.person} onChange={(event) => onDraftChange({ ...draft, person: event.target.value })} placeholder="涉及对象，可不填" />
-          <textarea value={draft.event} onChange={(event) => onDraftChange({ ...draft, event: event.target.value })} placeholder="争执经过，必填" />
-          <textarea value={draft.my_response} onChange={(event) => onDraftChange({ ...draft, my_response: event.target.value })} placeholder="我的反应，必填" />
-          <textarea value={draft.other_response} onChange={(event) => onDraftChange({ ...draft, other_response: event.target.value })} placeholder="对方反应，必填" />
-          <textarea value={draft.improvement} onChange={(event) => onDraftChange({ ...draft, improvement: event.target.value })} placeholder="下次如何改进，必填" />
+          <textarea value={draft.content} onChange={(event) => onDraftChange({ ...draft, content: event.target.value })} placeholder="复盘内容，必填" />
           <button className="primary-button" type="submit"><Plus size={18} />添加复盘</button>
         </form>
 
         <div className="argument-reflection-toolbar">
-          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索主题、对象或复盘内容" /></div>
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索主题或复盘内容" /></div>
         </div>
 
         <div className="argument-reflection-list">
@@ -916,20 +912,12 @@ export function ArgumentReflectionPanel({
                 <div className="argument-reflection-edit">
                   <input value={editingDraft.topic} onChange={(event) => onEditDraftChange({ ...editingDraft, topic: event.target.value })} autoFocus />
                   <input type="datetime-local" value={editingDraft.occurred_at} onChange={(event) => onEditDraftChange({ ...editingDraft, occurred_at: event.target.value })} />
-                  <input value={editingDraft.person} onChange={(event) => onEditDraftChange({ ...editingDraft, person: event.target.value })} placeholder="涉及对象，可不填" />
-                  <textarea value={editingDraft.event} onChange={(event) => onEditDraftChange({ ...editingDraft, event: event.target.value })} placeholder="争执经过，必填" />
-                  <textarea value={editingDraft.my_response} onChange={(event) => onEditDraftChange({ ...editingDraft, my_response: event.target.value })} placeholder="我的反应，必填" />
-                  <textarea value={editingDraft.other_response} onChange={(event) => onEditDraftChange({ ...editingDraft, other_response: event.target.value })} placeholder="对方反应，必填" />
-                  <textarea value={editingDraft.improvement} onChange={(event) => onEditDraftChange({ ...editingDraft, improvement: event.target.value })} placeholder="下次如何改进，必填" />
+                  <textarea value={editingDraft.content} onChange={(event) => onEditDraftChange({ ...editingDraft, content: event.target.value })} placeholder="复盘内容，必填" />
                 </div>
               ) : (
                 <div className="argument-reflection-content">
                   <div className="argument-reflection-heading"><strong>{record.topic}</strong><time>{formatArgumentDateTime(record.occurred_at)}</time></div>
-                  {record.person && <small>涉及对象：{record.person}</small>}
-                  <ReflectionField label="争执经过" value={record.event} />
-                  <ReflectionField label="我的反应" value={record.my_response} />
-                  <ReflectionField label="对方反应" value={record.other_response} />
-                  <ReflectionField label="下次如何改进" value={record.improvement} />
+                  <p>{record.content}</p>
                 </div>
               )}
               <div className="argument-reflection-actions">
@@ -946,16 +934,8 @@ export function ArgumentReflectionPanel({
 type ArgumentReflectionDraft = {
   topic: string;
   occurred_at: string;
-  person: string;
-  event: string;
-  my_response: string;
-  other_response: string;
-  improvement: string;
+  content: string;
 };
-
-function ReflectionField({ label, value }: { label: string; value: string }) {
-  return <div className="argument-reflection-field"><strong>{label}</strong><p>{value}</p></div>;
-}
 
 function formatArgumentDateTime(value: string): string {
   return value.replace("T", " ");

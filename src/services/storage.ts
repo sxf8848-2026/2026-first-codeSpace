@@ -320,21 +320,13 @@ export function createDailyReading(title: string, body: string, source: string):
 export function createArgumentReflection(
   topic: string,
   occurred_at: string,
-  person: string,
-  event: string,
-  my_response: string,
-  other_response: string,
-  improvement: string,
+  content: string,
 ): ArgumentReflectionRecord {
   return {
     id: crypto.randomUUID(),
     topic: topic.trim(),
     occurred_at,
-    person: person.trim(),
-    event: event.trim(),
-    my_response: my_response.trim(),
-    other_response: other_response.trim(),
-    improvement: improvement.trim(),
+    content: content.trim(),
     created_at: nowStamp(),
     archived_at: null,
   };

@@ -127,11 +127,7 @@ export type ArgumentReflectionRecord = {
   id: string;
   topic: string;
   occurred_at: string;
-  person: string;
-  event: string;
-  my_response: string;
-  other_response: string;
-  improvement: string;
+  content: string;
   created_at: string;
   archived_at?: string | null;
 };

@@ -10,7 +10,7 @@ import {
   TodoTag,
 } from "./types";
 
-export const DATA_VERSION = 19;
+export const DATA_VERSION = 20;
 
 export const TAG_TONES: Array<{ value: TagTone; label: string }> = [
   { value: "neutral", label: "灰" },

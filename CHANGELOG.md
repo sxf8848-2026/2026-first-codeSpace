@@ -13,6 +13,42 @@
 
 ---
 
+## [20.0.0] - 2026-10-07
+
+### 改了什么
+
+- “冲突复盘”页面标题调整为“吵架复盘”。
+- 复盘录入与编辑收敛为“争执主题”“发生时间”和一个必填的“复盘内容”文本框，不再单独维护涉及对象、经过、双方反应和改进字段。
+- 数据版本升级到 `20`；已有版本 19 的多字段复盘会自动合并为带字段标题的复盘正文，避免数据丢失。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/argumentReflections.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/argumentReflections.test.mjs`
+- `tests-web/schema.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，122/122。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧格式记录会在前端归一化并于下一次保存时写回为新格式。
+
+---
+
 ## [19.0.0] - 2026-10-07
 
 ### 改了什么
