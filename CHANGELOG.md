@@ -13,6 +13,35 @@
 
 ---
 
+## [20.2.0] - 2026-10-08
+
+### 改了什么
+
+- 每周快递“继承未取快递”会从当前周之前向前查找，跳过空周和全已取周，继承最近一个仍有未取快递的历史周。
+- 保持原有按“名称 + 平台”去重规则，不会重复加入当前周已有的快递。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/weeklyDeliveries.ts`
+- `tests-web/weeklyDeliveries.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，129/129。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 不新增数据结构；仅从当前周之前的历史周中查找，当前周和未来周不会作为继承来源。
+
+---
+
 ## [20.1.0] - 2026-10-08
 
 ### 改了什么

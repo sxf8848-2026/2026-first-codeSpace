@@ -1960,9 +1960,9 @@ export function WeeklyDeliveryPanel({
         </form>
 
         <div className="delivery-toolbar">
-          <button onClick={onCarryOver}>
+          <button onClick={onCarryOver} title="从最近有未取快递的历史周继承">
             <RotateCcw size={16} />
-            继承上周
+            继承未取快递
           </button>
           <Segmented
             value={filter}

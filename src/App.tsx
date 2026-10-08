@@ -64,6 +64,7 @@ import {
 } from "./services/videoInspirations";
 import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
 import { getVisibleArgumentReflections } from "./services/argumentReflections";
+import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
   Filters,
   AppPrefs,
@@ -1168,10 +1169,7 @@ export function App() {
   }
 
   function carryOverWeeklyDeliveries() {
-    const previousWeek = weekKey(addDays(deliveryDate, -7));
-    const existing = new Set(deliveryTasks.map((delivery) => deliveryKey(delivery)));
-    const carried = (activeData.weeklyDeliveries[previousWeek] ?? [])
-      .filter((delivery) => !delivery.picked && !existing.has(deliveryKey(delivery)))
+    const carried = getCarryOverDeliveries(activeData.weeklyDeliveries, currentDeliveryWeek, deliveryTasks)
       .map((delivery) => createWeeklyDelivery(delivery.name, delivery.platform, delivery.note, delivery.purchased_at));
     if (!carried.length) return;
     replaceWeeklyDeliveries(currentDeliveryWeek, [...carried, ...deliveryTasks]);
@@ -1934,10 +1932,6 @@ function matchesDeliveryFilter(delivery: WeeklyDelivery, filter: DeliveryFilter)
   if (filter === "pending") return !delivery.picked;
   if (filter === "picked") return delivery.picked;
   return true;
-}
-
-function deliveryKey(delivery: Pick<WeeklyDelivery, "name" | "platform">): string {
-  return `${delivery.name.trim().toLowerCase()}::${delivery.platform.trim().toLowerCase()}`;
 }
 
 function isUndoRedoShortcut(event: KeyboardEvent): boolean {
