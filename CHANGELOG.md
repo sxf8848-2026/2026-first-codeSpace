@@ -13,6 +13,43 @@
 
 ---
 
+## [20.1.0] - 2026-10-08
+
+### 改了什么
+
+- 每周快递的“平台”字段改为下拉选择，默认提供抖音、拼夕夕、淘宝、京东、小红书、快手、咸鱼和其他。
+- 设置页面新增“快递平台”管理区，支持新增、修改和删除自定义平台选项。
+- 删除平台选项不会改写已有快递记录；编辑旧记录时，已删除的平台会作为临时选项保留显示。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/dialogs.tsx`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/storage.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，126/126。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧偏好数据缺少平台列表时，会自动补齐默认 8 个平台；修改后端默认偏好或校验后，需要重启 `npm run dev`。
+
+---
+
 ## [20.0.0] - 2026-10-07
 
 ### 改了什么

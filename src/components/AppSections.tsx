@@ -1881,6 +1881,7 @@ export function WeeklyDeliveryPanel({
   draft,
   editingTaskId,
   editingDraft,
+  platforms,
   saveStatus,
   onFilterChange,
   onDraftChange,
@@ -1901,6 +1902,7 @@ export function WeeklyDeliveryPanel({
   draft: { name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
   editingDraft: { name: string; platform: string; note: string; purchased_at: string };
+  platforms: string[];
   saveStatus: SaveStatus;
   onFilterChange: (filter: "all" | "pending" | "picked") => void;
   onDraftChange: (draft: { name: string; platform: string; note: string; purchased_at: string }) => void;
@@ -1948,7 +1950,7 @@ export function WeeklyDeliveryPanel({
       <section className="delivery-panel" aria-label="每周快递">
         <form className="delivery-composer" onSubmit={onAdd}>
           <input value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="快递名称，例如：书籍" />
-          <input value={draft.platform} onChange={(event) => onDraftChange({ ...draft, platform: event.target.value })} placeholder="平台，例如：淘宝 / 京东" />
+          <PlatformSelect value={draft.platform} platforms={platforms} onChange={(platform) => onDraftChange({ ...draft, platform })} />
           <input type="date" value={draft.purchased_at} onChange={(event) => onDraftChange({ ...draft, purchased_at: event.target.value })} aria-label="购买时间" />
           <input value={draft.note} onChange={(event) => onDraftChange({ ...draft, note: event.target.value })} placeholder="备注，可不填" />
           <button className="primary-button" type="submit">
@@ -1993,11 +1995,7 @@ export function WeeklyDeliveryPanel({
                           }}
                           autoFocus
                         />
-                        <input
-                          value={editingDraft.platform}
-                          onChange={(event) => onEditDraftChange({ ...editingDraft, platform: event.target.value })}
-                          placeholder="平台"
-                        />
+                        <PlatformSelect value={editingDraft.platform} platforms={platforms} onChange={(platform) => onEditDraftChange({ ...editingDraft, platform })} />
                         <input
                           value={editingDraft.note}
                           onChange={(event) => onEditDraftChange({ ...editingDraft, note: event.target.value })}
@@ -2050,6 +2048,18 @@ export function WeeklyDeliveryPanel({
         </div>
       </section>
     </>
+  );
+}
+
+function PlatformSelect({ value, platforms, onChange }: { value: string; platforms: string[]; onChange: (platform: string) => void }) {
+  const options = value && !platforms.includes(value) ? [value, ...platforms] : platforms;
+  return (
+    <select value={value} onChange={(event) => onChange(event.target.value)} aria-label="购买平台">
+      <option value="" disabled>选择平台</option>
+      {options.map((platform) => (
+        <option key={platform} value={platform}>{platform === value && !platforms.includes(platform) ? `${platform}（已移除）` : platform}</option>
+      ))}
+    </select>
   );
 }
 

@@ -9,6 +9,7 @@ import {
   TaskStatus,
   TodoTag,
 } from "./types";
+import { DEFAULT_DELIVERY_PLATFORMS } from "./services/deliveryPlatforms";
 
 export const DATA_VERSION = 20;
 
@@ -25,6 +26,8 @@ export const TAGS: TodoTag[] = [
   { id: 2, name: "学习", tone: "blue" },
   { id: 3, name: "工作", tone: "amber" },
 ];
+
+export const DELIVERY_PLATFORMS = DEFAULT_DELIVERY_PLATFORMS;
 
 export const STATUSES: Array<{ value: TaskStatus; label: string }> = [
   { value: STATUS_TODO, label: "未完成" },

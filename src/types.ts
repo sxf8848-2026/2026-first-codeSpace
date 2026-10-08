@@ -155,6 +155,7 @@ export type AppPrefs = {
   theme: "light" | "dark";
   tags: TodoTag[];
   defaultTasks: DefaultTask[];
+  deliveryPlatforms: string[];
 };
 
 export type StatusFilter = "all" | "0" | "1" | "2";

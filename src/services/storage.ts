@@ -1,4 +1,4 @@
-import { DATA_VERSION, DEFAULT_TASKS, TAGS } from "../constants";
+import { DATA_VERSION, DEFAULT_TASKS, DELIVERY_PLATFORMS, TAGS } from "../constants";
 import { dateKey, nowStamp } from "../date";
 import { normalizeHabit } from "./habits";
 import { normalizeInspirations } from "./inspirations";
@@ -7,6 +7,7 @@ import { normalizeVideoInspirations } from "./videoInspirations";
 import { normalizeWorkExperiences } from "./workExperiences";
 import { normalizeDailyReadings, resolveDailyReadingCursorId } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
+import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
   AwesomeRecord,
@@ -591,15 +592,17 @@ const initialPrefs: AppPrefs = {
   theme: "light",
   tags: TAGS,
   defaultTasks: DEFAULT_TASKS,
+  deliveryPlatforms: DELIVERY_PLATFORMS,
 };
 
-function normalizePrefs(raw: unknown): AppPrefs {
+export function normalizePrefs(raw: unknown): AppPrefs {
   if (!raw || typeof raw !== "object") return initialPrefs;
   const value = raw as Partial<AppPrefs>;
   return {
     theme: value.theme === "dark" ? "dark" : "light",
     tags: normalizeTags(value.tags),
     defaultTasks: normalizeDefaultTasks(value.defaultTasks),
+    deliveryPlatforms: normalizeDeliveryPlatforms(value.deliveryPlatforms),
   };
 }
 

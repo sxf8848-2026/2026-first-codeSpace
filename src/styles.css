@@ -2424,6 +2424,10 @@ textarea:focus {
   grid-template-columns: minmax(180px, 1fr) 120px 92px 82px;
 }
 
+.settings-row.platform-settings-row {
+  grid-template-columns: minmax(160px, 1fr) 82px;
+}
+
 .settings-row .danger {
   color: var(--danger);
 }
@@ -2759,6 +2763,10 @@ textarea:focus {
 
   .settings-row,
   .settings-row.default-task-row {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-row.platform-settings-row {
     grid-template-columns: 1fr;
   }
 }

@@ -726,6 +726,7 @@ test("validates prefs payload", () => {
       theme: "light",
       tags: [{ id: 0, name: "未分类", tone: "neutral" }],
       defaultTasks: [{ text: "喝水", tag: 1, priority: "medium" }],
+      deliveryPlatforms: ["淘宝", "京东"],
     }),
     true,
   );
@@ -737,6 +738,30 @@ test("rejects invalid prefs theme", () => {
       theme: "blue",
       tags: [{ id: 0, name: "未分类", tone: "neutral" }],
       defaultTasks: [{ text: "喝水", tag: 1, priority: "medium" }],
+      deliveryPlatforms: ["淘宝"],
+    }),
+    false,
+  );
+});
+
+test("rejects prefs without delivery platforms", () => {
+  assert.equal(
+    isValidPrefsPayload({
+      theme: "light",
+      tags: [{ id: 0, name: "未分类", tone: "neutral" }],
+      defaultTasks: [{ text: "喝水", tag: 1, priority: "medium" }],
+    }),
+    false,
+  );
+});
+
+test("rejects prefs with empty delivery platform", () => {
+  assert.equal(
+    isValidPrefsPayload({
+      theme: "light",
+      tags: [{ id: 0, name: "未分类", tone: "neutral" }],
+      defaultTasks: [{ text: "喝水", tag: 1, priority: "medium" }],
+      deliveryPlatforms: ["淘宝", " "],
     }),
     false,
   );

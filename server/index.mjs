@@ -32,6 +32,7 @@ const defaultTodos = {
 
 const defaultPrefs = {
   theme: "light",
+  deliveryPlatforms: ["抖音", "拼夕夕", "淘宝", "京东", "小红书", "快手", "咸鱼", "其他"],
 };
 
 const writeQueues = new Map();

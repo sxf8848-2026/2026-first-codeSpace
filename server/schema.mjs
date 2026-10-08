@@ -73,7 +73,8 @@ export function isValidPrefsPayload(payload) {
   if (!allowedThemes.has(payload.theme)) return false;
   if (!Array.isArray(payload.tags)) return false;
   if (!Array.isArray(payload.defaultTasks)) return false;
-  return payload.tags.every(isValidTag) && payload.defaultTasks.every(isValidDefaultTask);
+  if (!Array.isArray(payload.deliveryPlatforms)) return false;
+  return payload.tags.every(isValidTag) && payload.defaultTasks.every(isValidDefaultTask) && payload.deliveryPlatforms.every(isNonEmptyString);
 }
 
 function isValidTask(task) {

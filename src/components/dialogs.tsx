@@ -286,6 +286,7 @@ function DailyHistoryTaskGroup({ title, tasks, emptyText }: { title: string; tas
 export function SettingsDialog({
   tags,
   defaultTasks,
+  deliveryPlatforms,
   onClose,
   onAddTag,
   onUpdateTag,
@@ -293,9 +294,13 @@ export function SettingsDialog({
   onAddDefaultTask,
   onUpdateDefaultTask,
   onDeleteDefaultTask,
+  onAddDeliveryPlatform,
+  onUpdateDeliveryPlatform,
+  onDeleteDeliveryPlatform,
 }: {
   tags: TodoTag[];
   defaultTasks: DefaultTask[];
+  deliveryPlatforms: string[];
   onClose: () => void;
   onAddTag: (name: string, tone: TodoTag["tone"]) => void;
   onUpdateTag: (tag: TodoTag) => void;
@@ -303,6 +308,9 @@ export function SettingsDialog({
   onAddDefaultTask: (task: DefaultTask) => void;
   onUpdateDefaultTask: (index: number, task: DefaultTask) => void;
   onDeleteDefaultTask: (index: number) => void;
+  onAddDeliveryPlatform: (platform: string) => void;
+  onUpdateDeliveryPlatform: (index: number, platform: string) => void;
+  onDeleteDeliveryPlatform: (index: number) => void;
 }) {
   const firstTagId = tags[1]?.id ?? tags[0]?.id ?? 0;
   const [tagDraft, setTagDraft] = useState({ name: "", tone: "blue" as TodoTag["tone"] });
@@ -311,6 +319,7 @@ export function SettingsDialog({
     tag: firstTagId,
     priority: "medium",
   });
+  const [deliveryPlatformDraft, setDeliveryPlatformDraft] = useState("");
 
   useEffect(() => {
     if (!tags.some((tag) => tag.id === taskDraft.tag)) {
@@ -397,6 +406,25 @@ export function SettingsDialog({
               <Plus size={16} />
               添加
             </button>
+          </form>
+        </SettingsSection>
+
+        <SettingsSection title="快递平台">
+          <div className="settings-list">
+            {deliveryPlatforms.map((platform, index) => (
+              <div className="settings-row platform-settings-row" key={`${platform}-${index}`}>
+                <input value={platform} onChange={(event) => onUpdateDeliveryPlatform(index, event.target.value)} />
+                <button type="button" className="danger text-button" disabled={deliveryPlatforms.length <= 1} onClick={() => onDeleteDeliveryPlatform(index)}>删除</button>
+              </div>
+            ))}
+          </div>
+          <form className="settings-row platform-settings-row add-row" onSubmit={(event: FormEvent) => {
+            event.preventDefault();
+            onAddDeliveryPlatform(deliveryPlatformDraft);
+            setDeliveryPlatformDraft("");
+          }}>
+            <input value={deliveryPlatformDraft} onChange={(event) => setDeliveryPlatformDraft(event.target.value)} placeholder="新平台名称" />
+            <button className="primary-button" type="submit"><Plus size={16} />添加</button>
           </form>
         </SettingsSection>
       </section>

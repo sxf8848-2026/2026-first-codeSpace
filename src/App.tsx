@@ -240,6 +240,7 @@ export function App() {
   const theme = prefs.theme;
   const tags = prefs.tags;
   const defaultTasks = prefs.defaultTasks;
+  const deliveryPlatforms = prefs.deliveryPlatforms;
   const currentDay = dateKey(currentDate);
   const currentWeek = weekKey(currentDate);
   const currentMonth = monthKey(currentDate);
@@ -1378,6 +1379,28 @@ export function App() {
     setDraft((value) => (value.tag === tagId ? { ...value, tag: 0 } : value));
   }
 
+  function addDeliveryPlatform(platform: string) {
+    const trimmed = platform.trim();
+    if (!trimmed || deliveryPlatforms.some((item) => item === trimmed)) return;
+    updatePrefs((value) => ({ ...value, deliveryPlatforms: [...value.deliveryPlatforms, trimmed] }));
+  }
+
+  function updateDeliveryPlatform(index: number, platform: string) {
+    const trimmed = platform.trim();
+    if (!trimmed || deliveryPlatforms.some((item, itemIndex) => itemIndex !== index && item === trimmed)) return;
+    updatePrefs((value) => ({
+      ...value,
+      deliveryPlatforms: value.deliveryPlatforms.map((item, itemIndex) => itemIndex === index ? trimmed : item),
+    }));
+  }
+
+  function deleteDeliveryPlatform(index: number) {
+    const platform = deliveryPlatforms[index];
+    if (!platform || deliveryPlatforms.length <= 1) return;
+    if (!window.confirm(`确定从可选平台中删除“${platform}”吗？已有快递记录不会受影响。`)) return;
+    updatePrefs((value) => ({ ...value, deliveryPlatforms: value.deliveryPlatforms.filter((_, itemIndex) => itemIndex !== index) }));
+  }
+
   function addDefaultTask(task: DefaultTask) {
     const text = task.text.trim();
     if (!text) return;
@@ -1789,6 +1812,7 @@ export function App() {
             draft={deliveryDraft}
             editingTaskId={editingDeliveryId}
             editingDraft={deliveryEditDraft}
+            platforms={deliveryPlatforms}
             saveStatus={projectSaveStatus}
             onFilterChange={setDeliveryFilter}
             onDraftChange={setDeliveryDraft}
@@ -1857,6 +1881,7 @@ export function App() {
         <SettingsDialog
           tags={tags}
           defaultTasks={defaultTasks}
+          deliveryPlatforms={deliveryPlatforms}
           onClose={() => setShowSettings(false)}
           onAddTag={addTag}
           onUpdateTag={updateTag}
@@ -1864,6 +1889,9 @@ export function App() {
           onAddDefaultTask={addDefaultTask}
           onUpdateDefaultTask={updateDefaultTask}
           onDeleteDefaultTask={deleteDefaultTask}
+          onAddDeliveryPlatform={addDeliveryPlatform}
+          onUpdateDeliveryPlatform={updateDeliveryPlatform}
+          onDeleteDeliveryPlatform={deleteDeliveryPlatform}
         />
       )}
     </main>

@@ -6,6 +6,7 @@ import { normalizeVideoInspirations } from "../src/services/videoInspirations.ts
 import { normalizeWorkExperiences } from "../src/services/workExperiences.ts";
 import { normalizeDailyReadings } from "../src/services/dailyReadings.ts";
 import { normalizeArgumentReflections } from "../src/services/argumentReflections.ts";
+import { DEFAULT_DELIVERY_PLATFORMS, normalizeDeliveryPlatforms } from "../src/services/deliveryPlatforms.ts";
 
 test("normalizes old todo data without inspirations", () => {
   assert.deepEqual(normalizeInspirations(undefined), []);
@@ -29,4 +30,12 @@ test("normalizes old todo data without daily readings", () => {
 
 test("normalizes old todo data without argument reflections", () => {
   assert.deepEqual(normalizeArgumentReflections(undefined), []);
+});
+
+test("normalizes old prefs with default delivery platforms", () => {
+  assert.deepEqual(normalizeDeliveryPlatforms(undefined), DEFAULT_DELIVERY_PLATFORMS);
+});
+
+test("normalizes custom delivery platforms by trimming and deduplicating", () => {
+  assert.deepEqual(normalizeDeliveryPlatforms([" 淘宝 ", "京东", "淘宝", "", 1]), ["淘宝", "京东"]);
 });
