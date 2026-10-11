@@ -61,7 +61,9 @@ import {
   WorkExperienceRecord,
   DailyReadingRecord,
   ArgumentReflectionRecord,
+  BookRecord,
 } from "../types";
+import { BookStatusFilter } from "../services/books";
 import { Segmented, TagButton } from "./Controls";
 
 export type AppView =
@@ -75,7 +77,8 @@ export type AppView =
   | "metaLearning"
   | "workExperience"
   | "dailyReading"
-  | "argumentReflection";
+  | "argumentReflection"
+  | "books";
 
 type SaveStatus = {
   state: "idle" | "saved" | "fallback";
@@ -163,6 +166,10 @@ export function Sidebar({
         <button className={activeView === "dailyReading" ? "active" : ""} onClick={() => onViewChange("dailyReading")}>
           <BookOpen size={16} />
           <span>每日必读文案</span>
+        </button>
+        <button className={activeView === "books" ? "active" : ""} onClick={() => onViewChange("books")}>
+          <BookOpen size={16} />
+          <span>书籍整理</span>
         </button>
         <button className={activeView === "argumentReflection" ? "active" : ""} onClick={() => onViewChange("argumentReflection")}>
           <MessagesSquare size={16} />
@@ -839,6 +846,110 @@ export function DailyReadingPanel({
           ) : (
             <div className="daily-reading-empty">{query.trim() ? "没有匹配的必读文案" : "还没有必读文案"}</div>
           )}
+        </div>
+      </section>
+    </>
+  );
+}
+
+const BOOK_STATUS_OPTIONS: Array<[BookRecord["status"], string]> = [
+  ["want_to_read", "想读"],
+  ["reading", "在读"],
+  ["read", "已读"],
+];
+
+export function BooksPanel({
+  books,
+  draft,
+  query,
+  statusFilter,
+  editingBookId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onStatusFilterChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+}: {
+  books: BookRecord[];
+  draft: { title: string; author: string; note: string; status: BookRecord["status"] };
+  query: string;
+  statusFilter: BookStatusFilter;
+  editingBookId: string | null;
+  editingDraft: { title: string; author: string; note: string; status: BookRecord["status"] };
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: { title: string; author: string; note: string; status: BookRecord["status"] }) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onStatusFilterChange: (filter: BookStatusFilter) => void;
+  onStartEdit: (book: BookRecord) => void;
+  onEditDraftChange: (draft: { title: string; author: string; note: string; status: BookRecord["status"] }) => void;
+  onSaveEdit: (bookId: string) => void;
+  onCancelEdit: () => void;
+}) {
+  return (
+    <>
+      <header className="topbar books-topbar">
+        <div>
+          <div className="eyebrow"><BookOpen size={16} />书籍整理</div>
+          <h1>我的书库</h1>
+        </div>
+      </header>
+
+      <section className="books-summary">
+        <div><span>当前展示</span><strong>{books.length} 本</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+
+      <section className="books-panel" aria-label="书籍整理">
+        <form className="books-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="书名，必填" />
+          <input value={draft.author} onChange={(event) => onDraftChange({ ...draft, author: event.target.value })} placeholder="作者，可不填" />
+          <select value={draft.status} onChange={(event) => onDraftChange({ ...draft, status: event.target.value as BookRecord["status"] })} aria-label="阅读状态">
+            {BOOK_STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <textarea value={draft.note} onChange={(event) => onDraftChange({ ...draft, note: event.target.value })} placeholder="简短笔记，可不填" />
+          <button className="primary-button" type="submit"><Plus size={18} />添加书籍</button>
+        </form>
+
+        <div className="books-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索书名、作者或笔记" /></div>
+          <Segmented
+            value={statusFilter}
+            options={[["all", "全部"], ...BOOK_STATUS_OPTIONS]}
+            onChange={(value) => onStatusFilterChange(value as BookStatusFilter)}
+          />
+        </div>
+
+        <div className="books-list">
+          {books.length ? books.map((book) => (
+            <article className={`book-item ${book.status}`} key={book.id}>
+              {editingBookId === book.id ? (
+                <div className="book-edit">
+                  <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} autoFocus />
+                  <input value={editingDraft.author} onChange={(event) => onEditDraftChange({ ...editingDraft, author: event.target.value })} placeholder="作者，可不填" />
+                  <select value={editingDraft.status} onChange={(event) => onEditDraftChange({ ...editingDraft, status: event.target.value as BookRecord["status"] })}>
+                    {BOOK_STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                  <textarea value={editingDraft.note} onChange={(event) => onEditDraftChange({ ...editingDraft, note: event.target.value })} placeholder="简短笔记，可不填" />
+                </div>
+              ) : (
+                <div className="book-content">
+                  <div className="book-title-line"><strong>{book.title}</strong><span>{BOOK_STATUS_OPTIONS.find(([value]) => value === book.status)?.[1]}</span></div>
+                  {book.author && <small>作者：{book.author}</small>}
+                  {book.note && <p>{book.note}</p>}
+                  <time>{book.updated_at === book.created_at ? `添加于 ${book.created_at.slice(0, 10)}` : `更新于 ${book.updated_at.slice(0, 10)}`}</time>
+                </div>
+              )}
+              <div className="book-actions">
+                {editingBookId === book.id ? <><button onClick={() => onSaveEdit(book.id)}>保存</button><button onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <button onClick={() => onStartEdit(book)} title="编辑书籍"><Pencil size={16} /></button>}
+              </div>
+            </article>
+          )) : <div className="books-empty">{query.trim() || statusFilter !== "all" ? "没有匹配的书籍" : "还没有书籍记录"}</div>}
         </div>
       </section>
     </>

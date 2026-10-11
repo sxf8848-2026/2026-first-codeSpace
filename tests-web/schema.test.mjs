@@ -113,9 +113,19 @@ const validArgumentReflection = {
   archived_at: null,
 };
 
+const validBook = {
+  id: "book-1",
+  title: "原则",
+  author: "瑞·达利欧",
+  note: "记录值得回看的观点",
+  status: "want_to_read",
+  created_at: "2026-09-19T08:00:00.000Z",
+  updated_at: "2026-09-19T08:00:00.000Z",
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 18,
+    version: 21,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -144,6 +154,7 @@ function makeTodosPayload(overrides = {}) {
     dailyReadings: [validDailyReading],
     dailyReadingCursorId: "daily-reading-1",
     argumentReflections: [validArgumentReflection],
+    books: [validBook],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -698,6 +709,24 @@ test("rejects todos payload without argumentReflections", () => {
   const payload = makeTodosPayload();
   delete payload.argumentReflections;
   assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects todos payload without books", () => {
+  const payload = makeTodosPayload();
+  delete payload.books;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects book with empty title", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ books: [{ ...validBook, title: " " }] })), false);
+});
+
+test("rejects book with invalid status", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ books: [{ ...validBook, status: "finished" }] })), false);
+});
+
+test("rejects book with invalid updated_at", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ books: [{ ...validBook, updated_at: false }] })), false);
 });
 
 test("rejects argument reflection with empty topic", () => {

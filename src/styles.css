@@ -1498,6 +1498,133 @@ h1 {
   text-align: center;
 }
 
+.books-topbar {
+  margin-bottom: 18px;
+}
+
+.books-summary,
+.books-panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.books-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.books-summary div:first-child {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.books-summary strong {
+  color: var(--ink);
+}
+
+.books-panel {
+  padding: 16px;
+}
+
+.books-composer {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 140px;
+  gap: 10px;
+}
+
+.books-composer textarea,
+.book-edit textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.books-composer textarea,
+.books-composer .primary-button {
+  grid-column: 1 / -1;
+}
+
+.books-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.books-list {
+  display: grid;
+  gap: 10px;
+}
+
+.book-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.book-content,
+.book-edit {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.book-title-line strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.book-title-line span {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.book-content small,
+.book-content time {
+  display: block;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.book-content p {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+}
+
+.book-edit {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 140px;
+  gap: 10px;
+}
+
+.book-edit textarea {
+  grid-column: 1 / -1;
+}
+
+.book-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.books-empty {
+  padding: 36px;
+  border: 1px dashed var(--line);
+  text-align: center;
+  color: var(--muted);
+}
+
 .argument-reflection-topbar {
   align-items: flex-start;
 }
@@ -2768,5 +2895,22 @@ textarea:focus {
 
   .settings-row.platform-settings-row {
     grid-template-columns: 1fr;
+  }
+
+  .books-composer,
+  .book-edit {
+    grid-template-columns: 1fr;
+  }
+
+  .books-composer textarea,
+  .books-composer .primary-button,
+  .book-edit textarea {
+    grid-column: auto;
+  }
+
+  .books-toolbar,
+  .books-summary {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

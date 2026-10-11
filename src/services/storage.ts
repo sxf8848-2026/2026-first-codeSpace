@@ -7,6 +7,7 @@ import { normalizeVideoInspirations } from "./videoInspirations";
 import { normalizeWorkExperiences } from "./workExperiences";
 import { normalizeDailyReadings, resolveDailyReadingCursorId } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
+import { normalizeBooks } from "./books";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
@@ -14,6 +15,7 @@ import {
   DefaultTask,
   DailyReadingRecord,
   ArgumentReflectionRecord,
+  BookRecord,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -63,6 +65,7 @@ const initialData: TodoData = {
   dailyReadings: [],
   dailyReadingCursorId: null,
   argumentReflections: [],
+  books: [],
   default_applied: [],
 };
 
@@ -333,6 +336,19 @@ export function createArgumentReflection(
   };
 }
 
+export function createBook(title: string, author: string, note: string, status: BookRecord["status"]): BookRecord {
+  const stamp = nowStamp();
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    author: author.trim(),
+    note: note.trim(),
+    status,
+    created_at: stamp,
+    updated_at: stamp,
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -400,6 +416,7 @@ export function normalizeData(raw: unknown): TodoData {
     () => crypto.randomUUID(),
     nowStamp,
   );
+  const books: TodoData["books"] = normalizeBooks(value.books, () => crypto.randomUUID(), nowStamp);
   const rawTodos =
     value.todos && typeof value.todos === "object"
       ? (value.todos as Record<string, unknown>)
@@ -490,6 +507,7 @@ export function normalizeData(raw: unknown): TodoData {
     dailyReadings,
     dailyReadingCursorId,
     argumentReflections,
+    books,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -510,7 +528,8 @@ function hasTasks(data: TodoData): boolean {
     data.videoInspirations.length > 0 ||
     data.workExperiences.length > 0 ||
     data.dailyReadings.length > 0 ||
-    data.argumentReflections.length > 0
+    data.argumentReflections.length > 0 ||
+    data.books.length > 0
   );
 }
 

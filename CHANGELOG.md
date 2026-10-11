@@ -13,6 +13,43 @@
 
 ---
 
+## [21.0.0] - 2026-10-11
+
+### 改了什么
+
+- 新增“书籍整理”菜单，支持记录书名、作者、简短笔记和阅读状态。
+- 支持“想读 / 在读 / 已读”状态筛选，以及按书名、作者、笔记搜索。
+- 支持新增和编辑书籍，列表按创建时间从新到旧展示。
+
+### 涉及文件
+
+- `src/types.ts`
+- `src/services/books.ts`
+- `src/services/storage.ts`
+- `src/components/AppSections.tsx`
+- `src/App.tsx`
+- `server/schema.mjs`
+- `server/index.mjs`
+- `tests-web/books.test.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/storage.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，139/139。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- `TodoData.version` 已升级到 `21`；旧数据缺少 `books` 时自动补为空数组。
+- 第一版不提供删除、归档、评分、阅读进度和历史查询。
+
+---
+
 ## [20.2.0] - 2026-10-08
 
 ### 改了什么

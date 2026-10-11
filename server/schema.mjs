@@ -24,6 +24,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.dailyReadings)) return false;
   if (typeof payload.dailyReadingCursorId !== "string" && payload.dailyReadingCursorId !== null) return false;
   if (!Array.isArray(payload.argumentReflections)) return false;
+  if (!Array.isArray(payload.books)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -34,6 +35,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.workExperiences.every(isValidWorkExperience)) return false;
   if (!payload.dailyReadings.every(isValidDailyReading)) return false;
   if (!payload.argumentReflections.every(isValidArgumentReflection)) return false;
+  if (!payload.books.every(isValidBook)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -209,6 +211,18 @@ function isValidArgumentReflection(record) {
   if (!isNonEmptyString(record.content)) return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
+  return true;
+}
+
+function isValidBook(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (typeof record.author !== "string") return false;
+  if (typeof record.note !== "string") return false;
+  if (!(record.status === "want_to_read" || record.status === "reading" || record.status === "read")) return false;
+  if (typeof record.created_at !== "string") return false;
+  if (typeof record.updated_at !== "string") return false;
   return true;
 }
 

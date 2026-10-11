@@ -132,6 +132,16 @@ export type ArgumentReflectionRecord = {
   archived_at?: string | null;
 };
 
+export type BookRecord = {
+  id: string;
+  title: string;
+  author: string;
+  note: string;
+  status: "want_to_read" | "reading" | "read";
+  created_at: string;
+  updated_at: string;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -148,6 +158,7 @@ export type TodoData = {
   dailyReadings: DailyReadingRecord[];
   dailyReadingCursorId: string | null;
   argumentReflections: ArgumentReflectionRecord[];
+  books: BookRecord[];
   default_applied: string[];
 };
 

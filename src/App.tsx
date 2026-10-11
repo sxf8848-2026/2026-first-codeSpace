@@ -3,6 +3,7 @@ import {
   AwesomePanel,
   ArgumentReflectionPanel,
   AppView,
+  BooksPanel,
   DailyCategoryPanel,
   DashboardPanel,
   DailyReadingPanel,
@@ -32,6 +33,7 @@ import {
   createHabit,
   createDailyReading,
   createArgumentReflection,
+  createBook,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -64,6 +66,7 @@ import {
 } from "./services/videoInspirations";
 import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
 import { getVisibleArgumentReflections } from "./services/argumentReflections";
+import { BookStatusFilter, getVisibleBooks } from "./services/books";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
   Filters,
@@ -92,6 +95,7 @@ import {
   WorkExperienceRecord,
   DailyReadingRecord,
   ArgumentReflectionRecord,
+  BookRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -113,6 +117,15 @@ type EditingTaskState = {
 };
 
 type DeliveryFilter = "all" | "pending" | "picked";
+
+type BookDraft = {
+  title: string;
+  author: string;
+  note: string;
+  status: BookRecord["status"];
+};
+
+const blankBookDraft: BookDraft = { title: "", author: "", note: "", status: "want_to_read" };
 
 type VideoInspirationDraft = {
   channel: string;
@@ -215,6 +228,11 @@ export function App() {
   const [argumentReflectionQuery, setArgumentReflectionQuery] = useState("");
   const [editingArgumentReflectionId, setEditingArgumentReflectionId] = useState<string | null>(null);
   const [argumentReflectionEditDraft, setArgumentReflectionEditDraft] = useState<ArgumentReflectionDraft>(createBlankArgumentReflectionDraft);
+  const [bookDraft, setBookDraft] = useState<BookDraft>(blankBookDraft);
+  const [bookQuery, setBookQuery] = useState("");
+  const [bookStatusFilter, setBookStatusFilter] = useState<BookStatusFilter>("all");
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [bookEditDraft, setBookEditDraft] = useState<BookDraft>(blankBookDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -305,6 +323,10 @@ export function App() {
   const visibleArgumentReflections = useMemo(
     () => getVisibleArgumentReflections(activeData.argumentReflections, argumentReflectionQuery),
     [activeData.argumentReflections, argumentReflectionQuery],
+  );
+  const visibleBooks = useMemo(
+    () => getVisibleBooks(activeData.books, bookQuery, bookStatusFilter),
+    [activeData.books, bookQuery, bookStatusFilter],
   );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -589,6 +611,10 @@ export function App() {
 
   function replaceArgumentReflections(argumentReflections: ArgumentReflectionRecord[]) {
     updateData((value) => ({ ...value, argumentReflections }));
+  }
+
+  function replaceBooks(books: BookRecord[]) {
+    updateData((value) => ({ ...value, books }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -940,6 +966,34 @@ export function App() {
       ...activeData.argumentReflections,
     ]);
     setArgumentReflectionDraft(createBlankArgumentReflectionDraft());
+  }
+
+  function addBook(event: FormEvent) {
+    event.preventDefault();
+    const title = bookDraft.title.trim();
+    if (!title) return;
+    replaceBooks([createBook(title, bookDraft.author, bookDraft.note, bookDraft.status), ...activeData.books]);
+    setBookDraft(blankBookDraft);
+  }
+
+  function startBookEdit(book: BookRecord) {
+    setEditingBookId(book.id);
+    setBookEditDraft({ title: book.title, author: book.author, note: book.note, status: book.status });
+  }
+
+  function saveBookEdit(bookId: string) {
+    const title = bookEditDraft.title.trim();
+    if (!title) return;
+    replaceBooks(activeData.books.map((book) => book.id === bookId ? {
+      ...book,
+      title,
+      author: bookEditDraft.author.trim(),
+      note: bookEditDraft.note.trim(),
+      status: bookEditDraft.status,
+      updated_at: nowStamp(),
+    } : book));
+    setEditingBookId(null);
+    setBookEditDraft(blankBookDraft);
   }
 
   function startArgumentReflectionEdit(record: ArgumentReflectionRecord) {
@@ -1711,6 +1765,27 @@ export function App() {
             }}
             onArchive={archiveDailyReading}
           />
+        ) : activeView === "books" ? (
+          <BooksPanel
+            books={visibleBooks}
+            draft={bookDraft}
+            query={bookQuery}
+            statusFilter={bookStatusFilter}
+            editingBookId={editingBookId}
+            editingDraft={bookEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setBookDraft}
+            onAdd={addBook}
+            onQueryChange={setBookQuery}
+            onStatusFilterChange={setBookStatusFilter}
+            onStartEdit={startBookEdit}
+            onEditDraftChange={setBookEditDraft}
+            onSaveEdit={saveBookEdit}
+            onCancelEdit={() => {
+              setEditingBookId(null);
+              setBookEditDraft(blankBookDraft);
+            }}
+          />
         ) : activeView === "argumentReflection" ? (
           <ArgumentReflectionPanel
             records={visibleArgumentReflections}
@@ -1912,6 +1987,7 @@ const emptyData: TodoData = {
   dailyReadings: [],
   dailyReadingCursorId: null,
   argumentReflections: [],
+  books: [],
   default_applied: [],
 };
 
