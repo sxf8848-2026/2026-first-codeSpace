@@ -53,9 +53,6 @@ import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitChec
 import { getDailyHistoryEntries, getMonthlyHistoryEntries, getWeeklyDeliveryHistoryEntries } from "./services/history";
 import { getVisibleInspirations } from "./services/inspirations";
 import {
-  getCurrentDailyReading,
-  getDailyReadingPosition,
-  getNextDailyReadingId,
   getVisibleDailyReadings,
   reorderDailyReadings,
 } from "./services/dailyReadings";
@@ -312,14 +309,6 @@ export function App() {
   const visibleDailyReadings = useMemo(
     () => getVisibleDailyReadings(activeData.dailyReadings, dailyReadingQuery),
     [activeData.dailyReadings, dailyReadingQuery],
-  );
-  const currentDailyReading = useMemo(
-    () => getCurrentDailyReading(activeData.dailyReadings, activeData.dailyReadingCursorId),
-    [activeData.dailyReadings, activeData.dailyReadingCursorId],
-  );
-  const dailyReadingPosition = useMemo(
-    () => getDailyReadingPosition(activeData.dailyReadings, activeData.dailyReadingCursorId),
-    [activeData.dailyReadings, activeData.dailyReadingCursorId],
   );
   const visibleArgumentReflections = useMemo(
     () => getVisibleArgumentReflections(activeData.argumentReflections, argumentReflectionQuery),
@@ -914,7 +903,6 @@ export function App() {
       return {
         ...value,
         dailyReadings: [...value.dailyReadings, record],
-        dailyReadingCursorId: value.dailyReadingCursorId ?? record.id,
       };
     });
     setDailyReadingDraft({ title: "", body: "", source: "" });
@@ -945,27 +933,14 @@ export function App() {
     setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
   }
 
-  function advanceDailyReading() {
-    updateData((value) => ({
-      ...value,
-      dailyReadingCursorId: getNextDailyReadingId(value.dailyReadings, value.dailyReadingCursorId),
-    }));
-  }
-
   function archiveDailyReading(recordId: string) {
     const record = activeData.dailyReadings.find((item) => item.id === recordId);
     if (!record) return;
     if (!window.confirm(`确定归档必读文案“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
-    updateData((value) => {
-      const nextCursorId = value.dailyReadingCursorId === recordId
-        ? getNextDailyReadingId(value.dailyReadings, recordId)
-        : value.dailyReadingCursorId;
-      return {
-        ...value,
-        dailyReadings: value.dailyReadings.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
-        dailyReadingCursorId: nextCursorId === recordId ? null : nextCursorId,
-      };
-    });
+    updateData((value) => ({
+      ...value,
+      dailyReadings: value.dailyReadings.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
+    }));
     if (editingDailyReadingId === recordId) {
       setEditingDailyReadingId(null);
       setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
@@ -1759,9 +1734,7 @@ export function App() {
         ) : activeView === "dailyReading" ? (
           <DailyReadingPanel
             records={visibleDailyReadings}
-            currentRecord={currentDailyReading}
-            currentPosition={dailyReadingPosition.current}
-            totalCount={dailyReadingPosition.total}
+            totalCount={activeData.dailyReadings.filter((record) => !record.archived_at).length}
             draft={dailyReadingDraft}
             query={dailyReadingQuery}
             editingRecordId={editingDailyReadingId}
@@ -1770,7 +1743,6 @@ export function App() {
             onDraftChange={setDailyReadingDraft}
             onAdd={addDailyReading}
             onQueryChange={setDailyReadingQuery}
-            onAdvance={advanceDailyReading}
             onStartEdit={startDailyReadingEdit}
             onEditDraftChange={setDailyReadingEditDraft}
             onSaveEdit={saveDailyReadingEdit}
@@ -2000,7 +1972,6 @@ const emptyData: TodoData = {
   videoInspirations: [],
   workExperiences: [],
   dailyReadings: [],
-  dailyReadingCursorId: null,
   argumentReflections: [],
   books: [],
   default_applied: [],

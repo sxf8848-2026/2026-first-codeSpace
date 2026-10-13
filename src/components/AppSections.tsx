@@ -711,8 +711,6 @@ export type MetaLearningDraft = {
 
 export function DailyReadingPanel({
   records,
-  currentRecord,
-  currentPosition,
   totalCount,
   draft,
   query,
@@ -722,7 +720,6 @@ export function DailyReadingPanel({
   onDraftChange,
   onAdd,
   onQueryChange,
-  onAdvance,
   onStartEdit,
   onEditDraftChange,
   onSaveEdit,
@@ -730,8 +727,6 @@ export function DailyReadingPanel({
   onArchive,
 }: {
   records: DailyReadingRecord[];
-  currentRecord: DailyReadingRecord | null;
-  currentPosition: number;
   totalCount: number;
   draft: { title: string; body: string; source: string };
   query: string;
@@ -741,7 +736,6 @@ export function DailyReadingPanel({
   onDraftChange: (draft: { title: string; body: string; source: string }) => void;
   onAdd: (event: FormEvent) => void;
   onQueryChange: (query: string) => void;
-  onAdvance: () => void;
   onStartEdit: (record: DailyReadingRecord) => void;
   onEditDraftChange: (draft: { title: string; body: string; source: string; sortOrder: string }) => void;
   onSaveEdit: (recordId: string) => void;
@@ -770,26 +764,6 @@ export function DailyReadingPanel({
         </div>
       </section>
 
-      <section className="daily-reading-current" aria-label="当前必读文案">
-        {currentRecord ? (
-          <>
-            <div className="daily-reading-current-head">
-              <span>当前必读</span>
-              <strong>第 {currentPosition} / {totalCount} 条</strong>
-            </div>
-            <h2>{currentRecord.title}</h2>
-            <p>{currentRecord.body}</p>
-            {currentRecord.source && <small>来源：{currentRecord.source}</small>}
-            <button className="primary-button" onClick={onAdvance}>
-              <Check size={18} />
-              已读，下一条
-            </button>
-          </>
-        ) : (
-          <div className="daily-reading-empty">还没有必读文案，先添加一条吧。</div>
-        )}
-      </section>
-
       <section className="daily-reading-panel" aria-label="全部必读文案">
         <form className="daily-reading-composer" onSubmit={onAdd}>
           <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="文案标题" />
@@ -810,7 +784,7 @@ export function DailyReadingPanel({
 
         <div className="daily-reading-list">
           {records.length ? (
-            records.map((record, index) => (
+            records.map((record) => (
               <article className="daily-reading-item" key={record.id}>
                 {editingRecordId === record.id ? (
                   <div className="daily-reading-edit">

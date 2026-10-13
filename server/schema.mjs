@@ -22,7 +22,6 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.videoInspirations)) return false;
   if (!Array.isArray(payload.workExperiences)) return false;
   if (!Array.isArray(payload.dailyReadings)) return false;
-  if (typeof payload.dailyReadingCursorId !== "string" && payload.dailyReadingCursorId !== null) return false;
   if (!Array.isArray(payload.argumentReflections)) return false;
   if (!Array.isArray(payload.books)) return false;
   if (!Array.isArray(payload.default_applied)) return false;

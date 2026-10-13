@@ -61,31 +61,6 @@ export function getVisibleDailyReadings<T extends SortableDailyReading>(records:
   });
 }
 
-export function resolveDailyReadingCursorId(records: SortableDailyReading[], cursorId: unknown): string | null {
-  const activeRecords = getActiveDailyReadings(records);
-  if (!activeRecords.length) return null;
-  return typeof cursorId === "string" && activeRecords.some((record) => record.id === cursorId) ? cursorId : activeRecords[0].id;
-}
-
-export function getCurrentDailyReading<T extends SortableDailyReading>(records: T[], cursorId: string | null): T | null {
-  const activeRecords = getActiveDailyReadings(records);
-  if (!activeRecords.length) return null;
-  return activeRecords.find((record) => record.id === cursorId) ?? activeRecords[0];
-}
-
-export function getNextDailyReadingId(records: SortableDailyReading[], currentId: string | null): string | null {
-  const activeRecords = getActiveDailyReadings(records);
-  if (!activeRecords.length) return null;
-  const currentIndex = activeRecords.findIndex((record) => record.id === currentId);
-  return activeRecords[(currentIndex + 1 + activeRecords.length) % activeRecords.length].id;
-}
-
-export function getDailyReadingPosition(records: SortableDailyReading[], cursorId: string | null): { current: number; total: number } {
-  const activeRecords = getActiveDailyReadings(records);
-  const currentIndex = activeRecords.findIndex((record) => record.id === cursorId);
-  return { current: currentIndex >= 0 ? currentIndex + 1 : activeRecords.length ? 1 : 0, total: activeRecords.length };
-}
-
 function timestamp(value: string): number {
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? 0 : parsed;

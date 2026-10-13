@@ -5,7 +5,7 @@ import { normalizeInspirations } from "./inspirations";
 import { normalizeMetaLearningAbilities } from "./metaLearning";
 import { normalizeVideoInspirations } from "./videoInspirations";
 import { normalizeWorkExperiences } from "./workExperiences";
-import { normalizeDailyReadings, resolveDailyReadingCursorId } from "./dailyReadings";
+import { normalizeDailyReadings } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
 import { normalizeBooks } from "./books";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
@@ -63,7 +63,6 @@ const initialData: TodoData = {
   videoInspirations: [],
   workExperiences: [],
   dailyReadings: [],
-  dailyReadingCursorId: null,
   argumentReflections: [],
   books: [],
   default_applied: [],
@@ -411,7 +410,6 @@ export function normalizeData(raw: unknown): TodoData {
     () => crypto.randomUUID(),
     nowStamp,
   );
-  const dailyReadingCursorId = resolveDailyReadingCursorId(dailyReadings, value.dailyReadingCursorId);
   const argumentReflections: TodoData["argumentReflections"] = normalizeArgumentReflections(
     value.argumentReflections,
     () => crypto.randomUUID(),
@@ -506,7 +504,6 @@ export function normalizeData(raw: unknown): TodoData {
     videoInspirations,
     workExperiences,
     dailyReadings,
-    dailyReadingCursorId,
     argumentReflections,
     books,
     default_applied: Array.isArray(value.default_applied)

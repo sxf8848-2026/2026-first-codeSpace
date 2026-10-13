@@ -13,6 +13,42 @@
 
 ---
 
+## [23.0.0] - 2026-10-13
+
+### 改了什么
+
+- 移除“每日必读”的当前必读展示区和“已读，下一条”轮读操作。
+- 移除每日必读轮读游标状态；页面保留新增、搜索、编辑、归档和自定义排序能力。
+- 旧数据中残留的轮读游标会在读取时自动忽略，文案和排序数据保持不变。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/dailyReadings.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/dailyReadings.test.mjs`
+- `tests-web/storage.test.mjs`
+- `tests-web/schema.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，140/140。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 数据版本升级至 23；使用中的本地服务需要重启后才会加载新的后端默认数据和校验逻辑。
+
+---
+
 ## [22.0.0] - 2026-10-13
 
 ### 改了什么

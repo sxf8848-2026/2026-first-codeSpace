@@ -153,7 +153,6 @@ function makeTodosPayload(overrides = {}) {
     videoInspirations: [validVideoInspiration],
     workExperiences: [validWorkExperience],
     dailyReadings: [validDailyReading],
-    dailyReadingCursorId: "daily-reading-1",
     argumentReflections: [validArgumentReflection],
     books: [validBook],
     default_applied: ["2026-09-12"],
@@ -163,6 +162,10 @@ function makeTodosPayload(overrides = {}) {
 
 test("validates todos payload with awesome records", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload()), true);
+});
+
+test("accepts old daily reading cursor fields for backward compatibility", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ dailyReadingCursorId: "legacy-reading" })), true);
 });
 
 test("rejects todos payload without awesomeRecords", () => {
@@ -707,10 +710,6 @@ test("rejects daily reading with invalid sort order", () => {
     isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, sort_order: 0 }] })),
     false,
   );
-});
-
-test("rejects daily reading cursor with invalid type", () => {
-  assert.equal(isValidTodosPayload(makeTodosPayload({ dailyReadingCursorId: false })), false);
 });
 
 test("rejects todos payload without argumentReflections", () => {

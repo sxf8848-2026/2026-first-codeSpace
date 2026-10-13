@@ -157,7 +157,6 @@ export type TodoData = {
   videoInspirations: VideoInspirationRecord[];
   workExperiences: WorkExperienceRecord[];
   dailyReadings: DailyReadingRecord[];
-  dailyReadingCursorId: string | null;
   argumentReflections: ArgumentReflectionRecord[];
   books: BookRecord[];
   default_applied: string[];

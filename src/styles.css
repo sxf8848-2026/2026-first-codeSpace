@@ -1372,7 +1372,6 @@ h1 {
   color: var(--ink);
 }
 
-.daily-reading-current,
 .daily-reading-panel {
   margin-top: 16px;
   padding: 20px;
@@ -1380,29 +1379,11 @@ h1 {
   background: var(--panel);
 }
 
-.daily-reading-current {
-  border-left: 3px solid var(--teal);
-}
-
-.daily-reading-current-head,
 .daily-reading-title-line {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
-.daily-reading-current-head {
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.daily-reading-current h2 {
-  margin: 16px 0 10px;
-  font-size: 22px;
-}
-
-.daily-reading-current p,
 .daily-reading-content p {
   margin: 0;
   white-space: pre-wrap;
@@ -1411,15 +1392,10 @@ h1 {
   font-weight: 600;
 }
 
-.daily-reading-current small,
 .daily-reading-content small {
   display: block;
   margin-top: 12px;
   color: var(--muted);
-}
-
-.daily-reading-current .primary-button {
-  margin-top: 18px;
 }
 
 .daily-reading-composer {
