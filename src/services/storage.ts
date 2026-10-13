@@ -310,12 +310,13 @@ export function createWorkExperience(title: string, body: string, month: string)
   };
 }
 
-export function createDailyReading(title: string, body: string, source: string): DailyReadingRecord {
+export function createDailyReading(title: string, body: string, source: string, sort_order: number): DailyReadingRecord {
   return {
     id: crypto.randomUUID(),
     title: title.trim(),
     body: body.trim(),
     source: source.trim(),
+    sort_order,
     created_at: nowStamp(),
     archived_at: null,
   };

@@ -119,6 +119,7 @@ export type DailyReadingRecord = {
   title: string;
   body: string;
   source: string;
+  sort_order: number;
   created_at: string;
   archived_at?: string | null;
 };

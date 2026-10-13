@@ -100,6 +100,7 @@ const validDailyReading = {
   title: "保持清醒",
   body: "把注意力放回当下能做的事情。",
   source: "个人笔记",
+  sort_order: 1,
   created_at: "2026-09-17T08:00:00.000Z",
   archived_at: null,
 };
@@ -697,6 +698,13 @@ test("rejects daily reading with invalid source", () => {
 test("rejects daily reading with invalid archived_at", () => {
   assert.equal(
     isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, archived_at: false }] })),
+    false,
+  );
+});
+
+test("rejects daily reading with invalid sort order", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ dailyReadings: [{ ...validDailyReading, sort_order: 0 }] })),
     false,
   );
 });

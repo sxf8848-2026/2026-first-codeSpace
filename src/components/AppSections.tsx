@@ -736,14 +736,14 @@ export function DailyReadingPanel({
   draft: { title: string; body: string; source: string };
   query: string;
   editingRecordId: string | null;
-  editingDraft: { title: string; body: string; source: string };
+  editingDraft: { title: string; body: string; source: string; sortOrder: string };
   saveStatus: SaveStatus;
   onDraftChange: (draft: { title: string; body: string; source: string }) => void;
   onAdd: (event: FormEvent) => void;
   onQueryChange: (query: string) => void;
   onAdvance: () => void;
   onStartEdit: (record: DailyReadingRecord) => void;
-  onEditDraftChange: (draft: { title: string; body: string; source: string }) => void;
+  onEditDraftChange: (draft: { title: string; body: string; source: string; sortOrder: string }) => void;
   onSaveEdit: (recordId: string) => void;
   onCancelEdit: () => void;
   onArchive: (recordId: string) => void;
@@ -816,12 +816,13 @@ export function DailyReadingPanel({
                   <div className="daily-reading-edit">
                     <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} autoFocus />
                     <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                    <input type="number" min="1" max={totalCount} value={editingDraft.sortOrder} onChange={(event) => onEditDraftChange({ ...editingDraft, sortOrder: event.target.value })} placeholder="排序序号" />
                     <textarea value={editingDraft.body} onChange={(event) => onEditDraftChange({ ...editingDraft, body: event.target.value })} placeholder="文案正文，必填" />
                   </div>
                 ) : (
                   <div className="daily-reading-content">
                     <div className="daily-reading-title-line">
-                      <span>{index + 1}</span>
+                      <span>{record.sort_order}</span>
                       <strong title={record.title}>{record.title}</strong>
                     </div>
                     <p>{record.body}</p>

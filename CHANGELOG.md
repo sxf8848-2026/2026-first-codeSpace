@@ -13,6 +13,41 @@
 
 ---
 
+## [22.0.0] - 2026-10-13
+
+### 改了什么
+
+- 每日必读文案支持自定义排序序号；轮读和列表均按序号从小到大展示。
+- 编辑排序序号时，其他未归档文案自动顺延，序号保持连续且唯一。
+- 旧数据会按原创建时间自动补齐排序序号；新增文案默认追加到末尾。
+
+### 涉及文件
+
+- `src/services/dailyReadings.ts`
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/types.ts`
+- `src/services/storage.ts`
+- `server/schema.mjs`
+- `server/index.mjs`
+- `tests-web/dailyReadings.test.mjs`
+- `tests-web/schema.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，143/143。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 每日必读数据结构已升级到版本 22；本地后端运行中时，需要重启 `npm run dev` 才会加载新的服务端默认数据和校验逻辑。
+
+---
+
 ## [21.0.0] - 2026-10-11
 
 ### 改了什么

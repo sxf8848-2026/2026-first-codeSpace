@@ -198,6 +198,7 @@ function isValidDailyReading(record) {
   if (!isNonEmptyString(record.title)) return false;
   if (!isNonEmptyString(record.body)) return false;
   if (typeof record.source !== "string") return false;
+  if (!Number.isInteger(record.sort_order) || record.sort_order < 1) return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
   return true;

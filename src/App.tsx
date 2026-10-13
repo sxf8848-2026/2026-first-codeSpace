@@ -57,6 +57,7 @@ import {
   getDailyReadingPosition,
   getNextDailyReadingId,
   getVisibleDailyReadings,
+  reorderDailyReadings,
 } from "./services/dailyReadings";
 import { getVisibleMetaLearningAbilities, MetaLearningMasteryFilter } from "./services/metaLearning";
 import {
@@ -223,7 +224,7 @@ export function App() {
   const [dailyReadingDraft, setDailyReadingDraft] = useState({ title: "", body: "", source: "" });
   const [dailyReadingQuery, setDailyReadingQuery] = useState("");
   const [editingDailyReadingId, setEditingDailyReadingId] = useState<string | null>(null);
-  const [dailyReadingEditDraft, setDailyReadingEditDraft] = useState({ title: "", body: "", source: "" });
+  const [dailyReadingEditDraft, setDailyReadingEditDraft] = useState({ title: "", body: "", source: "", sortOrder: "" });
   const [argumentReflectionDraft, setArgumentReflectionDraft] = useState<ArgumentReflectionDraft>(createBlankArgumentReflectionDraft);
   const [argumentReflectionQuery, setArgumentReflectionQuery] = useState("");
   const [editingArgumentReflectionId, setEditingArgumentReflectionId] = useState<string | null>(null);
@@ -458,7 +459,7 @@ export function App() {
       setEditingInspirationId(null);
       setInspirationEditDraft({ title: "", body: "" });
       setEditingDailyReadingId(null);
-      setDailyReadingEditDraft({ title: "", body: "", source: "" });
+      setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
       setEditingArgumentReflectionId(null);
       setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
       setEditingVideoInspirationId(null);
@@ -487,7 +488,7 @@ export function App() {
       setEditingInspirationId(null);
       setInspirationEditDraft({ title: "", body: "" });
       setEditingDailyReadingId(null);
-      setDailyReadingEditDraft({ title: "", body: "", source: "" });
+      setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
       setEditingArgumentReflectionId(null);
       setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
       setEditingVideoInspirationId(null);
@@ -903,31 +904,45 @@ export function App() {
     const title = dailyReadingDraft.title.trim();
     const body = dailyReadingDraft.body.trim();
     if (!title || !body) return;
-    const record = createDailyReading(title, body, dailyReadingDraft.source);
-    updateData((value) => ({
-      ...value,
-      dailyReadings: [...value.dailyReadings, record],
-      dailyReadingCursorId: value.dailyReadingCursorId ?? record.id,
-    }));
+    updateData((value) => {
+      const record = createDailyReading(
+        title,
+        body,
+        dailyReadingDraft.source,
+        value.dailyReadings.filter((item) => !item.archived_at).length + 1,
+      );
+      return {
+        ...value,
+        dailyReadings: [...value.dailyReadings, record],
+        dailyReadingCursorId: value.dailyReadingCursorId ?? record.id,
+      };
+    });
     setDailyReadingDraft({ title: "", body: "", source: "" });
   }
 
   function startDailyReadingEdit(record: DailyReadingRecord) {
     setEditingDailyReadingId(record.id);
-    setDailyReadingEditDraft({ title: record.title, body: record.body, source: record.source });
+    setDailyReadingEditDraft({ title: record.title, body: record.body, source: record.source, sortOrder: String(record.sort_order) });
   }
 
   function saveDailyReadingEdit(recordId: string) {
     const title = dailyReadingEditDraft.title.trim();
     const body = dailyReadingEditDraft.body.trim();
     if (!title || !body) return;
-    replaceDailyReadings(
-      activeData.dailyReadings.map((record) =>
-        record.id === recordId ? { ...record, title, body, source: dailyReadingEditDraft.source.trim() } : record,
+    const activeCount = activeData.dailyReadings.filter((record) => !record.archived_at).length;
+    const targetPosition = Math.min(Math.max(Number.parseInt(dailyReadingEditDraft.sortOrder, 10) || 1, 1), activeCount);
+    updateData((value) => ({
+      ...value,
+      dailyReadings: reorderDailyReadings(
+        value.dailyReadings.map((record) =>
+          record.id === recordId ? { ...record, title, body, source: dailyReadingEditDraft.source.trim() } : record,
+        ),
+        recordId,
+        targetPosition,
       ),
-    );
+    }));
     setEditingDailyReadingId(null);
-    setDailyReadingEditDraft({ title: "", body: "", source: "" });
+    setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
   }
 
   function advanceDailyReading() {
@@ -953,7 +968,7 @@ export function App() {
     });
     if (editingDailyReadingId === recordId) {
       setEditingDailyReadingId(null);
-      setDailyReadingEditDraft({ title: "", body: "", source: "" });
+      setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
     }
   }
 
@@ -1761,7 +1776,7 @@ export function App() {
             onSaveEdit={saveDailyReadingEdit}
             onCancelEdit={() => {
               setEditingDailyReadingId(null);
-              setDailyReadingEditDraft({ title: "", body: "", source: "" });
+              setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
             }}
             onArchive={archiveDailyReading}
           />
