@@ -114,6 +114,15 @@ const validArgumentReflection = {
   archived_at: null,
 };
 
+const validDivorcePlan = {
+  id: "divorce-plan-1",
+  title: "居住安排沟通",
+  occurred_at: "2026-10-16T20:30",
+  content: "讨论后续居住安排和需要继续确认的问题。",
+  created_at: "2026-10-16T20:40:00.000Z",
+  archived_at: null,
+};
+
 const validBook = {
   id: "book-1",
   title: "原则",
@@ -154,6 +163,7 @@ function makeTodosPayload(overrides = {}) {
     workExperiences: [validWorkExperience],
     dailyReadings: [validDailyReading],
     argumentReflections: [validArgumentReflection],
+    divorcePlans: [validDivorcePlan],
     books: [validBook],
     default_applied: ["2026-09-12"],
     ...overrides,
@@ -724,6 +734,12 @@ test("rejects todos payload without books", () => {
   assert.equal(isValidTodosPayload(payload), false);
 });
 
+test("rejects todos payload without divorcePlans", () => {
+  const payload = makeTodosPayload();
+  delete payload.divorcePlans;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
 test("rejects book with empty title", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ books: [{ ...validBook, title: " " }] })), false);
 });
@@ -754,6 +770,22 @@ test("rejects argument reflection with invalid content type", () => {
 
 test("rejects argument reflection with invalid archived_at", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ argumentReflections: [{ ...validArgumentReflection, archived_at: false }] })), false);
+});
+
+test("rejects divorce plan with empty title", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ divorcePlans: [{ ...validDivorcePlan, title: " " }] })), false);
+});
+
+test("rejects divorce plan with invalid occurred_at", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ divorcePlans: [{ ...validDivorcePlan, occurred_at: "2026-10-16 20:30" }] })), false);
+});
+
+test("rejects divorce plan with empty content", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ divorcePlans: [{ ...validDivorcePlan, content: " " }] })), false);
+});
+
+test("rejects divorce plan with invalid archived_at", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ divorcePlans: [{ ...validDivorcePlan, archived_at: false }] })), false);
 });
 
 test("validates prefs payload", () => {

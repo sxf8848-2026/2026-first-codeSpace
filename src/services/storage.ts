@@ -7,6 +7,7 @@ import { normalizeVideoInspirations } from "./videoInspirations";
 import { normalizeWorkExperiences } from "./workExperiences";
 import { normalizeDailyReadings } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
+import { normalizeDivorcePlans } from "./divorcePlans";
 import { normalizeBooks } from "./books";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
@@ -15,6 +16,7 @@ import {
   DefaultTask,
   DailyReadingRecord,
   ArgumentReflectionRecord,
+  DivorcePlanRecord,
   BookRecord,
   Habit,
   InspirationRecord,
@@ -64,6 +66,7 @@ const initialData: TodoData = {
   workExperiences: [],
   dailyReadings: [],
   argumentReflections: [],
+  divorcePlans: [],
   books: [],
   default_applied: [],
 };
@@ -336,6 +339,17 @@ export function createArgumentReflection(
   };
 }
 
+export function createDivorcePlan(title: string, occurred_at: string, content: string): DivorcePlanRecord {
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    occurred_at,
+    content: content.trim(),
+    created_at: nowStamp(),
+    archived_at: null,
+  };
+}
+
 export function createBook(title: string, author: string, note: string, status: BookRecord["status"]): BookRecord {
   const stamp = nowStamp();
   return {
@@ -412,6 +426,11 @@ export function normalizeData(raw: unknown): TodoData {
   );
   const argumentReflections: TodoData["argumentReflections"] = normalizeArgumentReflections(
     value.argumentReflections,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
+  const divorcePlans: TodoData["divorcePlans"] = normalizeDivorcePlans(
+    value.divorcePlans,
     () => crypto.randomUUID(),
     nowStamp,
   );
@@ -505,6 +524,7 @@ export function normalizeData(raw: unknown): TodoData {
     workExperiences,
     dailyReadings,
     argumentReflections,
+    divorcePlans,
     books,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
@@ -527,6 +547,7 @@ function hasTasks(data: TodoData): boolean {
     data.workExperiences.length > 0 ||
     data.dailyReadings.length > 0 ||
     data.argumentReflections.length > 0 ||
+    data.divorcePlans.length > 0 ||
     data.books.length > 0
   );
 }

@@ -2,6 +2,7 @@ import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "re
 import {
   AwesomePanel,
   ArgumentReflectionPanel,
+  DivorcePlanPanel,
   AppView,
   BooksPanel,
   DailyCategoryPanel,
@@ -33,6 +34,7 @@ import {
   createHabit,
   createDailyReading,
   createArgumentReflection,
+  createDivorcePlan,
   createBook,
   createInspiration,
   createMetaLearningAbility,
@@ -64,6 +66,7 @@ import {
 } from "./services/videoInspirations";
 import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
 import { getVisibleArgumentReflections } from "./services/argumentReflections";
+import { getVisibleDivorcePlans } from "./services/divorcePlans";
 import { BookStatusFilter, getVisibleBooks } from "./services/books";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
@@ -93,6 +96,7 @@ import {
   WorkExperienceRecord,
   DailyReadingRecord,
   ArgumentReflectionRecord,
+  DivorcePlanRecord,
   BookRecord,
 } from "./types";
 
@@ -169,9 +173,23 @@ type ArgumentReflectionDraft = {
   content: string;
 };
 
+type DivorcePlanDraft = {
+  title: string;
+  occurred_at: string;
+  content: string;
+};
+
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
     topic: "",
+    occurred_at: toLocalDateTime(new Date()),
+    content: "",
+  };
+}
+
+function createBlankDivorcePlanDraft(): DivorcePlanDraft {
+  return {
+    title: "",
     occurred_at: toLocalDateTime(new Date()),
     content: "",
   };
@@ -226,6 +244,10 @@ export function App() {
   const [argumentReflectionQuery, setArgumentReflectionQuery] = useState("");
   const [editingArgumentReflectionId, setEditingArgumentReflectionId] = useState<string | null>(null);
   const [argumentReflectionEditDraft, setArgumentReflectionEditDraft] = useState<ArgumentReflectionDraft>(createBlankArgumentReflectionDraft);
+  const [divorcePlanDraft, setDivorcePlanDraft] = useState<DivorcePlanDraft>(createBlankDivorcePlanDraft);
+  const [divorcePlanQuery, setDivorcePlanQuery] = useState("");
+  const [editingDivorcePlanId, setEditingDivorcePlanId] = useState<string | null>(null);
+  const [divorcePlanEditDraft, setDivorcePlanEditDraft] = useState<DivorcePlanDraft>(createBlankDivorcePlanDraft);
   const [bookDraft, setBookDraft] = useState<BookDraft>(blankBookDraft);
   const [bookQuery, setBookQuery] = useState("");
   const [bookStatusFilter, setBookStatusFilter] = useState<BookStatusFilter>("all");
@@ -313,6 +335,10 @@ export function App() {
   const visibleArgumentReflections = useMemo(
     () => getVisibleArgumentReflections(activeData.argumentReflections, argumentReflectionQuery),
     [activeData.argumentReflections, argumentReflectionQuery],
+  );
+  const visibleDivorcePlans = useMemo(
+    () => getVisibleDivorcePlans(activeData.divorcePlans, divorcePlanQuery),
+    [activeData.divorcePlans, divorcePlanQuery],
   );
   const visibleBooks = useMemo(
     () => getVisibleBooks(activeData.books, bookQuery, bookStatusFilter),
@@ -451,6 +477,8 @@ export function App() {
       setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
       setEditingArgumentReflectionId(null);
       setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
+      setEditingDivorcePlanId(null);
+      setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -480,6 +508,8 @@ export function App() {
       setDailyReadingEditDraft({ title: "", body: "", source: "", sortOrder: "" });
       setEditingArgumentReflectionId(null);
       setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
+      setEditingDivorcePlanId(null);
+      setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
       setEditingMetaLearningId(null);
@@ -601,6 +631,10 @@ export function App() {
 
   function replaceArgumentReflections(argumentReflections: ArgumentReflectionRecord[]) {
     updateData((value) => ({ ...value, argumentReflections }));
+  }
+
+  function replaceDivorcePlans(divorcePlans: DivorcePlanRecord[]) {
+    updateData((value) => ({ ...value, divorcePlans }));
   }
 
   function replaceBooks(books: BookRecord[]) {
@@ -958,6 +992,17 @@ export function App() {
     setArgumentReflectionDraft(createBlankArgumentReflectionDraft());
   }
 
+  function addDivorcePlan(event: FormEvent) {
+    event.preventDefault();
+    const draft = divorcePlanDraft;
+    if (![draft.title, draft.occurred_at, draft.content].every((value) => value.trim())) return;
+    replaceDivorcePlans([
+      createDivorcePlan(draft.title, draft.occurred_at, draft.content),
+      ...activeData.divorcePlans,
+    ]);
+    setDivorcePlanDraft(createBlankDivorcePlanDraft());
+  }
+
   function addBook(event: FormEvent) {
     event.preventDefault();
     const title = bookDraft.title.trim();
@@ -1016,6 +1061,39 @@ export function App() {
     if (editingArgumentReflectionId === recordId) {
       setEditingArgumentReflectionId(null);
       setArgumentReflectionEditDraft(createBlankArgumentReflectionDraft());
+    }
+  }
+
+  function startDivorcePlanEdit(record: DivorcePlanRecord) {
+    setEditingDivorcePlanId(record.id);
+    setDivorcePlanEditDraft({
+      title: record.title,
+      occurred_at: record.occurred_at,
+      content: record.content,
+    });
+  }
+
+  function saveDivorcePlanEdit(recordId: string) {
+    const draft = divorcePlanEditDraft;
+    if (![draft.title, draft.occurred_at, draft.content].every((value) => value.trim())) return;
+    replaceDivorcePlans(activeData.divorcePlans.map((record) => record.id === recordId ? {
+      ...record,
+      title: draft.title.trim(),
+      occurred_at: draft.occurred_at,
+      content: draft.content.trim(),
+    } : record));
+    setEditingDivorcePlanId(null);
+    setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
+  }
+
+  function archiveDivorcePlan(recordId: string) {
+    const record = activeData.divorcePlans.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档记录“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceDivorcePlans(activeData.divorcePlans.map((item) => item.id === recordId ? { ...item, archived_at: nowStamp() } : item));
+    if (editingDivorcePlanId === recordId) {
+      setEditingDivorcePlanId(null);
+      setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
     }
   }
 
@@ -1793,6 +1871,26 @@ export function App() {
             }}
             onArchive={archiveArgumentReflection}
           />
+        ) : activeView === "divorcePlan" ? (
+          <DivorcePlanPanel
+            records={visibleDivorcePlans}
+            draft={divorcePlanDraft}
+            query={divorcePlanQuery}
+            editingRecordId={editingDivorcePlanId}
+            editingDraft={divorcePlanEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setDivorcePlanDraft}
+            onAdd={addDivorcePlan}
+            onQueryChange={setDivorcePlanQuery}
+            onStartEdit={startDivorcePlanEdit}
+            onEditDraftChange={setDivorcePlanEditDraft}
+            onSaveEdit={saveDivorcePlanEdit}
+            onCancelEdit={() => {
+              setEditingDivorcePlanId(null);
+              setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
+            }}
+            onArchive={archiveDivorcePlan}
+          />
         ) : activeView === "videoInspiration" ? (
           <VideoInspirationPanel
             records={visibleVideoInspirations}
@@ -1973,6 +2071,7 @@ const emptyData: TodoData = {
   workExperiences: [],
   dailyReadings: [],
   argumentReflections: [],
+  divorcePlans: [],
   books: [],
   default_applied: [],
 };

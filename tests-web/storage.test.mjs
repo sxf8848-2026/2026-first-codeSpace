@@ -6,6 +6,7 @@ import { normalizeVideoInspirations } from "../src/services/videoInspirations.ts
 import { normalizeWorkExperiences } from "../src/services/workExperiences.ts";
 import { normalizeDailyReadings } from "../src/services/dailyReadings.ts";
 import { normalizeArgumentReflections } from "../src/services/argumentReflections.ts";
+import { normalizeDivorcePlans } from "../src/services/divorcePlans.ts";
 import { DEFAULT_DELIVERY_PLATFORMS, normalizeDeliveryPlatforms } from "../src/services/deliveryPlatforms.ts";
 import { normalizeBooks } from "../src/services/books.ts";
 
@@ -31,6 +32,10 @@ test("normalizes old todo data without daily readings", () => {
 
 test("normalizes old todo data without argument reflections", () => {
   assert.deepEqual(normalizeArgumentReflections(undefined), []);
+});
+
+test("normalizes old todo data without divorce plans", () => {
+  assert.deepEqual(normalizeDivorcePlans(undefined), []);
 });
 
 test("normalizes old todo data without books", () => {

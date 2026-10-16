@@ -23,6 +23,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.workExperiences)) return false;
   if (!Array.isArray(payload.dailyReadings)) return false;
   if (!Array.isArray(payload.argumentReflections)) return false;
+  if (!Array.isArray(payload.divorcePlans)) return false;
   if (!Array.isArray(payload.books)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
@@ -34,6 +35,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.workExperiences.every(isValidWorkExperience)) return false;
   if (!payload.dailyReadings.every(isValidDailyReading)) return false;
   if (!payload.argumentReflections.every(isValidArgumentReflection)) return false;
+  if (!payload.divorcePlans.every(isValidDivorcePlan)) return false;
   if (!payload.books.every(isValidBook)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
@@ -207,6 +209,17 @@ function isValidArgumentReflection(record) {
   if (!isPlainObject(record)) return false;
   if (!isNonEmptyString(record.id)) return false;
   if (!isNonEmptyString(record.topic)) return false;
+  if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
+  if (!isNonEmptyString(record.content)) return false;
+  if (typeof record.created_at !== "string") return false;
+  if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
+  return true;
+}
+
+function isValidDivorcePlan(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.title)) return false;
   if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
   if (!isNonEmptyString(record.content)) return false;
   if (typeof record.created_at !== "string") return false;

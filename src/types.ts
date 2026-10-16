@@ -133,6 +133,15 @@ export type ArgumentReflectionRecord = {
   archived_at?: string | null;
 };
 
+export type DivorcePlanRecord = {
+  id: string;
+  title: string;
+  occurred_at: string;
+  content: string;
+  created_at: string;
+  archived_at?: string | null;
+};
+
 export type BookRecord = {
   id: string;
   title: string;
@@ -158,6 +167,7 @@ export type TodoData = {
   workExperiences: WorkExperienceRecord[];
   dailyReadings: DailyReadingRecord[];
   argumentReflections: ArgumentReflectionRecord[];
+  divorcePlans: DivorcePlanRecord[];
   books: BookRecord[];
   default_applied: string[];
 };
