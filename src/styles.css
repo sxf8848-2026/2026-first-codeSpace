@@ -144,7 +144,20 @@ button:disabled {
 
 .view-nav {
   display: grid;
+  gap: 16px;
+}
+
+.view-nav-group,
+.view-nav-items {
+  display: grid;
   gap: 6px;
+}
+
+.view-nav-group-title {
+  margin: 0 12px 2px;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .view-nav button {
@@ -2717,7 +2730,7 @@ textarea:focus {
   }
 
   .tag-nav,
-  .view-nav {
+  .view-nav-items {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -2852,7 +2865,7 @@ textarea:focus {
   }
 
   .tag-nav,
-  .view-nav {
+  .view-nav-items {
     grid-template-columns: 1fr 1fr;
   }
 

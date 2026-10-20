@@ -13,6 +13,35 @@
 
 ---
 
+## [24.1.0] - 2026-10-20
+
+### 改了什么
+
+- 左侧菜单按使用目的划分为“日常计划、阅读灵感、成长经验、私人复盘”四个静态分组。
+- 菜单改为统一配置驱动，保留现有图标、数量、选中状态和页面切换行为。
+- 中等屏幕和移动端按分组保持三列、两列响应式排列，分组标题始终独占一行。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/services/sidebarNavigation.ts`
+- `src/styles.css`
+- `tests-web/sidebarNavigation.test.mjs`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，151/151。
+- `npm run build`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 本次只调整导航结构和样式，不修改业务页面、数据结构或 `TodoData.version`。
+- 分组始终展开，暂不支持自定义分类、折叠或拖拽排序。
+
+---
+
 ## [24.0.0] - 2026-10-16
 
 ### 改了什么

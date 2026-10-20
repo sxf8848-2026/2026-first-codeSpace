@@ -39,6 +39,7 @@ import type { HabitView } from "../services/habits";
 import { META_LEARNING_MASTERY_OPTIONS, MetaLearningMasteryFilter, metaLearningMasteryLabel } from "../services/metaLearning";
 import { VideoInspirationChannelFilter } from "../services/videoInspirations";
 import { WorkExperienceMonthFilter } from "../services/workExperiences";
+import { SIDEBAR_GROUPS, type AppView, type SidebarIconName } from "../services/sidebarNavigation";
 import {
   AwesomeRecord,
   Filters,
@@ -68,20 +69,21 @@ import {
 import { BookStatusFilter } from "../services/books";
 import { Segmented, TagButton } from "./Controls";
 
-export type AppView =
-  | "dashboard"
-  | "habits"
-  | "daily"
-  | "monthly"
-  | "delivery"
-  | "inspiration"
-  | "videoInspiration"
-  | "metaLearning"
-  | "workExperience"
-  | "dailyReading"
-  | "argumentReflection"
-  | "divorcePlan"
-  | "books";
+export type { AppView } from "../services/sidebarNavigation";
+
+const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
+  dashboard: LayoutDashboard,
+  habits: Flame,
+  calendar: CalendarDays,
+  delivery: Truck,
+  inspiration: Lightbulb,
+  video: Video,
+  reading: BookOpen,
+  learning: GraduationCap,
+  experience: BriefcaseBusiness,
+  reflection: MessagesSquare,
+  divorcePlan: ClipboardList,
+};
 
 type SaveStatus = {
   state: "idle" | "saved" | "fallback";
@@ -125,6 +127,8 @@ export function Sidebar({
   onViewChange: (view: AppView) => void;
   onShowSettings: () => void;
 }) {
+  const counts = { dashboardCount, dailyCount, monthlyCount, deliveryCount };
+
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -138,62 +142,26 @@ export function Sidebar({
       </div>
 
       <nav className="view-nav" aria-label="视图切换">
-        <button className={activeView === "dashboard" ? "active" : ""} onClick={() => onViewChange("dashboard")}>
-          <LayoutDashboard size={16} />
-          <span>总控台</span>
-          <strong>{dashboardCount}</strong>
-        </button>
-        <button className={activeView === "habits" ? "active" : ""} onClick={() => onViewChange("habits")}>
-          <Flame size={16} />
-          <span>习惯打卡</span>
-        </button>
-        <button className={activeView === "daily" ? "active" : ""} onClick={() => onViewChange("daily")}>
-          <CalendarDays size={16} />
-          <span>每日待办</span>
-          <strong>{dailyCount}</strong>
-        </button>
-        <button className={activeView === "monthly" ? "active" : ""} onClick={() => onViewChange("monthly")}>
-          <CalendarDays size={16} />
-          <span>每月待办</span>
-          <strong>{monthlyCount}</strong>
-        </button>
-        <button className={activeView === "delivery" ? "active" : ""} onClick={() => onViewChange("delivery")}>
-          <Truck size={16} />
-          <span>每周快递</span>
-          <strong>{deliveryCount}</strong>
-        </button>
-        <button className={activeView === "inspiration" ? "active" : ""} onClick={() => onViewChange("inspiration")}>
-          <Lightbulb size={16} />
-          <span>灵感记录</span>
-        </button>
-        <button className={activeView === "dailyReading" ? "active" : ""} onClick={() => onViewChange("dailyReading")}>
-          <BookOpen size={16} />
-          <span>每日必读文案</span>
-        </button>
-        <button className={activeView === "books" ? "active" : ""} onClick={() => onViewChange("books")}>
-          <BookOpen size={16} />
-          <span>书籍整理</span>
-        </button>
-        <button className={activeView === "argumentReflection" ? "active" : ""} onClick={() => onViewChange("argumentReflection")}>
-          <MessagesSquare size={16} />
-          <span>吵架整理</span>
-        </button>
-        <button className={activeView === "divorcePlan" ? "active" : ""} onClick={() => onViewChange("divorcePlan")}>
-          <ClipboardList size={16} />
-          <span>Divorce Plan</span>
-        </button>
-        <button className={activeView === "videoInspiration" ? "active" : ""} onClick={() => onViewChange("videoInspiration")}>
-          <Video size={16} />
-          <span>视频灵感</span>
-        </button>
-        <button className={activeView === "metaLearning" ? "active" : ""} onClick={() => onViewChange("metaLearning")}>
-          <GraduationCap size={16} />
-          <span>元学习力</span>
-        </button>
-        <button className={activeView === "workExperience" ? "active" : ""} onClick={() => onViewChange("workExperience")}>
-          <BriefcaseBusiness size={16} />
-          <span>工作经验</span>
-        </button>
+        {SIDEBAR_GROUPS.map((group, groupIndex) => {
+          const headingId = `sidebar-group-${groupIndex}`;
+          return (
+            <section className="view-nav-group" aria-labelledby={headingId} key={group.label}>
+              <h2 className="view-nav-group-title" id={headingId}>{group.label}</h2>
+              <div className="view-nav-items">
+                {group.items.map((item) => {
+                  const Icon = sidebarIcons[item.icon];
+                  return (
+                    <button type="button" className={activeView === item.view ? "active" : ""} onClick={() => onViewChange(item.view)} key={item.view}>
+                      <Icon size={16} />
+                      <span>{item.label}</span>
+                      {"count" in item ? <strong>{counts[item.count]}</strong> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </nav>
 
       <button className="side-action secondary" onClick={onShowSettings}>
