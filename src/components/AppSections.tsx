@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Archive,
@@ -32,14 +33,21 @@ import {
   ExternalLink,
   Video,
 } from "lucide-react";
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { STATUSES, TAGS } from "../constants";
 import { addDays, dayLabel, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
 import type { HabitView } from "../services/habits";
 import { META_LEARNING_MASTERY_OPTIONS, MetaLearningMasteryFilter, metaLearningMasteryLabel } from "../services/metaLearning";
 import { VideoInspirationChannelFilter } from "../services/videoInspirations";
 import { WorkExperienceMonthFilter } from "../services/workExperiences";
-import { SIDEBAR_GROUPS, type AppView, type SidebarIconName } from "../services/sidebarNavigation";
+import {
+  getSidebarGroupLabel,
+  SIDEBAR_GROUPS,
+  SIDEBAR_PRIMARY_ITEM,
+  type AppView,
+  type SidebarGroupLabel,
+  type SidebarIconName,
+} from "../services/sidebarNavigation";
 import {
   AwesomeRecord,
   Filters,
@@ -128,6 +136,13 @@ export function Sidebar({
   onShowSettings: () => void;
 }) {
   const counts = { dashboardCount, dailyCount, monthlyCount, deliveryCount };
+  const [expandedGroup, setExpandedGroup] = useState<SidebarGroupLabel | null>(() => getSidebarGroupLabel(activeView));
+
+  useEffect(() => {
+    setExpandedGroup(getSidebarGroupLabel(activeView));
+  }, [activeView]);
+
+  const PrimaryIcon = sidebarIcons[SIDEBAR_PRIMARY_ITEM.icon];
 
   return (
     <aside className="sidebar">
@@ -142,23 +157,44 @@ export function Sidebar({
       </div>
 
       <nav className="view-nav" aria-label="视图切换">
+        <button
+          type="button"
+          className={`view-nav-primary ${activeView === SIDEBAR_PRIMARY_ITEM.view ? "active" : ""}`}
+          onClick={() => onViewChange(SIDEBAR_PRIMARY_ITEM.view)}
+        >
+          <PrimaryIcon size={16} />
+          <span>{SIDEBAR_PRIMARY_ITEM.label}</span>
+          <strong>{counts[SIDEBAR_PRIMARY_ITEM.count]}</strong>
+        </button>
         {SIDEBAR_GROUPS.map((group, groupIndex) => {
-          const headingId = `sidebar-group-${groupIndex}`;
+          const itemsId = `sidebar-group-${groupIndex}`;
+          const expanded = expandedGroup === group.label;
           return (
-            <section className="view-nav-group" aria-labelledby={headingId} key={group.label}>
-              <h2 className="view-nav-group-title" id={headingId}>{group.label}</h2>
-              <div className="view-nav-items">
-                {group.items.map((item) => {
-                  const Icon = sidebarIcons[item.icon];
-                  return (
-                    <button type="button" className={activeView === item.view ? "active" : ""} onClick={() => onViewChange(item.view)} key={item.view}>
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                      {"count" in item ? <strong>{counts[item.count]}</strong> : null}
-                    </button>
-                  );
-                })}
-              </div>
+            <section className="view-nav-group" key={group.label}>
+              <button
+                type="button"
+                className="view-nav-group-toggle"
+                aria-expanded={expanded}
+                aria-controls={itemsId}
+                onClick={() => setExpandedGroup(expanded ? null : group.label)}
+              >
+                <span>{group.label}</span>
+                <ChevronDown className={expanded ? "expanded" : ""} size={15} />
+              </button>
+              {expanded ? (
+                <div className="view-nav-items" id={itemsId}>
+                  {group.items.map((item) => {
+                    const Icon = sidebarIcons[item.icon];
+                    return (
+                      <button type="button" className={activeView === item.view ? "active" : ""} onClick={() => onViewChange(item.view)} key={item.view}>
+                        <Icon size={16} />
+                        <span>{item.label}</span>
+                        {"count" in item ? <strong>{counts[item.count]}</strong> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
             </section>
           );
         })}

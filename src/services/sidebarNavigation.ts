@@ -23,11 +23,17 @@ type SidebarGroup = {
   }>;
 };
 
+export const SIDEBAR_PRIMARY_ITEM = {
+  view: "dashboard",
+  label: "总控台",
+  icon: "dashboard",
+  count: "dashboardCount",
+} as const;
+
 export const SIDEBAR_GROUPS = [
   {
     label: "日常计划",
     items: [
-      { view: "dashboard", label: "总控台", icon: "dashboard", count: "dashboardCount" },
       { view: "habits", label: "习惯打卡", icon: "habits" },
       { view: "daily", label: "每日待办", icon: "calendar", count: "dailyCount" },
       { view: "monthly", label: "每月待办", icon: "calendar", count: "monthlyCount" },
@@ -59,4 +65,9 @@ export const SIDEBAR_GROUPS = [
   },
 ] as const satisfies readonly SidebarGroup[];
 
-export type AppView = (typeof SIDEBAR_GROUPS)[number]["items"][number]["view"];
+export type SidebarGroupLabel = (typeof SIDEBAR_GROUPS)[number]["label"];
+export type AppView = typeof SIDEBAR_PRIMARY_ITEM.view | (typeof SIDEBAR_GROUPS)[number]["items"][number]["view"];
+
+export function getSidebarGroupLabel(view: AppView): SidebarGroupLabel | null {
+  return SIDEBAR_GROUPS.find((group) => group.items.some((item) => item.view === view))?.label ?? null;
+}

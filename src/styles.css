@@ -144,7 +144,7 @@ button:disabled {
 
 .view-nav {
   display: grid;
-  gap: 16px;
+  gap: 6px;
 }
 
 .view-nav-group,
@@ -153,11 +153,23 @@ button:disabled {
   gap: 6px;
 }
 
-.view-nav-group-title {
-  margin: 0 12px 2px;
+.view-nav .view-nav-group-toggle {
+  grid-template-columns: minmax(0, 1fr) auto;
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
+}
+
+.view-nav-group-toggle svg {
+  transition: transform 160ms ease;
+}
+
+.view-nav-group-toggle svg.expanded {
+  transform: rotate(180deg);
+}
+
+.view-nav-items button {
+  padding-left: 24px;
 }
 
 .view-nav button {
