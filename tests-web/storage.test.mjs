@@ -3,6 +3,7 @@ import test from "node:test";
 import { normalizeInspirations } from "../src/services/inspirations.ts";
 import { normalizeMetaLearningAbilities } from "../src/services/metaLearning.ts";
 import { normalizeVideoInspirations } from "../src/services/videoInspirations.ts";
+import { normalizeVideoNotes } from "../src/services/videoNotes.ts";
 import { normalizeWorkExperiences } from "../src/services/workExperiences.ts";
 import { normalizeDailyReadings } from "../src/services/dailyReadings.ts";
 import { normalizeArgumentReflections } from "../src/services/argumentReflections.ts";
@@ -20,6 +21,10 @@ test("normalizes old todo data without meta learning abilities", () => {
 
 test("normalizes old todo data without video inspirations", () => {
   assert.deepEqual(normalizeVideoInspirations(undefined), []);
+});
+
+test("normalizes old todo data without video notes", () => {
+  assert.deepEqual(normalizeVideoNotes(undefined), []);
 });
 
 test("normalizes old todo data without work experiences", () => {

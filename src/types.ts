@@ -104,6 +104,18 @@ export type VideoInspirationRecord = {
   archived_at?: string | null;
 };
 
+export type VideoNoteRecord = {
+  id: string;
+  title: string;
+  quote: string;
+  reflection: string;
+  source: string;
+  url: string;
+  pinned: boolean;
+  created_at: string;
+  archived_at?: string | null;
+};
+
 export type WorkExperienceRecord = {
   id: string;
   title: string;
@@ -164,6 +176,7 @@ export type TodoData = {
   inspirations: InspirationRecord[];
   metaLearningAbilities: MetaLearningAbility[];
   videoInspirations: VideoInspirationRecord[];
+  videoNotes: VideoNoteRecord[];
   workExperiences: WorkExperienceRecord[];
   dailyReadings: DailyReadingRecord[];
   argumentReflections: ArgumentReflectionRecord[];

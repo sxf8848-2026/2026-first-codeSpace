@@ -45,6 +45,7 @@ export const SIDEBAR_GROUPS = [
     items: [
       { view: "inspiration", label: "灵感记录", icon: "inspiration" },
       { view: "videoInspiration", label: "视频灵感", icon: "video" },
+      { view: "videoNotes", label: "刷视频随记", icon: "video" },
       { view: "dailyReading", label: "每日必读文案", icon: "reading" },
       { view: "books", label: "书籍整理", icon: "reading" },
     ],

@@ -19,6 +19,7 @@ import {
   PinOff,
   Play,
   Plus,
+  Quote,
   Redo2,
   RotateCcw,
   Search,
@@ -66,6 +67,7 @@ import {
   TodoTask,
   TodoTag,
   VideoInspirationRecord,
+  VideoNoteRecord,
   WeeklyDelivery,
   WeeklyTask,
   WorkExperienceRecord,
@@ -543,6 +545,164 @@ export type VideoInspirationDraft = {
   channel: string;
   title: string;
   content: string;
+  url: string;
+};
+
+export function VideoNotesPanel({
+  records,
+  draft,
+  query,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onTogglePinned,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onArchive,
+}: {
+  records: VideoNoteRecord[];
+  draft: VideoNoteDraft;
+  query: string;
+  editingRecordId: string | null;
+  editingDraft: VideoNoteDraft;
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: VideoNoteDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onTogglePinned: (recordId: string) => void;
+  onStartEdit: (record: VideoNoteRecord) => void;
+  onEditDraftChange: (draft: VideoNoteDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onArchive: (recordId: string) => void;
+}) {
+  return (
+    <>
+      <header className="topbar video-note-topbar">
+        <div>
+          <div className="eyebrow">
+            <Video size={16} />
+            刷视频随记
+          </div>
+          <h1>视频里的好句与想法</h1>
+        </div>
+      </header>
+
+      <section className="video-note-summary">
+        <div>
+          <span>当前展示</span>
+          <strong>{records.length} 条</strong>
+        </div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">
+          {saveStatus.message}
+        </div>
+      </section>
+
+      <section className="video-note-panel" aria-label="刷视频随记">
+        <form className="video-note-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="标题，必填" />
+          <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，例如：抖音 · 某账号" />
+          <input value={draft.url} onChange={(event) => onDraftChange({ ...draft, url: event.target.value })} placeholder="视频链接，可不填" />
+          <textarea value={draft.quote} onChange={(event) => onDraftChange({ ...draft, quote: event.target.value })} placeholder="名言、金句或原话" />
+          <textarea value={draft.reflection} onChange={(event) => onDraftChange({ ...draft, reflection: event.target.value })} placeholder="我的感悟" />
+          <button className="primary-button" type="submit">
+            <Plus size={18} />
+            添加
+          </button>
+        </form>
+
+        <div className="video-note-toolbar">
+          <div className="search-box">
+            <Search size={16} />
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题、摘录、感悟、来源或链接" />
+          </div>
+        </div>
+
+        <div className="video-note-list">
+          {records.length ? (
+            records.map((record) => (
+              <article className={`video-note-item ${record.pinned ? "pinned" : ""}`} key={record.id}>
+                {editingRecordId === record.id ? (
+                  <div className="video-note-edit">
+                    <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus />
+                    <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                    <input value={editingDraft.url} onChange={(event) => onEditDraftChange({ ...editingDraft, url: event.target.value })} placeholder="视频链接，可不填" />
+                    <textarea value={editingDraft.quote} onChange={(event) => onEditDraftChange({ ...editingDraft, quote: event.target.value })} placeholder="名言、金句或原话" />
+                    <textarea value={editingDraft.reflection} onChange={(event) => onEditDraftChange({ ...editingDraft, reflection: event.target.value })} placeholder="我的感悟" />
+                  </div>
+                ) : (
+                  <div className="video-note-content">
+                    <div className="video-note-title-line">
+                      {record.pinned && <Pin size={15} />}
+                      <strong>{record.title}</strong>
+                    </div>
+                    {record.quote && (
+                      <blockquote>
+                        <Quote size={16} />
+                        <p>{record.quote}</p>
+                      </blockquote>
+                    )}
+                    {record.reflection && (
+                      <div className="video-note-reflection">
+                        <strong>我的感悟</strong>
+                        <p>{record.reflection}</p>
+                      </div>
+                    )}
+                    <div className="video-note-meta">
+                      {record.source && <span>来源：{record.source}</span>}
+                      <small>{formatRecordStamp(record.created_at)}</small>
+                      {record.url && (
+                        <a href={normalizeExternalHref(record.url)} target="_blank" rel="noreferrer" title={record.url}>
+                          <ExternalLink size={14} />
+                          打开视频
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="video-note-actions">
+                  {editingRecordId === record.id ? (
+                    <>
+                      <button onClick={() => onSaveEdit(record.id)}>保存</button>
+                      <button onClick={onCancelEdit} title="取消编辑">
+                        <X size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => onTogglePinned(record.id)} title={record.pinned ? "取消置顶" : "置顶刷视频随记"}>
+                        {record.pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                      </button>
+                      <button onClick={() => onStartEdit(record)} title="编辑刷视频随记">
+                        <Pencil size={16} />
+                      </button>
+                      <button className="danger" onClick={() => onArchive(record.id)} title="归档刷视频随记">
+                        <Archive size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="video-note-empty">{query.trim() ? "没有匹配的刷视频随记" : "还没有刷视频随记"}</div>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
+
+export type VideoNoteDraft = {
+  title: string;
+  quote: string;
+  reflection: string;
+  source: string;
   url: string;
 };
 

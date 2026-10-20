@@ -18,6 +18,7 @@ import {
   TaskComposer,
   TaskToolbar,
   VideoInspirationPanel,
+  VideoNotesPanel,
   WorkExperiencePanel,
   WeeklyDeliveryPanel,
   WeeklyPanel,
@@ -41,6 +42,7 @@ import {
   createMonthlyTask,
   createTask,
   createVideoInspiration,
+  createVideoNote,
   createWeeklyDelivery,
   createWeeklyTask,
   createWorkExperience,
@@ -64,6 +66,7 @@ import {
   getVisibleVideoInspirations,
   VideoInspirationChannelFilter,
 } from "./services/videoInspirations";
+import { getVisibleVideoNotes } from "./services/videoNotes";
 import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonthFilter } from "./services/workExperiences";
 import { getVisibleArgumentReflections } from "./services/argumentReflections";
 import { getVisibleDivorcePlans } from "./services/divorcePlans";
@@ -86,6 +89,7 @@ import {
   TodoTag,
   TodoTask,
   VideoInspirationRecord,
+  VideoNoteRecord,
   WeeklyDelivery,
   WeeklyTask,
   AwesomeRecord,
@@ -140,6 +144,22 @@ const blankVideoInspirationDraft: VideoInspirationDraft = {
   channel: "",
   title: "",
   content: "",
+  url: "",
+};
+
+type VideoNoteDraft = {
+  title: string;
+  quote: string;
+  reflection: string;
+  source: string;
+  url: string;
+};
+
+const blankVideoNoteDraft: VideoNoteDraft = {
+  title: "",
+  quote: "",
+  reflection: "",
+  source: "",
   url: "",
 };
 
@@ -258,6 +278,10 @@ export function App() {
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
   const [editingVideoInspirationId, setEditingVideoInspirationId] = useState<string | null>(null);
   const [videoInspirationEditDraft, setVideoInspirationEditDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
+  const [videoNoteDraft, setVideoNoteDraft] = useState<VideoNoteDraft>(blankVideoNoteDraft);
+  const [videoNoteQuery, setVideoNoteQuery] = useState("");
+  const [editingVideoNoteId, setEditingVideoNoteId] = useState<string | null>(null);
+  const [videoNoteEditDraft, setVideoNoteEditDraft] = useState<VideoNoteDraft>(blankVideoNoteDraft);
   const [metaLearningDraft, setMetaLearningDraft] = useState<MetaLearningDraft>(blankMetaLearningDraft);
   const [metaLearningQuery, setMetaLearningQuery] = useState("");
   const [metaLearningMasteryFilter, setMetaLearningMasteryFilter] = useState<MetaLearningMasteryFilter>("all");
@@ -351,6 +375,10 @@ export function App() {
   const visibleVideoInspirations = useMemo(
     () => getVisibleVideoInspirations(activeData.videoInspirations, videoInspirationQuery, videoInspirationChannelFilter),
     [activeData.videoInspirations, videoInspirationChannelFilter, videoInspirationQuery],
+  );
+  const visibleVideoNotes = useMemo(
+    () => getVisibleVideoNotes(activeData.videoNotes, videoNoteQuery),
+    [activeData.videoNotes, videoNoteQuery],
   );
   const visibleMetaLearningAbilities = useMemo(
     () => getVisibleMetaLearningAbilities(activeData.metaLearningAbilities, metaLearningQuery, metaLearningMasteryFilter),
@@ -481,6 +509,8 @@ export function App() {
       setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
+      setEditingVideoNoteId(null);
+      setVideoNoteEditDraft(blankVideoNoteDraft);
       setEditingMetaLearningId(null);
       setMetaLearningEditDraft(blankMetaLearningDraft);
     });
@@ -512,6 +542,8 @@ export function App() {
       setDivorcePlanEditDraft(createBlankDivorcePlanDraft());
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
+      setEditingVideoNoteId(null);
+      setVideoNoteEditDraft(blankVideoNoteDraft);
       setEditingMetaLearningId(null);
       setMetaLearningEditDraft(blankMetaLearningDraft);
     });
@@ -643,6 +675,10 @@ export function App() {
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
     updateData((value) => ({ ...value, videoInspirations }));
+  }
+
+  function replaceVideoNotes(videoNotes: VideoNoteRecord[]) {
+    updateData((value) => ({ ...value, videoNotes }));
   }
 
   function replaceMetaLearningAbilities(metaLearningAbilities: MetaLearningAbility[]) {
@@ -1156,6 +1192,72 @@ export function App() {
     if (editingVideoInspirationId === recordId) {
       setEditingVideoInspirationId(null);
       setVideoInspirationEditDraft(blankVideoInspirationDraft);
+    }
+  }
+
+  function addVideoNote(event: FormEvent) {
+    event.preventDefault();
+    const title = videoNoteDraft.title.trim();
+    const quote = videoNoteDraft.quote.trim();
+    const reflection = videoNoteDraft.reflection.trim();
+    if (!title || (!quote && !reflection)) return;
+    replaceVideoNotes([
+      createVideoNote(title, quote, reflection, videoNoteDraft.source, videoNoteDraft.url),
+      ...activeData.videoNotes,
+    ]);
+    setVideoNoteDraft(blankVideoNoteDraft);
+  }
+
+  function startVideoNoteEdit(record: VideoNoteRecord) {
+    setEditingVideoNoteId(record.id);
+    setVideoNoteEditDraft({
+      title: record.title,
+      quote: record.quote,
+      reflection: record.reflection,
+      source: record.source,
+      url: record.url,
+    });
+  }
+
+  function saveVideoNoteEdit(recordId: string) {
+    const title = videoNoteEditDraft.title.trim();
+    const quote = videoNoteEditDraft.quote.trim();
+    const reflection = videoNoteEditDraft.reflection.trim();
+    if (!title || (!quote && !reflection)) return;
+    replaceVideoNotes(
+      activeData.videoNotes.map((record) =>
+        record.id === recordId
+          ? {
+              ...record,
+              title,
+              quote,
+              reflection,
+              source: videoNoteEditDraft.source.trim(),
+              url: videoNoteEditDraft.url.trim(),
+            }
+          : record,
+      ),
+    );
+    setEditingVideoNoteId(null);
+    setVideoNoteEditDraft(blankVideoNoteDraft);
+  }
+
+  function toggleVideoNotePinned(recordId: string) {
+    replaceVideoNotes(
+      activeData.videoNotes.map((record) => (record.id === recordId ? { ...record, pinned: !record.pinned } : record)),
+    );
+  }
+
+  function archiveVideoNote(recordId: string) {
+    const record = activeData.videoNotes.find((item) => item.id === recordId);
+    if (!record) return;
+    if (!window.confirm(`确定归档刷视频随记“${record.title}”吗？归档后列表不再显示，但数据会保留。`)) return;
+    replaceVideoNotes(
+      activeData.videoNotes.map((item) => (item.id === recordId ? { ...item, archived_at: nowStamp() } : item)),
+    );
+    if (editingVideoNoteId === recordId) {
+      setEditingVideoNoteId(null);
+      setVideoNoteEditDraft(blankVideoNoteDraft);
     }
   }
 
@@ -1915,6 +2017,27 @@ export function App() {
             }}
             onArchive={archiveVideoInspiration}
           />
+        ) : activeView === "videoNotes" ? (
+          <VideoNotesPanel
+            records={visibleVideoNotes}
+            draft={videoNoteDraft}
+            query={videoNoteQuery}
+            editingRecordId={editingVideoNoteId}
+            editingDraft={videoNoteEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setVideoNoteDraft}
+            onAdd={addVideoNote}
+            onQueryChange={setVideoNoteQuery}
+            onTogglePinned={toggleVideoNotePinned}
+            onStartEdit={startVideoNoteEdit}
+            onEditDraftChange={setVideoNoteEditDraft}
+            onSaveEdit={saveVideoNoteEdit}
+            onCancelEdit={() => {
+              setEditingVideoNoteId(null);
+              setVideoNoteEditDraft(blankVideoNoteDraft);
+            }}
+            onArchive={archiveVideoNote}
+          />
         ) : activeView === "metaLearning" ? (
           <MetaLearningPanel
             records={visibleMetaLearningAbilities}
@@ -2068,6 +2191,7 @@ const emptyData: TodoData = {
   inspirations: [],
   metaLearningAbilities: [],
   videoInspirations: [],
+  videoNotes: [],
   workExperiences: [],
   dailyReadings: [],
   argumentReflections: [],

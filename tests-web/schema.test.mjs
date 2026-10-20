@@ -85,6 +85,18 @@ const validVideoInspiration = {
   archived_at: null,
 };
 
+const validVideoNote = {
+  id: "video-note-1",
+  title: "关于长期主义",
+  quote: "慢就是快",
+  reflection: "持续行动比短期冲刺更重要",
+  source: "抖音 · 某账号",
+  url: "https://example.com/note",
+  pinned: false,
+  created_at: "2026-10-20T08:20:00.000Z",
+  archived_at: null,
+};
+
 const validWorkExperience = {
   id: "work-experience-1",
   title: "需求评审经验",
@@ -160,6 +172,7 @@ function makeTodosPayload(overrides = {}) {
     inspirations: [validInspiration],
     metaLearningAbilities: [validMetaLearningAbility],
     videoInspirations: [validVideoInspiration],
+    videoNotes: [validVideoNote],
     workExperiences: [validWorkExperience],
     dailyReadings: [validDailyReading],
     argumentReflections: [validArgumentReflection],
@@ -592,6 +605,36 @@ test("rejects video inspiration with invalid archived_at type", () => {
     ),
     false,
   );
+});
+
+test("rejects todos payload without videoNotes", () => {
+  const payload = makeTodosPayload();
+  delete payload.videoNotes;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("accepts video note with only a quote or only a reflection", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, reflection: "" }] })), true);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, quote: "" }] })), true);
+});
+
+test("rejects video note with empty title", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, title: " " }] })), false);
+});
+
+test("rejects video note without a quote or reflection", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, quote: " ", reflection: " " }] })),
+    false,
+  );
+});
+
+test("rejects video note with invalid pinned type", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, pinned: "yes" }] })), false);
+});
+
+test("rejects video note with invalid archived_at type", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ videoNotes: [{ ...validVideoNote, archived_at: false }] })), false);
 });
 
 test("rejects todos payload without workExperiences", () => {

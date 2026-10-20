@@ -4,6 +4,7 @@ import { normalizeHabit } from "./habits";
 import { normalizeInspirations } from "./inspirations";
 import { normalizeMetaLearningAbilities } from "./metaLearning";
 import { normalizeVideoInspirations } from "./videoInspirations";
+import { normalizeVideoNotes } from "./videoNotes";
 import { normalizeWorkExperiences } from "./workExperiences";
 import { normalizeDailyReadings } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
@@ -33,6 +34,7 @@ import {
   TodoTag,
   TodoTask,
   VideoInspirationRecord,
+  VideoNoteRecord,
   WeeklyDelivery,
   WeeklyTask,
   WorkExperienceRecord,
@@ -63,6 +65,7 @@ const initialData: TodoData = {
   inspirations: [],
   metaLearningAbilities: [],
   videoInspirations: [],
+  videoNotes: [],
   workExperiences: [],
   dailyReadings: [],
   argumentReflections: [],
@@ -300,6 +303,20 @@ export function createVideoInspiration(channel: string, title: string, content: 
   };
 }
 
+export function createVideoNote(title: string, quote: string, reflection: string, source: string, url: string): VideoNoteRecord {
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    quote: quote.trim(),
+    reflection: reflection.trim(),
+    source: source.trim(),
+    url: url.trim(),
+    pinned: false,
+    created_at: nowStamp(),
+    archived_at: null,
+  };
+}
+
 export function createWorkExperience(title: string, body: string, month: string): WorkExperienceRecord {
   return {
     id: crypto.randomUUID(),
@@ -414,6 +431,11 @@ export function normalizeData(raw: unknown): TodoData {
     () => crypto.randomUUID(),
     nowStamp,
   );
+  const videoNotes: TodoData["videoNotes"] = normalizeVideoNotes(
+    value.videoNotes,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
   const workExperiences: TodoData["workExperiences"] = normalizeWorkExperiences(
     value.workExperiences,
     () => crypto.randomUUID(),
@@ -521,6 +543,7 @@ export function normalizeData(raw: unknown): TodoData {
     inspirations,
     metaLearningAbilities,
     videoInspirations,
+    videoNotes,
     workExperiences,
     dailyReadings,
     argumentReflections,
@@ -544,6 +567,7 @@ function hasTasks(data: TodoData): boolean {
     data.inspirations.length > 0 ||
     data.metaLearningAbilities.length > 0 ||
     data.videoInspirations.length > 0 ||
+    data.videoNotes.length > 0 ||
     data.workExperiences.length > 0 ||
     data.dailyReadings.length > 0 ||
     data.argumentReflections.length > 0 ||

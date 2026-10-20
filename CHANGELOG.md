@@ -13,6 +13,46 @@
 
 ---
 
+## [25.0.0] - 2026-10-20
+
+### 改了什么
+
+- 在“阅读灵感”一级菜单下新增独立的“刷视频随记”页面，现有“视频灵感”数据与功能保持不变。
+- 支持记录必填标题、可选摘录、可选感悟、来源和视频链接；摘录与感悟至少填写一项。
+- 列表支持关键词搜索、置顶、编辑和归档，默认按置顶优先、创建时间倒序展示。
+- 数据模型新增 `videoNotes`，前端归一化、本地保存、localStorage 兜底和后端写入校验同步支持。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/videoNotes.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，162/162。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 数据版本升级至 25；旧数据首次读取时会自动补充空的 `videoNotes` 数组。
+- “刷视频随记”与现有“视频灵感”完全独立，不迁移或合并已有记录。
+- 来源和链接均为可选自由文本，第一版不提供平台筛选、标签或归档查看页。
+
+---
+
 ## [24.2.0] - 2026-10-20
 
 ### 改了什么

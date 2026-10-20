@@ -14,7 +14,7 @@ test("groups sidebar views by user intent in the expected order", () => {
     })),
     [
       { label: "日常计划", views: ["habits", "daily", "monthly", "delivery"] },
-      { label: "阅读灵感", views: ["inspiration", "videoInspiration", "dailyReading", "books"] },
+      { label: "阅读灵感", views: ["inspiration", "videoInspiration", "videoNotes", "dailyReading", "books"] },
       { label: "成长经验", views: ["metaLearning", "workExperience"] },
       { label: "私人复盘", views: ["argumentReflection", "divorcePlan"] },
     ],
@@ -41,6 +41,7 @@ test("finds the group that should expand for the active view", () => {
   assert.equal(getSidebarGroupLabel("dashboard"), null);
   assert.equal(getSidebarGroupLabel("habits"), "日常计划");
   assert.equal(getSidebarGroupLabel("dailyReading"), "阅读灵感");
+  assert.equal(getSidebarGroupLabel("videoNotes"), "阅读灵感");
   assert.equal(getSidebarGroupLabel("workExperience"), "成长经验");
   assert.equal(getSidebarGroupLabel("divorcePlan"), "私人复盘");
 });

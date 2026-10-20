@@ -20,6 +20,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.inspirations)) return false;
   if (!Array.isArray(payload.metaLearningAbilities)) return false;
   if (!Array.isArray(payload.videoInspirations)) return false;
+  if (!Array.isArray(payload.videoNotes)) return false;
   if (!Array.isArray(payload.workExperiences)) return false;
   if (!Array.isArray(payload.dailyReadings)) return false;
   if (!Array.isArray(payload.argumentReflections)) return false;
@@ -32,6 +33,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.inspirations.every(isValidInspiration)) return false;
   if (!payload.metaLearningAbilities.every(isValidMetaLearningAbility)) return false;
   if (!payload.videoInspirations.every(isValidVideoInspiration)) return false;
+  if (!payload.videoNotes.every(isValidVideoNote)) return false;
   if (!payload.workExperiences.every(isValidWorkExperience)) return false;
   if (!payload.dailyReadings.every(isValidDailyReading)) return false;
   if (!payload.argumentReflections.every(isValidArgumentReflection)) return false;
@@ -174,6 +176,21 @@ function isValidVideoInspiration(record) {
   if (!isNonEmptyString(record.channel)) return false;
   if (!isNonEmptyString(record.title)) return false;
   if (typeof record.content !== "string") return false;
+  if (typeof record.url !== "string") return false;
+  if (typeof record.pinned !== "boolean") return false;
+  if (typeof record.created_at !== "string") return false;
+  if (typeof record.archived_at !== "string" && record.archived_at !== null && record.archived_at !== undefined) return false;
+  return true;
+}
+
+function isValidVideoNote(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (typeof record.quote !== "string") return false;
+  if (typeof record.reflection !== "string") return false;
+  if (!record.quote.trim() && !record.reflection.trim()) return false;
+  if (typeof record.source !== "string") return false;
   if (typeof record.url !== "string") return false;
   if (typeof record.pinned !== "boolean") return false;
   if (typeof record.created_at !== "string") return false;
