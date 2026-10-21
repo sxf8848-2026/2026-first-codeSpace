@@ -145,9 +145,17 @@ const validBook = {
   updated_at: "2026-09-19T08:00:00.000Z",
 };
 
+const validKindnessRecord = {
+  id: "kindness-1",
+  title: "帮助同事排查问题",
+  occurred_at: "2026-10-20T09:30",
+  content: "一起定位并解决了接口报错。",
+  created_at: "2026-10-20T09:40:00.000Z",
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 21,
+    version: 26,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -178,6 +186,7 @@ function makeTodosPayload(overrides = {}) {
     argumentReflections: [validArgumentReflection],
     divorcePlans: [validDivorcePlan],
     books: [validBook],
+    kindnessRecords: [validKindnessRecord],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -829,6 +838,32 @@ test("rejects divorce plan with empty content", () => {
 
 test("rejects divorce plan with invalid archived_at", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ divorcePlans: [{ ...validDivorcePlan, archived_at: false }] })), false);
+});
+
+test("accepts a valid kindness record", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ kindnessRecords: [validKindnessRecord] })), true);
+});
+
+test("rejects todos payload without kindness records", () => {
+  const payload = makeTodosPayload();
+  delete payload.kindnessRecords;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects kindness record with empty title or content", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ kindnessRecords: [{ ...validKindnessRecord, title: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ kindnessRecords: [{ ...validKindnessRecord, content: " " }] })), false);
+});
+
+test("rejects kindness record with invalid occurred_at or created_at", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ kindnessRecords: [{ ...validKindnessRecord, occurred_at: "2026-10-20 09:30" }] })),
+    false,
+  );
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ kindnessRecords: [{ ...validKindnessRecord, created_at: "not-a-date" }] })),
+    false,
+  );
 });
 
 test("validates prefs payload", () => {

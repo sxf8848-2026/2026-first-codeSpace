@@ -10,6 +10,7 @@ import { normalizeArgumentReflections } from "../src/services/argumentReflection
 import { normalizeDivorcePlans } from "../src/services/divorcePlans.ts";
 import { DEFAULT_DELIVERY_PLATFORMS, normalizeDeliveryPlatforms } from "../src/services/deliveryPlatforms.ts";
 import { normalizeBooks } from "../src/services/books.ts";
+import { normalizeKindnessRecords } from "../src/services/kindnessRecords.ts";
 
 test("normalizes old todo data without inspirations", () => {
   assert.deepEqual(normalizeInspirations(undefined), []);
@@ -45,6 +46,10 @@ test("normalizes old todo data without divorce plans", () => {
 
 test("normalizes old todo data without books", () => {
   assert.deepEqual(normalizeBooks(undefined), []);
+});
+
+test("normalizes old todo data without kindness records", () => {
+  assert.deepEqual(normalizeKindnessRecords(undefined), []);
 });
 
 test("normalizes old prefs with default delivery platforms", () => {

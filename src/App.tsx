@@ -10,6 +10,7 @@ import {
   DailyReadingPanel,
   HabitPanel,
   InspirationPanel,
+  KindnessRecordsPanel,
   LoadingScreen,
   MetaLearningPanel,
   MonthlyPanel,
@@ -37,6 +38,7 @@ import {
   createArgumentReflection,
   createDivorcePlan,
   createBook,
+  createKindnessRecord,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -71,6 +73,7 @@ import { getVisibleWorkExperiences, getWorkExperienceMonths, WorkExperienceMonth
 import { getVisibleArgumentReflections } from "./services/argumentReflections";
 import { getVisibleDivorcePlans } from "./services/divorcePlans";
 import { BookStatusFilter, getVisibleBooks } from "./services/books";
+import { getVisibleKindnessRecords } from "./services/kindnessRecords";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
   Filters,
@@ -102,6 +105,7 @@ import {
   ArgumentReflectionRecord,
   DivorcePlanRecord,
   BookRecord,
+  KindnessRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -199,6 +203,12 @@ type DivorcePlanDraft = {
   content: string;
 };
 
+type KindnessDraft = {
+  title: string;
+  occurred_at: string;
+  content: string;
+};
+
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
     topic: "",
@@ -208,6 +218,14 @@ function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
 }
 
 function createBlankDivorcePlanDraft(): DivorcePlanDraft {
+  return {
+    title: "",
+    occurred_at: toLocalDateTime(new Date()),
+    content: "",
+  };
+}
+
+function createBlankKindnessDraft(): KindnessDraft {
   return {
     title: "",
     occurred_at: toLocalDateTime(new Date()),
@@ -273,6 +291,12 @@ export function App() {
   const [bookStatusFilter, setBookStatusFilter] = useState<BookStatusFilter>("all");
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [bookEditDraft, setBookEditDraft] = useState<BookDraft>(blankBookDraft);
+  const [kindnessDraft, setKindnessDraft] = useState<KindnessDraft>(createBlankKindnessDraft);
+  const [kindnessQuery, setKindnessQuery] = useState("");
+  const [kindnessStartDate, setKindnessStartDate] = useState("");
+  const [kindnessEndDate, setKindnessEndDate] = useState("");
+  const [editingKindnessId, setEditingKindnessId] = useState<string | null>(null);
+  const [kindnessEditDraft, setKindnessEditDraft] = useState<KindnessDraft>(createBlankKindnessDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -367,6 +391,10 @@ export function App() {
   const visibleBooks = useMemo(
     () => getVisibleBooks(activeData.books, bookQuery, bookStatusFilter),
     [activeData.books, bookQuery, bookStatusFilter],
+  );
+  const visibleKindnessRecords = useMemo(
+    () => getVisibleKindnessRecords(activeData.kindnessRecords, kindnessQuery, kindnessStartDate, kindnessEndDate),
+    [activeData.kindnessRecords, kindnessEndDate, kindnessQuery, kindnessStartDate],
   );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -513,6 +541,8 @@ export function App() {
       setVideoNoteEditDraft(blankVideoNoteDraft);
       setEditingMetaLearningId(null);
       setMetaLearningEditDraft(blankMetaLearningDraft);
+      setEditingKindnessId(null);
+      setKindnessEditDraft(createBlankKindnessDraft());
     });
   }
 
@@ -546,6 +576,8 @@ export function App() {
       setVideoNoteEditDraft(blankVideoNoteDraft);
       setEditingMetaLearningId(null);
       setMetaLearningEditDraft(blankMetaLearningDraft);
+      setEditingKindnessId(null);
+      setKindnessEditDraft(createBlankKindnessDraft());
     });
   }
 
@@ -671,6 +703,10 @@ export function App() {
 
   function replaceBooks(books: BookRecord[]) {
     updateData((value) => ({ ...value, books }));
+  }
+
+  function replaceKindnessRecords(kindnessRecords: KindnessRecord[]) {
+    updateData((value) => ({ ...value, kindnessRecords }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -1045,6 +1081,35 @@ export function App() {
     if (!title) return;
     replaceBooks([createBook(title, bookDraft.author, bookDraft.note, bookDraft.status), ...activeData.books]);
     setBookDraft(blankBookDraft);
+  }
+
+  function addKindnessRecord(event: FormEvent) {
+    event.preventDefault();
+    const draft = kindnessDraft;
+    if (![draft.title, draft.occurred_at, draft.content].every((value) => value.trim())) return;
+    replaceKindnessRecords([
+      createKindnessRecord(draft.title, draft.occurred_at, draft.content),
+      ...activeData.kindnessRecords,
+    ]);
+    setKindnessDraft(createBlankKindnessDraft());
+  }
+
+  function startKindnessEdit(record: KindnessRecord) {
+    setEditingKindnessId(record.id);
+    setKindnessEditDraft({ title: record.title, occurred_at: record.occurred_at, content: record.content });
+  }
+
+  function saveKindnessEdit(recordId: string) {
+    const draft = kindnessEditDraft;
+    if (![draft.title, draft.occurred_at, draft.content].every((value) => value.trim())) return;
+    replaceKindnessRecords(activeData.kindnessRecords.map((record) => record.id === recordId ? {
+      ...record,
+      title: draft.title.trim(),
+      occurred_at: draft.occurred_at,
+      content: draft.content.trim(),
+    } : record));
+    setEditingKindnessId(null);
+    setKindnessEditDraft(createBlankKindnessDraft());
   }
 
   function startBookEdit(book: BookRecord) {
@@ -2084,6 +2149,30 @@ export function App() {
             }}
             onArchive={archiveWorkExperience}
           />
+        ) : activeView === "kindnessRecords" ? (
+          <KindnessRecordsPanel
+            records={visibleKindnessRecords}
+            totalCount={activeData.kindnessRecords.length}
+            draft={kindnessDraft}
+            query={kindnessQuery}
+            startDate={kindnessStartDate}
+            endDate={kindnessEndDate}
+            editingRecordId={editingKindnessId}
+            editingDraft={kindnessEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setKindnessDraft}
+            onAdd={addKindnessRecord}
+            onQueryChange={setKindnessQuery}
+            onStartDateChange={setKindnessStartDate}
+            onEndDateChange={setKindnessEndDate}
+            onStartEdit={startKindnessEdit}
+            onEditDraftChange={setKindnessEditDraft}
+            onSaveEdit={saveKindnessEdit}
+            onCancelEdit={() => {
+              setEditingKindnessId(null);
+              setKindnessEditDraft(createBlankKindnessDraft());
+            }}
+          />
         ) : (
           <WeeklyDeliveryPanel
             weekRange={deliveryWeekRange}
@@ -2197,6 +2286,7 @@ const emptyData: TodoData = {
   argumentReflections: [],
   divorcePlans: [],
   books: [],
+  kindnessRecords: [],
   default_applied: [],
 };
 

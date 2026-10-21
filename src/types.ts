@@ -164,6 +164,14 @@ export type BookRecord = {
   updated_at: string;
 };
 
+export type KindnessRecord = {
+  id: string;
+  title: string;
+  occurred_at: string;
+  content: string;
+  created_at: string;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -182,6 +190,7 @@ export type TodoData = {
   argumentReflections: ArgumentReflectionRecord[];
   divorcePlans: DivorcePlanRecord[];
   books: BookRecord[];
+  kindnessRecords: KindnessRecord[];
   default_applied: string[];
 };
 

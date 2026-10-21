@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Flame,
   History,
+  HandHeart,
   LayoutDashboard,
   Lightbulb,
   MessagesSquare,
@@ -75,6 +76,7 @@ import {
   ArgumentReflectionRecord,
   DivorcePlanRecord,
   BookRecord,
+  KindnessRecord,
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { Segmented, TagButton } from "./Controls";
@@ -91,6 +93,7 @@ const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
   reading: BookOpen,
   learning: GraduationCap,
   experience: BriefcaseBusiness,
+  kindness: HandHeart,
   reflection: MessagesSquare,
   divorcePlan: ClipboardList,
 };
@@ -1096,6 +1099,109 @@ export function BooksPanel({
               </div>
             </article>
           )) : <div className="books-empty">{query.trim() || statusFilter !== "all" ? "没有匹配的书籍" : "还没有书籍记录"}</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+type KindnessDraft = {
+  title: string;
+  occurred_at: string;
+  content: string;
+};
+
+export function KindnessRecordsPanel({
+  records,
+  totalCount,
+  draft,
+  query,
+  startDate,
+  endDate,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onStartDateChange,
+  onEndDateChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+}: {
+  records: KindnessRecord[];
+  totalCount: number;
+  draft: KindnessDraft;
+  query: string;
+  startDate: string;
+  endDate: string;
+  editingRecordId: string | null;
+  editingDraft: KindnessDraft;
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: KindnessDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  onStartEdit: (record: KindnessRecord) => void;
+  onEditDraftChange: (draft: KindnessDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+}) {
+  return (
+    <>
+      <header className="topbar kindness-topbar">
+        <div>
+          <div className="eyebrow"><HandHeart size={16} />成长经验</div>
+          <h1>善意足迹</h1>
+        </div>
+      </header>
+
+      <section className="kindness-summary">
+        <div><span>当前展示</span><strong>{records.length} 条</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+
+      <section className="kindness-panel" aria-label="善意足迹">
+        <form className="kindness-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="标题，必填" required />
+          <input type="datetime-local" value={draft.occurred_at} onChange={(event) => onDraftChange({ ...draft, occurred_at: event.target.value })} aria-label="发生时间" required />
+          <textarea value={draft.content} onChange={(event) => onDraftChange({ ...draft, content: event.target.value })} placeholder="记录这次善意，必填" required />
+          <button className="primary-button" type="submit"><Plus size={18} />添加记录</button>
+        </form>
+
+        <div className="kindness-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题或正文" /></div>
+          <label className="kindness-date-filter"><span>开始日期</span><input type="date" value={startDate} max={endDate || undefined} onChange={(event) => onStartDateChange(event.target.value)} /></label>
+          <label className="kindness-date-filter"><span>结束日期</span><input type="date" value={endDate} min={startDate || undefined} onChange={(event) => onEndDateChange(event.target.value)} /></label>
+        </div>
+
+        <div className="kindness-list">
+          {records.length ? records.map((record) => (
+            <article className="kindness-item" key={record.id}>
+              {editingRecordId === record.id ? (
+                <div className="kindness-edit">
+                  <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
+                  <input type="datetime-local" value={editingDraft.occurred_at} onChange={(event) => onEditDraftChange({ ...editingDraft, occurred_at: event.target.value })} required />
+                  <textarea value={editingDraft.content} onChange={(event) => onEditDraftChange({ ...editingDraft, content: event.target.value })} placeholder="记录这次善意，必填" required />
+                </div>
+              ) : (
+                <div className="kindness-content">
+                  <div className="kindness-heading"><strong>{record.title}</strong><time>{formatArgumentDateTime(record.occurred_at)}</time></div>
+                  <p>{record.content}</p>
+                </div>
+              )}
+              <div className="kindness-actions">
+                {editingRecordId === record.id ? (
+                  <><button type="button" onClick={() => onSaveEdit(record.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></>
+                ) : (
+                  <button type="button" onClick={() => onStartEdit(record)} title="编辑记录"><Pencil size={16} /></button>
+                )}
+              </div>
+            </article>
+          )) : <div className="kindness-empty">{totalCount ? "没有匹配的善意足迹" : "还没有善意足迹"}</div>}
         </div>
       </section>
     </>

@@ -26,6 +26,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.argumentReflections)) return false;
   if (!Array.isArray(payload.divorcePlans)) return false;
   if (!Array.isArray(payload.books)) return false;
+  if (!Array.isArray(payload.kindnessRecords)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -39,6 +40,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.argumentReflections.every(isValidArgumentReflection)) return false;
   if (!payload.divorcePlans.every(isValidDivorcePlan)) return false;
   if (!payload.books.every(isValidBook)) return false;
+  if (!payload.kindnessRecords.every(isValidKindnessRecord)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -253,6 +255,16 @@ function isValidBook(record) {
   if (!(record.status === "want_to_read" || record.status === "reading" || record.status === "read")) return false;
   if (typeof record.created_at !== "string") return false;
   if (typeof record.updated_at !== "string") return false;
+  return true;
+}
+
+function isValidKindnessRecord(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
+  if (!isNonEmptyString(record.content)) return false;
+  if (typeof record.created_at !== "string" || Number.isNaN(Date.parse(record.created_at))) return false;
   return true;
 }
 

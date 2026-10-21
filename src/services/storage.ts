@@ -10,6 +10,7 @@ import { normalizeDailyReadings } from "./dailyReadings";
 import { normalizeArgumentReflections } from "./argumentReflections";
 import { normalizeDivorcePlans } from "./divorcePlans";
 import { normalizeBooks } from "./books";
+import { normalizeKindnessRecords } from "./kindnessRecords";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
@@ -19,6 +20,7 @@ import {
   ArgumentReflectionRecord,
   DivorcePlanRecord,
   BookRecord,
+  KindnessRecord,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -71,6 +73,7 @@ const initialData: TodoData = {
   argumentReflections: [],
   divorcePlans: [],
   books: [],
+  kindnessRecords: [],
   default_applied: [],
 };
 
@@ -380,6 +383,16 @@ export function createBook(title: string, author: string, note: string, status: 
   };
 }
 
+export function createKindnessRecord(title: string, occurred_at: string, content: string): KindnessRecord {
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    occurred_at,
+    content: content.trim(),
+    created_at: nowStamp(),
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -457,6 +470,11 @@ export function normalizeData(raw: unknown): TodoData {
     nowStamp,
   );
   const books: TodoData["books"] = normalizeBooks(value.books, () => crypto.randomUUID(), nowStamp);
+  const kindnessRecords: TodoData["kindnessRecords"] = normalizeKindnessRecords(
+    value.kindnessRecords,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
   const rawTodos =
     value.todos && typeof value.todos === "object"
       ? (value.todos as Record<string, unknown>)
@@ -549,6 +567,7 @@ export function normalizeData(raw: unknown): TodoData {
     argumentReflections,
     divorcePlans,
     books,
+    kindnessRecords,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -572,7 +591,8 @@ function hasTasks(data: TodoData): boolean {
     data.dailyReadings.length > 0 ||
     data.argumentReflections.length > 0 ||
     data.divorcePlans.length > 0 ||
-    data.books.length > 0
+    data.books.length > 0 ||
+    data.kindnessRecords.length > 0
   );
 }
 

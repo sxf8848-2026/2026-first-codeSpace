@@ -13,6 +13,46 @@
 
 ---
 
+## [26.0.0] - 2026-10-21
+
+### 改了什么
+
+- 在“成长经验”一级菜单下新增“善意足迹”页面，放在“工作经验”之后。
+- 支持记录必填标题、发生时间和正文，列表按发生时间倒序展示，并允许编辑已有记录。
+- 支持按标题或正文搜索，以及按包含边界的开始日期、结束日期组合查询。
+- 数据模型新增 `kindnessRecords`，前端归一化、项目文件保存、localStorage 兜底和后端写入校验同步支持。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/kindnessRecords.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，172/172。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 数据版本升级至 26；旧数据首次读取时会自动补充空的 `kindnessRecords` 数组。
+- 第一版不提供删除、归档、置顶或统计功能；查询日期以记录的发生时间为准。
+- 数据继续明文保存在当前本地项目数据文件中。
+
+---
+
 ## [25.0.0] - 2026-10-20
 
 ### 改了什么
