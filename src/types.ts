@@ -172,6 +172,18 @@ export type KindnessRecord = {
   created_at: string;
 };
 
+export type StudyGrowthType = "method" | "habit";
+
+export type StudyGrowthRecord = {
+  id: string;
+  type: StudyGrowthType;
+  title: string;
+  content: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -191,6 +203,7 @@ export type TodoData = {
   divorcePlans: DivorcePlanRecord[];
   books: BookRecord[];
   kindnessRecords: KindnessRecord[];
+  studyGrowthRecords: StudyGrowthRecord[];
   default_applied: string[];
 };
 

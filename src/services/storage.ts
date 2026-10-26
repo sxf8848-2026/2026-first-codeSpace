@@ -11,6 +11,7 @@ import { normalizeArgumentReflections } from "./argumentReflections";
 import { normalizeDivorcePlans } from "./divorcePlans";
 import { normalizeBooks } from "./books";
 import { normalizeKindnessRecords } from "./kindnessRecords";
+import { normalizeStudyGrowthRecords } from "./studyGrowthRecords";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
@@ -21,6 +22,8 @@ import {
   DivorcePlanRecord,
   BookRecord,
   KindnessRecord,
+  StudyGrowthRecord,
+  StudyGrowthType,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -74,6 +77,7 @@ const initialData: TodoData = {
   divorcePlans: [],
   books: [],
   kindnessRecords: [],
+  studyGrowthRecords: [],
   default_applied: [],
 };
 
@@ -393,6 +397,24 @@ export function createKindnessRecord(title: string, occurred_at: string, content
   };
 }
 
+export function createStudyGrowthRecord(
+  type: StudyGrowthType,
+  title: string,
+  content: string,
+  source: string,
+): StudyGrowthRecord {
+  const stamp = nowStamp();
+  return {
+    id: crypto.randomUUID(),
+    type,
+    title: title.trim(),
+    content: content.trim(),
+    source: source.trim(),
+    created_at: stamp,
+    updated_at: stamp,
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -472,6 +494,11 @@ export function normalizeData(raw: unknown): TodoData {
   const books: TodoData["books"] = normalizeBooks(value.books, () => crypto.randomUUID(), nowStamp);
   const kindnessRecords: TodoData["kindnessRecords"] = normalizeKindnessRecords(
     value.kindnessRecords,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
+  const studyGrowthRecords: TodoData["studyGrowthRecords"] = normalizeStudyGrowthRecords(
+    value.studyGrowthRecords,
     () => crypto.randomUUID(),
     nowStamp,
   );
@@ -568,6 +595,7 @@ export function normalizeData(raw: unknown): TodoData {
     divorcePlans,
     books,
     kindnessRecords,
+    studyGrowthRecords,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -592,7 +620,8 @@ function hasTasks(data: TodoData): boolean {
     data.argumentReflections.length > 0 ||
     data.divorcePlans.length > 0 ||
     data.books.length > 0 ||
-    data.kindnessRecords.length > 0
+    data.kindnessRecords.length > 0 ||
+    data.studyGrowthRecords.length > 0
   );
 }
 

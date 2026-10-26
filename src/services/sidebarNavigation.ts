@@ -9,6 +9,7 @@ export type SidebarIconName =
   | "learning"
   | "experience"
   | "kindness"
+  | "studyGrowth"
   | "reflection"
   | "divorcePlan";
 
@@ -57,6 +58,7 @@ export const SIDEBAR_GROUPS = [
       { view: "metaLearning", label: "元学习力", icon: "learning" },
       { view: "workExperience", label: "工作经验", icon: "experience" },
       { view: "kindnessRecords", label: "善意足迹", icon: "kindness" },
+      { view: "studyGrowth", label: "学会当学霸", icon: "studyGrowth" },
     ],
   },
   {

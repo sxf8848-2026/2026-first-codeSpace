@@ -3,6 +3,7 @@ const allowedPriorities = new Set(["high", "medium", "low"]);
 const allowedTagTones = new Set(["neutral", "green", "blue", "amber"]);
 const allowedThemes = new Set(["light", "dark"]);
 const allowedMetaLearningMasteries = new Set(["todo", "learning", "mastered", "skilled"]);
+const allowedStudyGrowthTypes = new Set(["method", "habit"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
 const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -27,6 +28,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.divorcePlans)) return false;
   if (!Array.isArray(payload.books)) return false;
   if (!Array.isArray(payload.kindnessRecords)) return false;
+  if (!Array.isArray(payload.studyGrowthRecords)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -41,6 +43,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.divorcePlans.every(isValidDivorcePlan)) return false;
   if (!payload.books.every(isValidBook)) return false;
   if (!payload.kindnessRecords.every(isValidKindnessRecord)) return false;
+  if (!payload.studyGrowthRecords.every(isValidStudyGrowthRecord)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -265,6 +268,18 @@ function isValidKindnessRecord(record) {
   if (typeof record.occurred_at !== "string" || !localDateTimePattern.test(record.occurred_at)) return false;
   if (!isNonEmptyString(record.content)) return false;
   if (typeof record.created_at !== "string" || Number.isNaN(Date.parse(record.created_at))) return false;
+  return true;
+}
+
+function isValidStudyGrowthRecord(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!allowedStudyGrowthTypes.has(record.type)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (!isNonEmptyString(record.content)) return false;
+  if (typeof record.source !== "string") return false;
+  if (typeof record.created_at !== "string" || Number.isNaN(Date.parse(record.created_at))) return false;
+  if (typeof record.updated_at !== "string" || Number.isNaN(Date.parse(record.updated_at))) return false;
   return true;
 }
 

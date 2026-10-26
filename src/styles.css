@@ -1756,6 +1756,141 @@ h1 {
   border: 1px dashed var(--line-strong);
 }
 
+.study-growth-topbar {
+  align-items: flex-start;
+}
+
+.study-growth-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.study-growth-summary div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.study-growth-summary strong,
+.study-growth-heading strong {
+  color: var(--ink);
+}
+
+.study-growth-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.study-growth-panel > .segmented {
+  justify-self: start;
+}
+
+.study-growth-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.45fr);
+  gap: 12px;
+}
+
+.study-growth-composer textarea {
+  grid-column: 1 / -1;
+  min-height: 96px;
+  resize: vertical;
+}
+
+.study-growth-composer .primary-button {
+  justify-self: start;
+}
+
+.study-growth-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.study-growth-toolbar .search-box {
+  width: min(100%, 360px);
+}
+
+.study-growth-list {
+  display: grid;
+  gap: 12px;
+}
+
+.study-growth-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  background: var(--panel-soft);
+}
+
+.study-growth-content {
+  display: grid;
+  gap: 10px;
+}
+
+.study-growth-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.study-growth-heading time,
+.study-growth-content small {
+  color: var(--muted);
+}
+
+.study-growth-content p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.study-growth-edit {
+  display: grid;
+  grid-template-columns: 180px minmax(240px, 1fr) minmax(220px, 0.7fr);
+  gap: 12px;
+}
+
+.study-growth-edit textarea {
+  grid-column: 1 / -1;
+  min-height: 96px;
+  resize: vertical;
+}
+
+.study-growth-actions {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+}
+
+.study-growth-actions button {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+}
+
+.study-growth-empty {
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+}
+
 .argument-reflection-summary {
   display: flex;
   align-items: center;
@@ -3100,6 +3235,8 @@ textarea:focus {
   .argument-reflection-edit,
   .kindness-composer,
   .kindness-edit,
+  .study-growth-composer,
+  .study-growth-edit,
   .meta-learning-composer,
   .monthly-composer,
   .video-inspiration-composer,
@@ -3119,6 +3256,7 @@ textarea:focus {
   .daily-reading-summary,
   .argument-reflection-summary,
   .kindness-summary,
+    .study-growth-summary,
   .meta-learning-summary,
   .monthly-summary,
   .video-inspiration-summary,
@@ -3191,16 +3329,36 @@ textarea:focus {
   }
 
   .kindness-toolbar,
-  .kindness-item {
+  .kindness-item,
+  .study-growth-item {
     grid-template-columns: 1fr;
   }
 
   .kindness-composer textarea,
-  .kindness-edit textarea {
+  .kindness-edit textarea,
+  .study-growth-composer textarea,
+  .study-growth-edit textarea {
     grid-column: auto;
   }
 
   .kindness-actions {
+    justify-content: flex-end;
+  }
+
+  .study-growth-toolbar {
+    justify-content: stretch;
+  }
+
+  .study-growth-toolbar .search-box {
+    width: 100%;
+  }
+
+  .study-growth-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .study-growth-actions {
     justify-content: flex-end;
   }
 

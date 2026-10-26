@@ -11,6 +11,7 @@ import {
   HabitPanel,
   InspirationPanel,
   KindnessRecordsPanel,
+  StudyGrowthPanel,
   LoadingScreen,
   MetaLearningPanel,
   MonthlyPanel,
@@ -39,6 +40,7 @@ import {
   createDivorcePlan,
   createBook,
   createKindnessRecord,
+  createStudyGrowthRecord,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -74,6 +76,7 @@ import { getVisibleArgumentReflections } from "./services/argumentReflections";
 import { getVisibleDivorcePlans } from "./services/divorcePlans";
 import { BookStatusFilter, getVisibleBooks } from "./services/books";
 import { getVisibleKindnessRecords } from "./services/kindnessRecords";
+import { getVisibleStudyGrowthRecords, updateStudyGrowthRecord } from "./services/studyGrowthRecords";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
   Filters,
@@ -106,6 +109,8 @@ import {
   DivorcePlanRecord,
   BookRecord,
   KindnessRecord,
+  StudyGrowthRecord,
+  StudyGrowthType,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -209,6 +214,19 @@ type KindnessDraft = {
   content: string;
 };
 
+type StudyGrowthDraft = {
+  title: string;
+  content: string;
+  source: string;
+};
+
+type StudyGrowthEditDraft = StudyGrowthDraft & {
+  type: StudyGrowthType;
+};
+
+const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", content: "", source: "" };
+const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDraft, type: "method" };
+
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
     topic: "",
@@ -297,6 +315,11 @@ export function App() {
   const [kindnessEndDate, setKindnessEndDate] = useState("");
   const [editingKindnessId, setEditingKindnessId] = useState<string | null>(null);
   const [kindnessEditDraft, setKindnessEditDraft] = useState<KindnessDraft>(createBlankKindnessDraft);
+  const [studyGrowthType, setStudyGrowthType] = useState<StudyGrowthType>("method");
+  const [studyGrowthDraft, setStudyGrowthDraft] = useState<StudyGrowthDraft>(blankStudyGrowthDraft);
+  const [studyGrowthQuery, setStudyGrowthQuery] = useState("");
+  const [editingStudyGrowthId, setEditingStudyGrowthId] = useState<string | null>(null);
+  const [studyGrowthEditDraft, setStudyGrowthEditDraft] = useState<StudyGrowthEditDraft>(blankStudyGrowthEditDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -395,6 +418,14 @@ export function App() {
   const visibleKindnessRecords = useMemo(
     () => getVisibleKindnessRecords(activeData.kindnessRecords, kindnessQuery, kindnessStartDate, kindnessEndDate),
     [activeData.kindnessRecords, kindnessEndDate, kindnessQuery, kindnessStartDate],
+  );
+  const visibleStudyGrowthRecords = useMemo(
+    () => getVisibleStudyGrowthRecords(activeData.studyGrowthRecords, studyGrowthType, studyGrowthQuery),
+    [activeData.studyGrowthRecords, studyGrowthQuery, studyGrowthType],
+  );
+  const studyGrowthTypeCount = useMemo(
+    () => activeData.studyGrowthRecords.filter((record) => record.type === studyGrowthType).length,
+    [activeData.studyGrowthRecords, studyGrowthType],
   );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -543,6 +574,8 @@ export function App() {
       setMetaLearningEditDraft(blankMetaLearningDraft);
       setEditingKindnessId(null);
       setKindnessEditDraft(createBlankKindnessDraft());
+      setEditingStudyGrowthId(null);
+      setStudyGrowthEditDraft(blankStudyGrowthEditDraft);
     });
   }
 
@@ -578,6 +611,8 @@ export function App() {
       setMetaLearningEditDraft(blankMetaLearningDraft);
       setEditingKindnessId(null);
       setKindnessEditDraft(createBlankKindnessDraft());
+      setEditingStudyGrowthId(null);
+      setStudyGrowthEditDraft(blankStudyGrowthEditDraft);
     });
   }
 
@@ -707,6 +742,10 @@ export function App() {
 
   function replaceKindnessRecords(kindnessRecords: KindnessRecord[]) {
     updateData((value) => ({ ...value, kindnessRecords }));
+  }
+
+  function replaceStudyGrowthRecords(studyGrowthRecords: StudyGrowthRecord[]) {
+    updateData((value) => ({ ...value, studyGrowthRecords }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -1110,6 +1149,43 @@ export function App() {
     } : record));
     setEditingKindnessId(null);
     setKindnessEditDraft(createBlankKindnessDraft());
+  }
+
+  function addStudyGrowthRecord(event: FormEvent) {
+    event.preventDefault();
+    const title = studyGrowthDraft.title.trim();
+    const content = studyGrowthDraft.content.trim();
+    if (!title || !content) return;
+    replaceStudyGrowthRecords([
+      createStudyGrowthRecord(studyGrowthType, title, content, studyGrowthDraft.source),
+      ...activeData.studyGrowthRecords,
+    ]);
+    setStudyGrowthDraft(blankStudyGrowthDraft);
+  }
+
+  function startStudyGrowthEdit(record: StudyGrowthRecord) {
+    setEditingStudyGrowthId(record.id);
+    setStudyGrowthEditDraft({ type: record.type, title: record.title, content: record.content, source: record.source });
+  }
+
+  function saveStudyGrowthEdit(recordId: string) {
+    const title = studyGrowthEditDraft.title.trim();
+    const content = studyGrowthEditDraft.content.trim();
+    if (!title || !content) return;
+    replaceStudyGrowthRecords(updateStudyGrowthRecord(activeData.studyGrowthRecords, recordId, {
+      type: studyGrowthEditDraft.type,
+      title,
+      content,
+      source: studyGrowthEditDraft.source,
+    }, nowStamp()));
+    setEditingStudyGrowthId(null);
+    setStudyGrowthEditDraft(blankStudyGrowthEditDraft);
+  }
+
+  function changeStudyGrowthType(type: StudyGrowthType) {
+    setStudyGrowthType(type);
+    setEditingStudyGrowthId(null);
+    setStudyGrowthEditDraft({ ...blankStudyGrowthEditDraft, type });
   }
 
   function startBookEdit(book: BookRecord) {
@@ -2173,6 +2249,28 @@ export function App() {
               setKindnessEditDraft(createBlankKindnessDraft());
             }}
           />
+        ) : activeView === "studyGrowth" ? (
+          <StudyGrowthPanel
+            records={visibleStudyGrowthRecords}
+            totalCount={studyGrowthTypeCount}
+            activeType={studyGrowthType}
+            draft={studyGrowthDraft}
+            query={studyGrowthQuery}
+            editingRecordId={editingStudyGrowthId}
+            editingDraft={studyGrowthEditDraft}
+            saveStatus={projectSaveStatus}
+            onTypeChange={changeStudyGrowthType}
+            onDraftChange={setStudyGrowthDraft}
+            onAdd={addStudyGrowthRecord}
+            onQueryChange={setStudyGrowthQuery}
+            onStartEdit={startStudyGrowthEdit}
+            onEditDraftChange={setStudyGrowthEditDraft}
+            onSaveEdit={saveStudyGrowthEdit}
+            onCancelEdit={() => {
+              setEditingStudyGrowthId(null);
+              setStudyGrowthEditDraft({ ...blankStudyGrowthEditDraft, type: studyGrowthType });
+            }}
+          />
         ) : (
           <WeeklyDeliveryPanel
             weekRange={deliveryWeekRange}
@@ -2287,6 +2385,7 @@ const emptyData: TodoData = {
   divorcePlans: [],
   books: [],
   kindnessRecords: [],
+  studyGrowthRecords: [],
   default_applied: [],
 };
 

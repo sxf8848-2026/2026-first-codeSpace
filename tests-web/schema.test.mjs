@@ -153,9 +153,19 @@ const validKindnessRecord = {
   created_at: "2026-10-20T09:40:00.000Z",
 };
 
+const validStudyGrowthRecord = {
+  id: "study-growth-1",
+  type: "method",
+  title: "费曼学习法",
+  content: "用自己的话解释知识点。",
+  source: "学习笔记",
+  created_at: "2026-10-26T08:00:00.000Z",
+  updated_at: "2026-10-26T08:00:00.000Z",
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 26,
+    version: 27,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -187,6 +197,7 @@ function makeTodosPayload(overrides = {}) {
     divorcePlans: [validDivorcePlan],
     books: [validBook],
     kindnessRecords: [validKindnessRecord],
+    studyGrowthRecords: [validStudyGrowthRecord],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -864,6 +875,24 @@ test("rejects kindness record with invalid occurred_at or created_at", () => {
     isValidTodosPayload(makeTodosPayload({ kindnessRecords: [{ ...validKindnessRecord, created_at: "not-a-date" }] })),
     false,
   );
+});
+
+test("accepts a valid study growth record", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [validStudyGrowthRecord] })), true);
+});
+
+test("rejects todos payload without study growth records", () => {
+  const payload = makeTodosPayload();
+  delete payload.studyGrowthRecords;
+  assert.equal(isValidTodosPayload(payload), false);
+});
+
+test("rejects invalid study growth fields", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, type: "other" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, title: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, content: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, source: null }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, updated_at: "invalid" }] })), false);
 });
 
 test("validates prefs payload", () => {

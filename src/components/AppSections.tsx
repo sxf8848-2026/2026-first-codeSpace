@@ -7,6 +7,7 @@ import {
   Archive,
   BriefcaseBusiness,
   BookOpen,
+  BrainCircuit,
   ClipboardList,
   Flame,
   History,
@@ -77,6 +78,8 @@ import {
   DivorcePlanRecord,
   BookRecord,
   KindnessRecord,
+  StudyGrowthRecord,
+  StudyGrowthType,
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { Segmented, TagButton } from "./Controls";
@@ -94,6 +97,7 @@ const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
   learning: GraduationCap,
   experience: BriefcaseBusiness,
   kindness: HandHeart,
+  studyGrowth: BrainCircuit,
   reflection: MessagesSquare,
   divorcePlan: ClipboardList,
 };
@@ -1202,6 +1206,119 @@ export function KindnessRecordsPanel({
               </div>
             </article>
           )) : <div className="kindness-empty">{totalCount ? "没有匹配的善意足迹" : "还没有善意足迹"}</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+type StudyGrowthDraft = {
+  title: string;
+  content: string;
+  source: string;
+};
+
+type StudyGrowthEditDraft = StudyGrowthDraft & {
+  type: StudyGrowthType;
+};
+
+export function StudyGrowthPanel({
+  records,
+  totalCount,
+  activeType,
+  draft,
+  query,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onTypeChange,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+}: {
+  records: StudyGrowthRecord[];
+  totalCount: number;
+  activeType: StudyGrowthType;
+  draft: StudyGrowthDraft;
+  query: string;
+  editingRecordId: string | null;
+  editingDraft: StudyGrowthEditDraft;
+  saveStatus: SaveStatus;
+  onTypeChange: (type: StudyGrowthType) => void;
+  onDraftChange: (draft: StudyGrowthDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onStartEdit: (record: StudyGrowthRecord) => void;
+  onEditDraftChange: (draft: StudyGrowthEditDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+}) {
+  const typeLabel = activeType === "method" ? "学习方法" : "学习习惯";
+  return (
+    <>
+      <header className="topbar study-growth-topbar">
+        <div>
+          <div className="eyebrow"><BrainCircuit size={16} />成长经验</div>
+          <h1>学会当学霸</h1>
+        </div>
+      </header>
+
+      <section className="study-growth-summary">
+        <div><span>当前展示</span><strong>{records.length} 条</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+
+      <section className="study-growth-panel" aria-label="学会当学霸">
+        <Segmented
+          value={activeType}
+          options={[["method", "学习方法"], ["habit", "学习习惯"]]}
+          onChange={(value) => onTypeChange(value as StudyGrowthType)}
+        />
+
+        <form className="study-growth-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder={`${typeLabel}标题，必填`} required />
+          <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
+          <textarea value={draft.content} onChange={(event) => onDraftChange({ ...draft, content: event.target.value })} placeholder={`记录${typeLabel}的具体内容，必填`} required />
+          <button className="primary-button" type="submit"><Plus size={18} />添加记录</button>
+        </form>
+
+        <div className="study-growth-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题、正文或来源" /></div>
+        </div>
+
+        <div className="study-growth-list">
+          {records.length ? records.map((record) => (
+            <article className="study-growth-item" key={record.id}>
+              {editingRecordId === record.id ? (
+                <div className="study-growth-edit">
+                  <select value={editingDraft.type} onChange={(event) => onEditDraftChange({ ...editingDraft, type: event.target.value as StudyGrowthType })} aria-label="记录类型">
+                    <option value="method">学习方法</option>
+                    <option value="habit">学习习惯</option>
+                  </select>
+                  <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
+                  <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                  <textarea value={editingDraft.content} onChange={(event) => onEditDraftChange({ ...editingDraft, content: event.target.value })} placeholder="正文，必填" required />
+                </div>
+              ) : (
+                <div className="study-growth-content">
+                  <div className="study-growth-heading"><strong>{record.title}</strong><time>{record.updated_at === record.created_at ? `添加于 ${formatRecordStamp(record.created_at)}` : `更新于 ${formatRecordStamp(record.updated_at)}`}</time></div>
+                  <p>{record.content}</p>
+                  {record.source ? <small>来源：{record.source}</small> : null}
+                </div>
+              )}
+              <div className="study-growth-actions">
+                {editingRecordId === record.id ? (
+                  <><button type="button" onClick={() => onSaveEdit(record.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></>
+                ) : (
+                  <button type="button" onClick={() => onStartEdit(record)} title="编辑记录"><Pencil size={16} /></button>
+                )}
+              </div>
+            </article>
+          )) : <div className="study-growth-empty">{totalCount ? `没有匹配的${typeLabel}` : `还没有${typeLabel}记录`}</div>}
         </div>
       </section>
     </>

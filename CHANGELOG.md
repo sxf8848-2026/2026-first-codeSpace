@@ -13,6 +13,46 @@
 
 ---
 
+## [27.0.0] - 2026-10-26
+
+### 改了什么
+
+- 在“成长经验”一级菜单下新增“学会当学霸”页面，放在“善意足迹”之后。
+- 页面通过“学习方法”和“学习习惯”两个标签页管理记录，支持新增、关键词搜索和编辑。
+- 编辑时可以修改记录类型；保存后记录会移动到对应标签页，列表按创建时间倒序展示。
+- 数据模型新增 `studyGrowthRecords`，前端归一化、项目文件保存、localStorage 兜底和后端写入校验同步支持。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/studyGrowthRecords.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，180/180。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+- 已通过 1440px 桌面端和 390px 移动端截图检查，无横向溢出或界面重叠。
+
+### 注意事项
+
+- 数据版本升级至 27；旧数据首次读取时会自动补充空的 `studyGrowthRecords` 数组。
+- 第一版不提供删除、归档、置顶、标签或统计功能。
+
+---
+
 ## [26.0.0] - 2026-10-21
 
 ### 改了什么
