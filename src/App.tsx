@@ -12,6 +12,8 @@ import {
   InspirationPanel,
   KindnessRecordsPanel,
   StudyGrowthPanel,
+  SkincarePanel,
+  RewardPanel,
   LoadingScreen,
   MetaLearningPanel,
   MonthlyPanel,
@@ -41,6 +43,9 @@ import {
   createBook,
   createKindnessRecord,
   createStudyGrowthRecord,
+  createSkincareProduct,
+  createRewardRule,
+  createRewardClaim,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -77,6 +82,15 @@ import { getVisibleDivorcePlans } from "./services/divorcePlans";
 import { BookStatusFilter, getVisibleBooks } from "./services/books";
 import { getVisibleKindnessRecords } from "./services/kindnessRecords";
 import { getVisibleStudyGrowthRecords, updateStudyGrowthRecord } from "./services/studyGrowthRecords";
+import { getVisibleSkincareProducts, SkincareCategoryFilter } from "./services/skincareProducts";
+import {
+  canClaimReward,
+  getRewardClaimMonths,
+  getRewardTotals,
+  getVisibleRewardClaims,
+  getVisibleRewardRules,
+  RewardRuleStatusFilter,
+} from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
   Filters,
@@ -111,6 +125,9 @@ import {
   KindnessRecord,
   StudyGrowthRecord,
   StudyGrowthType,
+  SkincareCategory,
+  SkincareProductRecord,
+  RewardRuleRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -227,6 +244,12 @@ type StudyGrowthEditDraft = StudyGrowthDraft & {
 const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", content: "", source: "" };
 const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDraft, type: "method" };
 
+type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
+type RewardRuleDraft = { name: string; amount: string; description: string };
+
+const blankSkincareDraft: SkincareDraft = { name: "", brand: "", category: "cleanser", description: "" };
+const blankRewardRuleDraft: RewardRuleDraft = { name: "", amount: "", description: "" };
+
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
     topic: "",
@@ -320,6 +343,18 @@ export function App() {
   const [studyGrowthQuery, setStudyGrowthQuery] = useState("");
   const [editingStudyGrowthId, setEditingStudyGrowthId] = useState<string | null>(null);
   const [studyGrowthEditDraft, setStudyGrowthEditDraft] = useState<StudyGrowthEditDraft>(blankStudyGrowthEditDraft);
+  const [skincareDraft, setSkincareDraft] = useState<SkincareDraft>(blankSkincareDraft);
+  const [skincareQuery, setSkincareQuery] = useState("");
+  const [skincareCategoryFilter, setSkincareCategoryFilter] = useState<SkincareCategoryFilter>("all");
+  const [editingSkincareId, setEditingSkincareId] = useState<string | null>(null);
+  const [skincareEditDraft, setSkincareEditDraft] = useState<SkincareDraft>(blankSkincareDraft);
+  const [rewardRuleDraft, setRewardRuleDraft] = useState<RewardRuleDraft>(blankRewardRuleDraft);
+  const [rewardRuleQuery, setRewardRuleQuery] = useState("");
+  const [rewardRuleStatusFilter, setRewardRuleStatusFilter] = useState<RewardRuleStatusFilter>("active");
+  const [editingRewardRuleId, setEditingRewardRuleId] = useState<string | null>(null);
+  const [rewardRuleEditDraft, setRewardRuleEditDraft] = useState<RewardRuleDraft>(blankRewardRuleDraft);
+  const [rewardClaimQuery, setRewardClaimQuery] = useState("");
+  const [rewardClaimMonthFilter, setRewardClaimMonthFilter] = useState("all");
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -427,6 +462,23 @@ export function App() {
     () => activeData.studyGrowthRecords.filter((record) => record.type === studyGrowthType).length,
     [activeData.studyGrowthRecords, studyGrowthType],
   );
+  const visibleSkincareProducts = useMemo(
+    () => getVisibleSkincareProducts(activeData.skincareProducts, skincareQuery, skincareCategoryFilter),
+    [activeData.skincareProducts, skincareCategoryFilter, skincareQuery],
+  );
+  const visibleRewardRules = useMemo(
+    () => getVisibleRewardRules(activeData.rewardRules, rewardRuleQuery, rewardRuleStatusFilter),
+    [activeData.rewardRules, rewardRuleQuery, rewardRuleStatusFilter],
+  );
+  const visibleRewardClaims = useMemo(
+    () => getVisibleRewardClaims(activeData.rewardClaims, rewardClaimQuery, rewardClaimMonthFilter),
+    [activeData.rewardClaims, rewardClaimMonthFilter, rewardClaimQuery],
+  );
+  const rewardClaimMonths = useMemo(() => getRewardClaimMonths(activeData.rewardClaims), [activeData.rewardClaims]);
+  const rewardTotals = useMemo(() => getRewardTotals(activeData.rewardClaims, todayMonth), [activeData.rewardClaims, todayMonth]);
+  const claimedRewardRuleIds = useMemo(() => new Set(
+    activeData.rewardClaims.filter((claim) => claim.claimed_at.slice(0, 10) === todayDay).map((claim) => claim.rule_id),
+  ), [activeData.rewardClaims, todayDay]);
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
     [activeData.videoInspirations],
@@ -576,6 +628,10 @@ export function App() {
       setKindnessEditDraft(createBlankKindnessDraft());
       setEditingStudyGrowthId(null);
       setStudyGrowthEditDraft(blankStudyGrowthEditDraft);
+      setEditingSkincareId(null);
+      setSkincareEditDraft(blankSkincareDraft);
+      setEditingRewardRuleId(null);
+      setRewardRuleEditDraft(blankRewardRuleDraft);
     });
   }
 
@@ -613,6 +669,10 @@ export function App() {
       setKindnessEditDraft(createBlankKindnessDraft());
       setEditingStudyGrowthId(null);
       setStudyGrowthEditDraft(blankStudyGrowthEditDraft);
+      setEditingSkincareId(null);
+      setSkincareEditDraft(blankSkincareDraft);
+      setEditingRewardRuleId(null);
+      setRewardRuleEditDraft(blankRewardRuleDraft);
     });
   }
 
@@ -746,6 +806,14 @@ export function App() {
 
   function replaceStudyGrowthRecords(studyGrowthRecords: StudyGrowthRecord[]) {
     updateData((value) => ({ ...value, studyGrowthRecords }));
+  }
+
+  function replaceSkincareProducts(skincareProducts: SkincareProductRecord[]) {
+    updateData((value) => ({ ...value, skincareProducts }));
+  }
+
+  function replaceRewardRules(rewardRules: RewardRuleRecord[]) {
+    updateData((value) => ({ ...value, rewardRules }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -1186,6 +1254,88 @@ export function App() {
     setStudyGrowthType(type);
     setEditingStudyGrowthId(null);
     setStudyGrowthEditDraft({ ...blankStudyGrowthEditDraft, type });
+  }
+
+  function addSkincareProduct(event: FormEvent) {
+    event.preventDefault();
+    const name = skincareDraft.name.trim();
+    if (!name) return;
+    replaceSkincareProducts([
+      createSkincareProduct(name, skincareDraft.brand, skincareDraft.category, skincareDraft.description),
+      ...activeData.skincareProducts,
+    ]);
+    setSkincareDraft(blankSkincareDraft);
+  }
+
+  function startSkincareEdit(product: SkincareProductRecord) {
+    setEditingSkincareId(product.id);
+    setSkincareEditDraft({ name: product.name, brand: product.brand, category: product.category, description: product.description });
+  }
+
+  function saveSkincareEdit(productId: string) {
+    const name = skincareEditDraft.name.trim();
+    if (!name) return;
+    replaceSkincareProducts(activeData.skincareProducts.map((product) => product.id === productId ? {
+      ...product,
+      name,
+      brand: skincareEditDraft.brand.trim(),
+      category: skincareEditDraft.category,
+      description: skincareEditDraft.description.trim(),
+      updated_at: nowStamp(),
+    } : product));
+    setEditingSkincareId(null);
+    setSkincareEditDraft(blankSkincareDraft);
+  }
+
+  function addRewardRule(event: FormEvent) {
+    event.preventDefault();
+    const name = rewardRuleDraft.name.trim();
+    const amountCents = parseRewardAmount(rewardRuleDraft.amount);
+    if (!name || amountCents === null) return;
+    replaceRewardRules([createRewardRule(name, amountCents, rewardRuleDraft.description), ...activeData.rewardRules]);
+    setRewardRuleDraft(blankRewardRuleDraft);
+  }
+
+  function startRewardRuleEdit(rule: RewardRuleRecord) {
+    setEditingRewardRuleId(rule.id);
+    setRewardRuleEditDraft({ name: rule.name, amount: (rule.amount_cents / 100).toFixed(2), description: rule.description });
+  }
+
+  function saveRewardRule(ruleId: string) {
+    const name = rewardRuleEditDraft.name.trim();
+    const amountCents = parseRewardAmount(rewardRuleEditDraft.amount);
+    if (!name || amountCents === null) return;
+    replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? {
+      ...rule,
+      name,
+      amount_cents: amountCents,
+      description: rewardRuleEditDraft.description.trim(),
+      updated_at: nowStamp(),
+    } : rule));
+    setEditingRewardRuleId(null);
+    setRewardRuleEditDraft(blankRewardRuleDraft);
+  }
+
+  function toggleRewardRule(ruleId: string) {
+    replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? { ...rule, active: !rule.active, updated_at: nowStamp() } : rule));
+  }
+
+  function claimReward(ruleId: string) {
+    const rule = activeData.rewardRules.find((item) => item.id === ruleId);
+    if (!rule) return;
+    const now = new Date();
+    const localDay = dateKey(now);
+    if (!canClaimReward(rule, activeData.rewardClaims, localDay)) {
+      if (rule.active) window.alert("这条奖励今天已经领取过了。");
+      return;
+    }
+    updateData((value) => ({ ...value, rewardClaims: [createRewardClaim(rule, toLocalDateTime(now)), ...value.rewardClaims] }));
+  }
+
+  function deleteRewardClaim(claimId: string) {
+    const claim = activeData.rewardClaims.find((item) => item.id === claimId);
+    if (!claim || !window.confirm(`确定删除“${claim.rule_name}”的这条领取记录吗？金额统计会同步回退。`)) return;
+    updateData((value) => ({ ...value, rewardClaims: value.rewardClaims.filter((item) => item.id !== claimId) }));
   }
 
   function startBookEdit(book: BookRecord) {
@@ -2271,6 +2421,55 @@ export function App() {
               setStudyGrowthEditDraft({ ...blankStudyGrowthEditDraft, type: studyGrowthType });
             }}
           />
+        ) : activeView === "skincare" ? (
+          <SkincarePanel
+            products={visibleSkincareProducts}
+            totalCount={activeData.skincareProducts.length}
+            draft={skincareDraft}
+            query={skincareQuery}
+            categoryFilter={skincareCategoryFilter}
+            editingProductId={editingSkincareId}
+            editingDraft={skincareEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setSkincareDraft}
+            onAdd={addSkincareProduct}
+            onQueryChange={setSkincareQuery}
+            onCategoryFilterChange={setSkincareCategoryFilter}
+            onStartEdit={startSkincareEdit}
+            onEditDraftChange={setSkincareEditDraft}
+            onSaveEdit={saveSkincareEdit}
+            onCancelEdit={() => { setEditingSkincareId(null); setSkincareEditDraft(blankSkincareDraft); }}
+          />
+        ) : activeView === "reward" ? (
+          <RewardPanel
+            rules={visibleRewardRules}
+            claims={visibleRewardClaims}
+            claimMonths={rewardClaimMonths}
+            claimedRuleIds={claimedRewardRuleIds}
+            monthRewardCents={rewardTotals.monthCents}
+            totalRewardCents={rewardTotals.totalCents}
+            ruleDraft={rewardRuleDraft}
+            ruleQuery={rewardRuleQuery}
+            ruleStatusFilter={rewardRuleStatusFilter}
+            editingRuleId={editingRewardRuleId}
+            editingDraft={rewardRuleEditDraft}
+            claimQuery={rewardClaimQuery}
+            claimMonthFilter={rewardClaimMonthFilter}
+            saveStatus={projectSaveStatus}
+            onRuleDraftChange={setRewardRuleDraft}
+            onAddRule={addRewardRule}
+            onRuleQueryChange={setRewardRuleQuery}
+            onRuleStatusFilterChange={setRewardRuleStatusFilter}
+            onStartEditRule={startRewardRuleEdit}
+            onEditDraftChange={setRewardRuleEditDraft}
+            onSaveRule={saveRewardRule}
+            onCancelEdit={() => { setEditingRewardRuleId(null); setRewardRuleEditDraft(blankRewardRuleDraft); }}
+            onToggleRule={toggleRewardRule}
+            onClaim={claimReward}
+            onClaimQueryChange={setRewardClaimQuery}
+            onClaimMonthFilterChange={setRewardClaimMonthFilter}
+            onDeleteClaim={deleteRewardClaim}
+          />
         ) : (
           <WeeklyDeliveryPanel
             weekRange={deliveryWeekRange}
@@ -2386,8 +2585,18 @@ const emptyData: TodoData = {
   books: [],
   kindnessRecords: [],
   studyGrowthRecords: [],
+  skincareProducts: [],
+  rewardRules: [],
+  rewardClaims: [],
   default_applied: [],
 };
+
+function parseRewardAmount(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  const cents = Math.round(Number(normalized) * 100);
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+}
 
 function matchesFilters(task: TodoTask, filters: Filters): boolean {
   if (filters.status !== "all" && String(task.status) !== filters.status) return false;

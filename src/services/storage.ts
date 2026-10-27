@@ -12,6 +12,8 @@ import { normalizeDivorcePlans } from "./divorcePlans";
 import { normalizeBooks } from "./books";
 import { normalizeKindnessRecords } from "./kindnessRecords";
 import { normalizeStudyGrowthRecords } from "./studyGrowthRecords";
+import { normalizeSkincareProducts } from "./skincareProducts";
+import { buildRewardClaim, normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
@@ -24,6 +26,10 @@ import {
   KindnessRecord,
   StudyGrowthRecord,
   StudyGrowthType,
+  SkincareCategory,
+  SkincareProductRecord,
+  RewardRuleRecord,
+  RewardClaimRecord,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -78,6 +84,9 @@ const initialData: TodoData = {
   books: [],
   kindnessRecords: [],
   studyGrowthRecords: [],
+  skincareProducts: [],
+  rewardRules: [],
+  rewardClaims: [],
   default_applied: [],
 };
 
@@ -415,6 +424,41 @@ export function createStudyGrowthRecord(
   };
 }
 
+export function createSkincareProduct(
+  name: string,
+  brand: string,
+  category: SkincareCategory,
+  description: string,
+): SkincareProductRecord {
+  const stamp = nowStamp();
+  return {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    brand: brand.trim(),
+    category,
+    description: description.trim(),
+    created_at: stamp,
+    updated_at: stamp,
+  };
+}
+
+export function createRewardRule(name: string, amount_cents: number, description: string): RewardRuleRecord {
+  const stamp = nowStamp();
+  return {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    amount_cents,
+    description: description.trim(),
+    active: true,
+    created_at: stamp,
+    updated_at: stamp,
+  };
+}
+
+export function createRewardClaim(rule: RewardRuleRecord, claimed_at: string): RewardClaimRecord {
+  return buildRewardClaim(rule, claimed_at, () => crypto.randomUUID());
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -501,6 +545,20 @@ export function normalizeData(raw: unknown): TodoData {
     value.studyGrowthRecords,
     () => crypto.randomUUID(),
     nowStamp,
+  );
+  const skincareProducts: TodoData["skincareProducts"] = normalizeSkincareProducts(
+    value.skincareProducts,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
+  const rewardRules: TodoData["rewardRules"] = normalizeRewardRules(
+    value.rewardRules,
+    () => crypto.randomUUID(),
+    nowStamp,
+  );
+  const rewardClaims: TodoData["rewardClaims"] = normalizeRewardClaims(
+    value.rewardClaims,
+    () => crypto.randomUUID(),
   );
   const rawTodos =
     value.todos && typeof value.todos === "object"
@@ -596,6 +654,9 @@ export function normalizeData(raw: unknown): TodoData {
     books,
     kindnessRecords,
     studyGrowthRecords,
+    skincareProducts,
+    rewardRules,
+    rewardClaims,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -621,7 +682,10 @@ function hasTasks(data: TodoData): boolean {
     data.divorcePlans.length > 0 ||
     data.books.length > 0 ||
     data.kindnessRecords.length > 0 ||
-    data.studyGrowthRecords.length > 0
+    data.studyGrowthRecords.length > 0 ||
+    data.skincareProducts.length > 0 ||
+    data.rewardRules.length > 0 ||
+    data.rewardClaims.length > 0
   );
 }
 

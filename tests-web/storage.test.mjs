@@ -12,6 +12,8 @@ import { DEFAULT_DELIVERY_PLATFORMS, normalizeDeliveryPlatforms } from "../src/s
 import { normalizeBooks } from "../src/services/books.ts";
 import { normalizeKindnessRecords } from "../src/services/kindnessRecords.ts";
 import { normalizeStudyGrowthRecords } from "../src/services/studyGrowthRecords.ts";
+import { normalizeSkincareProducts } from "../src/services/skincareProducts.ts";
+import { normalizeRewardClaims, normalizeRewardRules } from "../src/services/rewards.ts";
 
 test("normalizes old todo data without inspirations", () => {
   assert.deepEqual(normalizeInspirations(undefined), []);
@@ -55,6 +57,12 @@ test("normalizes old todo data without kindness records", () => {
 
 test("normalizes old todo data without study growth records", () => {
   assert.deepEqual(normalizeStudyGrowthRecords(undefined), []);
+});
+
+test("normalizes old todo data without personal management records", () => {
+  assert.deepEqual(normalizeSkincareProducts(undefined), []);
+  assert.deepEqual(normalizeRewardRules(undefined), []);
+  assert.deepEqual(normalizeRewardClaims(undefined), []);
 });
 
 test("normalizes old prefs with default delivery platforms", () => {

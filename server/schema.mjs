@@ -4,6 +4,7 @@ const allowedTagTones = new Set(["neutral", "green", "blue", "amber"]);
 const allowedThemes = new Set(["light", "dark"]);
 const allowedMetaLearningMasteries = new Set(["todo", "learning", "mastered", "skilled"]);
 const allowedStudyGrowthTypes = new Set(["method", "habit", "mental_model"]);
+const allowedSkincareCategories = new Set(["cleanser", "toner", "serum", "lotion", "cream", "sunscreen", "mask", "other"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
 const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -29,6 +30,9 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.books)) return false;
   if (!Array.isArray(payload.kindnessRecords)) return false;
   if (!Array.isArray(payload.studyGrowthRecords)) return false;
+  if (!Array.isArray(payload.skincareProducts)) return false;
+  if (!Array.isArray(payload.rewardRules)) return false;
+  if (!Array.isArray(payload.rewardClaims)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -44,6 +48,9 @@ export function isValidTodosPayload(payload) {
   if (!payload.books.every(isValidBook)) return false;
   if (!payload.kindnessRecords.every(isValidKindnessRecord)) return false;
   if (!payload.studyGrowthRecords.every(isValidStudyGrowthRecord)) return false;
+  if (!payload.skincareProducts.every(isValidSkincareProduct)) return false;
+  if (!payload.rewardRules.every(isValidRewardRule)) return false;
+  if (!payload.rewardClaims.every(isValidRewardClaim)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -283,6 +290,40 @@ function isValidStudyGrowthRecord(record) {
   return true;
 }
 
+function isValidSkincareProduct(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.name)) return false;
+  if (typeof record.brand !== "string") return false;
+  if (!allowedSkincareCategories.has(record.category)) return false;
+  if (typeof record.description !== "string") return false;
+  if (!isDateTimeStamp(record.created_at)) return false;
+  if (!isDateTimeStamp(record.updated_at)) return false;
+  return true;
+}
+
+function isValidRewardRule(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.name)) return false;
+  if (!isPositiveCents(record.amount_cents)) return false;
+  if (typeof record.description !== "string") return false;
+  if (typeof record.active !== "boolean") return false;
+  if (!isDateTimeStamp(record.created_at)) return false;
+  if (!isDateTimeStamp(record.updated_at)) return false;
+  return true;
+}
+
+function isValidRewardClaim(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.rule_id)) return false;
+  if (!isNonEmptyString(record.rule_name)) return false;
+  if (!isPositiveCents(record.amount_cents)) return false;
+  if (typeof record.claimed_at !== "string" || !localDateTimePattern.test(record.claimed_at)) return false;
+  return true;
+}
+
 function isValidTag(tag) {
   if (!isPlainObject(tag)) return false;
   if (!isValidTagId(tag.id)) return false;
@@ -315,4 +356,12 @@ function isMonthKey(value) {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isPositiveCents(value) {
+  return Number.isSafeInteger(value) && value > 0;
+}
+
+function isDateTimeStamp(value) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }

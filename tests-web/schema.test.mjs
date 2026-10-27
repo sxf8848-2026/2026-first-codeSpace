@@ -163,9 +163,37 @@ const validStudyGrowthRecord = {
   updated_at: "2026-10-26T08:00:00.000Z",
 };
 
+const validSkincareProduct = {
+  id: "skin-1",
+  name: "修护精华",
+  brand: "品牌甲",
+  category: "serum",
+  description: "晚间使用",
+  created_at: "2026-10-27T08:00:00.000Z",
+  updated_at: "2026-10-27T08:00:00.000Z",
+};
+
+const validRewardRule = {
+  id: "reward-rule-1",
+  name: "早起早睡",
+  amount_cents: 200,
+  description: "当天按计划作息",
+  active: true,
+  created_at: "2026-10-27T08:00:00.000Z",
+  updated_at: "2026-10-27T08:00:00.000Z",
+};
+
+const validRewardClaim = {
+  id: "reward-claim-1",
+  rule_id: "reward-rule-1",
+  rule_name: "早起早睡",
+  amount_cents: 200,
+  claimed_at: "2026-10-27T07:30",
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 28,
+    version: 29,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -198,6 +226,9 @@ function makeTodosPayload(overrides = {}) {
     books: [validBook],
     kindnessRecords: [validKindnessRecord],
     studyGrowthRecords: [validStudyGrowthRecord],
+    skincareProducts: [validSkincareProduct],
+    rewardRules: [validRewardRule],
+    rewardClaims: [validRewardClaim],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -894,6 +925,36 @@ test("rejects invalid study growth fields", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, content: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, source: null }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, updated_at: "invalid" }] })), false);
+});
+
+test("accepts valid personal management records", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({
+    skincareProducts: [validSkincareProduct],
+    rewardRules: [validRewardRule],
+    rewardClaims: [validRewardClaim],
+  })), true);
+});
+
+test("rejects missing personal management arrays", () => {
+  for (const field of ["skincareProducts", "rewardRules", "rewardClaims"]) {
+    const payload = makeTodosPayload();
+    delete payload[field];
+    assert.equal(isValidTodosPayload(payload), false);
+  }
+});
+
+test("rejects invalid skincare products", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ skincareProducts: [{ ...validSkincareProduct, name: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ skincareProducts: [{ ...validSkincareProduct, category: "unknown" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ skincareProducts: [{ ...validSkincareProduct, created_at: "invalid" }] })), false);
+});
+
+test("rejects invalid reward rules and claims", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, amount_cents: 0 }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, amount_cents: 1.5 }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, active: "yes" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, rule_name: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, claimed_at: "2026-10-27" }] })), false);
 });
 
 test("validates prefs payload", () => {

@@ -10,6 +10,8 @@ export type SidebarIconName =
   | "experience"
   | "kindness"
   | "studyGrowth"
+  | "skincare"
+  | "reward"
   | "reflection"
   | "divorcePlan";
 
@@ -66,6 +68,13 @@ export const SIDEBAR_GROUPS = [
     items: [
       { view: "argumentReflection", label: "吵架整理", icon: "reflection" },
       { view: "divorcePlan", label: "Divorce Plan", icon: "divorcePlan" },
+    ],
+  },
+  {
+    label: "个人管理",
+    items: [
+      { view: "skincare", label: "个人护肤", icon: "skincare" },
+      { view: "reward", label: "个人奖励", icon: "reward" },
     ],
   },
 ] as const satisfies readonly SidebarGroup[];

@@ -13,6 +13,47 @@
 
 ---
 
+## [29.0.0] - 2026-10-27
+
+### 改了什么
+
+- 在“私人复盘”之后新增“个人管理”一级菜单，包含“个人护肤”和“个人奖励”两个页面。
+- “个人护肤”支持维护全部护肤品清单，按名称、品牌和说明搜索，按固定品类筛选，并可编辑已有产品。
+- “个人奖励”支持奖励规则新增、搜索、编辑、停用和重新启用；同一规则每天只能领取一次。
+- 领取流水保存规则名称和金额快照，支持关键词和月份查询、误领删除，并展示本月奖励和历史累计金额。
+- 数据模型新增 `skincareProducts`、`rewardRules` 和 `rewardClaims`，前后端保存与校验链路同步支持。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/skincareProducts.ts`
+- `src/services/rewards.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，196/196。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+- 已通过 1440px 桌面端和 390px 移动端截图检查，两个页面均无横向溢出。
+
+### 注意事项
+
+- 数据版本升级至 29；旧数据缺少新增字段时自动补为空数组。
+- 奖励金额以整数分保存，界面按人民币元展示；规则修改不会改写历史领取流水。
+- 第一版不提供护肤品删除、归档、状态和早晚流程，也不提供奖励规则删除、分类或消费兑换。
+
+---
+
 ## [28.0.0] - 2026-10-27
 
 ### 改了什么

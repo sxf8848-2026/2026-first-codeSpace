@@ -184,6 +184,36 @@ export type StudyGrowthRecord = {
   updated_at: string;
 };
 
+export type SkincareCategory = "cleanser" | "toner" | "serum" | "lotion" | "cream" | "sunscreen" | "mask" | "other";
+
+export type SkincareProductRecord = {
+  id: string;
+  name: string;
+  brand: string;
+  category: SkincareCategory;
+  description: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RewardRuleRecord = {
+  id: string;
+  name: string;
+  amount_cents: number;
+  description: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RewardClaimRecord = {
+  id: string;
+  rule_id: string;
+  rule_name: string;
+  amount_cents: number;
+  claimed_at: string;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -204,6 +234,9 @@ export type TodoData = {
   books: BookRecord[];
   kindnessRecords: KindnessRecord[];
   studyGrowthRecords: StudyGrowthRecord[];
+  skincareProducts: SkincareProductRecord[];
+  rewardRules: RewardRuleRecord[];
+  rewardClaims: RewardClaimRecord[];
   default_applied: string[];
 };
 

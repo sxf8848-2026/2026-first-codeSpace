@@ -35,6 +35,9 @@ import {
   GraduationCap,
   ExternalLink,
   Video,
+  Droplets,
+  Gift,
+  CircleDollarSign,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { STATUSES, TAGS } from "../constants";
@@ -80,8 +83,14 @@ import {
   KindnessRecord,
   StudyGrowthRecord,
   StudyGrowthType,
+  SkincareCategory,
+  SkincareProductRecord,
+  RewardRuleRecord,
+  RewardClaimRecord,
 } from "../types";
 import { BookStatusFilter } from "../services/books";
+import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
+import { RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
 
 export type { AppView } from "../services/sidebarNavigation";
@@ -98,6 +107,8 @@ const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
   experience: BriefcaseBusiness,
   kindness: HandHeart,
   studyGrowth: BrainCircuit,
+  skincare: Droplets,
+  reward: Gift,
   reflection: MessagesSquare,
   divorcePlan: ClipboardList,
 };
@@ -1323,6 +1334,224 @@ export function StudyGrowthPanel({
       </section>
     </>
   );
+}
+
+type SkincareDraft = {
+  name: string;
+  brand: string;
+  category: SkincareCategory;
+  description: string;
+};
+
+export function SkincarePanel({
+  products,
+  totalCount,
+  draft,
+  query,
+  categoryFilter,
+  editingProductId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onCategoryFilterChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+}: {
+  products: SkincareProductRecord[];
+  totalCount: number;
+  draft: SkincareDraft;
+  query: string;
+  categoryFilter: SkincareCategoryFilter;
+  editingProductId: string | null;
+  editingDraft: SkincareDraft;
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: SkincareDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onCategoryFilterChange: (filter: SkincareCategoryFilter) => void;
+  onStartEdit: (product: SkincareProductRecord) => void;
+  onEditDraftChange: (draft: SkincareDraft) => void;
+  onSaveEdit: (productId: string) => void;
+  onCancelEdit: () => void;
+}) {
+  return (
+    <>
+      <header className="topbar personal-topbar">
+        <div><div className="eyebrow"><Droplets size={16} />个人管理</div><h1>个人护肤</h1></div>
+      </header>
+      <section className="personal-summary">
+        <div><span>当前展示</span><strong>{products.length} 件</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+      <section className="personal-panel" aria-label="个人护肤">
+        <form className="skincare-composer" onSubmit={onAdd}>
+          <input value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="产品名称，必填" required />
+          <input value={draft.brand} onChange={(event) => onDraftChange({ ...draft, brand: event.target.value })} placeholder="品牌，可不填" />
+          <select value={draft.category} onChange={(event) => onDraftChange({ ...draft, category: event.target.value as SkincareCategory })} aria-label="护肤品品类">
+            {SKINCARE_CATEGORY_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <textarea value={draft.description} onChange={(event) => onDraftChange({ ...draft, description: event.target.value })} placeholder="用途说明，可不填" />
+          <button className="primary-button" type="submit"><Plus size={18} />添加产品</button>
+        </form>
+        <div className="personal-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索名称、品牌或说明" /></div>
+          <select value={categoryFilter} onChange={(event) => onCategoryFilterChange(event.target.value as SkincareCategoryFilter)} aria-label="按品类筛选">
+            <option value="all">全部品类</option>
+            {SKINCARE_CATEGORY_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+        <div className="personal-list">
+          {products.length ? products.map((product) => (
+            <article className="personal-item" key={product.id}>
+              {editingProductId === product.id ? (
+                <div className="skincare-edit">
+                  <input value={editingDraft.name} onChange={(event) => onEditDraftChange({ ...editingDraft, name: event.target.value })} placeholder="产品名称，必填" required autoFocus />
+                  <input value={editingDraft.brand} onChange={(event) => onEditDraftChange({ ...editingDraft, brand: event.target.value })} placeholder="品牌，可不填" />
+                  <select value={editingDraft.category} onChange={(event) => onEditDraftChange({ ...editingDraft, category: event.target.value as SkincareCategory })}>
+                    {SKINCARE_CATEGORY_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                  <textarea value={editingDraft.description} onChange={(event) => onEditDraftChange({ ...editingDraft, description: event.target.value })} placeholder="用途说明，可不填" />
+                </div>
+              ) : (
+                <div className="personal-content">
+                  <div className="personal-heading"><strong>{product.name}</strong><span>{skincareCategoryLabel(product.category)}</span></div>
+                  {product.brand ? <small>品牌：{product.brand}</small> : null}
+                  {product.description ? <p>{product.description}</p> : null}
+                  <time>{product.updated_at === product.created_at ? `添加于 ${formatRecordStamp(product.created_at)}` : `更新于 ${formatRecordStamp(product.updated_at)}`}</time>
+                </div>
+              )}
+              <div className="personal-actions">
+                {editingProductId === product.id ? <><button type="button" onClick={() => onSaveEdit(product.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <button type="button" onClick={() => onStartEdit(product)} title="编辑产品"><Pencil size={16} /></button>}
+              </div>
+            </article>
+          )) : <div className="personal-empty">{totalCount ? "没有匹配的护肤品" : "还没有护肤品记录"}</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+type RewardRuleDraft = { name: string; amount: string; description: string };
+
+export function RewardPanel({
+  rules,
+  claims,
+  claimMonths,
+  claimedRuleIds,
+  monthRewardCents,
+  totalRewardCents,
+  ruleDraft,
+  ruleQuery,
+  ruleStatusFilter,
+  editingRuleId,
+  editingDraft,
+  claimQuery,
+  claimMonthFilter,
+  saveStatus,
+  onRuleDraftChange,
+  onAddRule,
+  onRuleQueryChange,
+  onRuleStatusFilterChange,
+  onStartEditRule,
+  onEditDraftChange,
+  onSaveRule,
+  onCancelEdit,
+  onToggleRule,
+  onClaim,
+  onClaimQueryChange,
+  onClaimMonthFilterChange,
+  onDeleteClaim,
+}: {
+  rules: RewardRuleRecord[];
+  claims: RewardClaimRecord[];
+  claimMonths: string[];
+  claimedRuleIds: Set<string>;
+  monthRewardCents: number;
+  totalRewardCents: number;
+  ruleDraft: RewardRuleDraft;
+  ruleQuery: string;
+  ruleStatusFilter: RewardRuleStatusFilter;
+  editingRuleId: string | null;
+  editingDraft: RewardRuleDraft;
+  claimQuery: string;
+  claimMonthFilter: string;
+  saveStatus: SaveStatus;
+  onRuleDraftChange: (draft: RewardRuleDraft) => void;
+  onAddRule: (event: FormEvent) => void;
+  onRuleQueryChange: (query: string) => void;
+  onRuleStatusFilterChange: (filter: RewardRuleStatusFilter) => void;
+  onStartEditRule: (rule: RewardRuleRecord) => void;
+  onEditDraftChange: (draft: RewardRuleDraft) => void;
+  onSaveRule: (ruleId: string) => void;
+  onCancelEdit: () => void;
+  onToggleRule: (ruleId: string) => void;
+  onClaim: (ruleId: string) => void;
+  onClaimQueryChange: (query: string) => void;
+  onClaimMonthFilterChange: (month: string) => void;
+  onDeleteClaim: (claimId: string) => void;
+}) {
+  return (
+    <>
+      <header className="topbar personal-topbar"><div><div className="eyebrow"><Gift size={16} />个人管理</div><h1>个人奖励</h1></div></header>
+      <section className="reward-summary">
+        <div><span>本月奖励</span><strong>{formatRewardAmount(monthRewardCents)}</strong></div>
+        <div><span>历史累计</span><strong>{formatRewardAmount(totalRewardCents)}</strong></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </section>
+      <section className="personal-panel reward-rules" aria-label="奖励规则">
+        <h2>奖励规则</h2>
+        <form className="reward-composer" onSubmit={onAddRule}>
+          <input value={ruleDraft.name} onChange={(event) => onRuleDraftChange({ ...ruleDraft, name: event.target.value })} placeholder="规则名称，必填" required />
+          <input type="number" min="0.01" step="0.01" value={ruleDraft.amount} onChange={(event) => onRuleDraftChange({ ...ruleDraft, amount: event.target.value })} placeholder="奖励金额（元），必填" required />
+          <textarea value={ruleDraft.description} onChange={(event) => onRuleDraftChange({ ...ruleDraft, description: event.target.value })} placeholder="达成说明，可不填" />
+          <button className="primary-button" type="submit"><Plus size={18} />添加规则</button>
+        </form>
+        <div className="personal-toolbar reward-toolbar">
+          <div className="search-box"><Search size={16} /><input value={ruleQuery} onChange={(event) => onRuleQueryChange(event.target.value)} placeholder="搜索规则名称或说明" /></div>
+          <Segmented value={ruleStatusFilter} options={[["active", "启用"], ["all", "全部"], ["inactive", "已停用"]]} onChange={(value) => onRuleStatusFilterChange(value as RewardRuleStatusFilter)} />
+        </div>
+        <div className="reward-rule-list">
+          {rules.length ? rules.map((rule) => {
+            const claimedToday = claimedRuleIds.has(rule.id);
+            return (
+              <article className={`reward-rule-item ${rule.active ? "" : "inactive"}`} key={rule.id}>
+                {editingRuleId === rule.id ? (
+                  <div className="reward-edit">
+                    <input value={editingDraft.name} onChange={(event) => onEditDraftChange({ ...editingDraft, name: event.target.value })} placeholder="规则名称，必填" required autoFocus />
+                    <input type="number" min="0.01" step="0.01" value={editingDraft.amount} onChange={(event) => onEditDraftChange({ ...editingDraft, amount: event.target.value })} placeholder="奖励金额（元）" required />
+                    <textarea value={editingDraft.description} onChange={(event) => onEditDraftChange({ ...editingDraft, description: event.target.value })} placeholder="达成说明，可不填" />
+                  </div>
+                ) : (
+                  <div className="personal-content"><div className="personal-heading"><strong>{rule.name}</strong><span>{formatRewardAmount(rule.amount_cents)}</span></div>{rule.description ? <p>{rule.description}</p> : null}<small>{rule.active ? "启用中" : "已停用"}</small></div>
+                )}
+                <div className="reward-actions">
+                  {editingRuleId === rule.id ? <><button type="button" onClick={() => onSaveRule(rule.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <><button type="button" onClick={() => onClaim(rule.id)} disabled={!rule.active || claimedToday}><CircleDollarSign size={16} />{claimedToday ? "今日已领取" : "获得奖励"}</button><button type="button" onClick={() => onStartEditRule(rule)} title="编辑规则"><Pencil size={16} /></button><button type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button></>}
+                </div>
+              </article>
+            );
+          }) : <div className="personal-empty">还没有匹配的奖励规则</div>}
+        </div>
+      </section>
+      <section className="personal-panel reward-history" aria-label="领取记录">
+        <h2>领取记录</h2>
+        <div className="personal-toolbar">
+          <div className="search-box"><Search size={16} /><input value={claimQuery} onChange={(event) => onClaimQueryChange(event.target.value)} placeholder="搜索规则名称" /></div>
+          <select value={claimMonthFilter} onChange={(event) => onClaimMonthFilterChange(event.target.value)} aria-label="按月份筛选领取记录"><option value="all">全部月份</option>{claimMonths.map((month) => <option key={month} value={month}>{month}</option>)}</select>
+        </div>
+        <div className="reward-claim-list">
+          {claims.length ? claims.map((claim) => <article className="reward-claim-item" key={claim.id}><div><strong>{claim.rule_name}</strong><time>{formatArgumentDateTime(claim.claimed_at)}</time></div><span>{formatRewardAmount(claim.amount_cents)}</span><button type="button" onClick={() => onDeleteClaim(claim.id)} title="删除领取记录"><Trash2 size={16} /></button></article>) : <div className="personal-empty">还没有匹配的领取记录</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function formatRewardAmount(cents: number): string {
+  return `${(cents / 100).toFixed(2)} 元`;
 }
 
 export function ArgumentReflectionPanel({
