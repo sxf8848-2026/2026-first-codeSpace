@@ -179,6 +179,7 @@ export type StudyGrowthRecord = {
   type: StudyGrowthType;
   title: string;
   content: string;
+  content_html: string;
   source: string;
   created_at: string;
   updated_at: string;

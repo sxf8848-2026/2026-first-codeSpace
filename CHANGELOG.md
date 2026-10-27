@@ -13,6 +13,43 @@
 
 ---
 
+## [30.0.0] - 2026-10-27
+
+### 改了什么
+
+- “学会当学霸”的学习方法、学习习惯和思维模型三个标签页均支持为正文局部文字加粗和设置颜色。
+- 正文颜色使用固定色板：黑色、红色、蓝色、绿色、橙色和紫色；标题与来源保持原有纯文本输入。
+- 新增受限富文本保存字段 `content_html`，旧记录会根据原正文自动补齐格式内容，关键词搜索继续使用纯文本正文。
+- 前后端仅允许保存加粗、固定色板和换行格式，粘贴内容按纯文本处理，避免任意 HTML 写入。
+- `TodoData.version` 升级至 `30`，后端默认数据与写入校验同步更新。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/StudyGrowthRichTextEditor.tsx`
+- `src/services/studyGrowthRecords.ts`
+- `src/services/studyGrowthRichText.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，200/200。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 更新后需要重启 `npm run dev`，使本地后端加载版本 30 的写入校验。
+- 本次只提供正文加粗和固定六色，不增加字号、下划线、背景色或任意颜色选择。
+
 ## [29.0.0] - 2026-10-27
 
 ### 改了什么

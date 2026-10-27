@@ -234,6 +234,7 @@ type KindnessDraft = {
 type StudyGrowthDraft = {
   title: string;
   content: string;
+  content_html: string;
   source: string;
 };
 
@@ -241,7 +242,7 @@ type StudyGrowthEditDraft = StudyGrowthDraft & {
   type: StudyGrowthType;
 };
 
-const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", content: "", source: "" };
+const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", content: "", content_html: "", source: "" };
 const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDraft, type: "method" };
 
 type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
@@ -1225,7 +1226,7 @@ export function App() {
     const content = studyGrowthDraft.content.trim();
     if (!title || !content) return;
     replaceStudyGrowthRecords([
-      createStudyGrowthRecord(studyGrowthType, title, content, studyGrowthDraft.source),
+      createStudyGrowthRecord(studyGrowthType, title, content, studyGrowthDraft.content_html, studyGrowthDraft.source),
       ...activeData.studyGrowthRecords,
     ]);
     setStudyGrowthDraft(blankStudyGrowthDraft);
@@ -1233,7 +1234,7 @@ export function App() {
 
   function startStudyGrowthEdit(record: StudyGrowthRecord) {
     setEditingStudyGrowthId(record.id);
-    setStudyGrowthEditDraft({ type: record.type, title: record.title, content: record.content, source: record.source });
+    setStudyGrowthEditDraft({ type: record.type, title: record.title, content: record.content, content_html: record.content_html, source: record.source });
   }
 
   function saveStudyGrowthEdit(recordId: string) {
@@ -1244,6 +1245,7 @@ export function App() {
       type: studyGrowthEditDraft.type,
       title,
       content,
+      content_html: studyGrowthEditDraft.content_html,
       source: studyGrowthEditDraft.source,
     }, nowStamp()));
     setEditingStudyGrowthId(null);

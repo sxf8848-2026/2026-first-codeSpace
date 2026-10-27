@@ -284,10 +284,17 @@ function isValidStudyGrowthRecord(record) {
   if (!allowedStudyGrowthTypes.has(record.type)) return false;
   if (!isNonEmptyString(record.title)) return false;
   if (!isNonEmptyString(record.content)) return false;
+  if (!isValidStudyGrowthRichText(record.content_html)) return false;
   if (typeof record.source !== "string") return false;
   if (typeof record.created_at !== "string" || Number.isNaN(Date.parse(record.created_at))) return false;
   if (typeof record.updated_at !== "string" || Number.isNaN(Date.parse(record.updated_at))) return false;
   return true;
+}
+
+function isValidStudyGrowthRichText(value) {
+  if (typeof value !== "string") return false;
+  const remainder = value.replace(/<br>|<strong>|<\/strong>|<span data-color="(?:black|red|blue|green|orange|purple)">|<\/span>/g, "");
+  return !/[<>]/.test(remainder);
 }
 
 function isValidSkincareProduct(record) {

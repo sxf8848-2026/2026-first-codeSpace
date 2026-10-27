@@ -410,6 +410,7 @@ export function createStudyGrowthRecord(
   type: StudyGrowthType,
   title: string,
   content: string,
+  content_html: string,
   source: string,
 ): StudyGrowthRecord {
   const stamp = nowStamp();
@@ -418,6 +419,7 @@ export function createStudyGrowthRecord(
     type,
     title: title.trim(),
     content: content.trim(),
+    content_html,
     source: source.trim(),
     created_at: stamp,
     updated_at: stamp,

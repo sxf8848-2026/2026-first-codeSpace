@@ -1806,6 +1806,71 @@ h1 {
   resize: vertical;
 }
 
+.study-growth-composer > .study-growth-rich-editor,
+.study-growth-edit > .study-growth-rich-editor {
+  grid-column: 1 / -1;
+}
+
+.study-growth-rich-editor {
+  border: 1px solid var(--line-strong);
+  background: var(--input-bg);
+}
+
+.study-growth-rich-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.study-growth-rich-toolbar > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.study-growth-color-palette {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.study-growth-color-palette .study-growth-color {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  background: var(--text-color);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.study-growth-rich-input {
+  min-height: 110px;
+  padding: 14px;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  outline: none;
+}
+
+.study-growth-rich-input:empty::before {
+  color: var(--muted);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.study-growth-rich-input:focus {
+  box-shadow: inset 0 0 0 1px var(--teal);
+}
+
 .study-growth-composer .primary-button {
   justify-self: start;
 }
@@ -1851,12 +1916,26 @@ h1 {
   color: var(--muted);
 }
 
-.study-growth-content p {
+.study-growth-content p,
+.study-growth-rich-content {
   margin: 0;
   color: var(--ink);
   line-height: 1.65;
   white-space: pre-wrap;
 }
+
+.study-growth-rich-input [data-color="black"],
+.study-growth-rich-content [data-color="black"] { color: #111827; }
+.study-growth-rich-input [data-color="red"],
+.study-growth-rich-content [data-color="red"] { color: #dc2626; }
+.study-growth-rich-input [data-color="blue"],
+.study-growth-rich-content [data-color="blue"] { color: #2563eb; }
+.study-growth-rich-input [data-color="green"],
+.study-growth-rich-content [data-color="green"] { color: #15803d; }
+.study-growth-rich-input [data-color="orange"],
+.study-growth-rich-content [data-color="orange"] { color: #ea580c; }
+.study-growth-rich-input [data-color="purple"],
+.study-growth-rich-content [data-color="purple"] { color: #7e22ce; }
 
 .study-growth-edit {
   display: grid;

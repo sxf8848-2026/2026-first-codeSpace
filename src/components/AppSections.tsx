@@ -92,6 +92,8 @@ import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
 import { RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
+import { StudyGrowthRichTextEditor } from "./StudyGrowthRichTextEditor";
+import { sanitizeStudyGrowthHtml } from "../services/studyGrowthRichText";
 
 export type { AppView } from "../services/sidebarNavigation";
 
@@ -1226,6 +1228,7 @@ export function KindnessRecordsPanel({
 type StudyGrowthDraft = {
   title: string;
   content: string;
+  content_html: string;
   source: string;
 };
 
@@ -1293,7 +1296,11 @@ export function StudyGrowthPanel({
         <form className="study-growth-composer" onSubmit={onAdd}>
           <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder={`${typeLabel}标题，必填`} required />
           <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
-          <textarea value={draft.content} onChange={(event) => onDraftChange({ ...draft, content: event.target.value })} placeholder={`记录${typeLabel}的具体内容，必填`} required />
+          <StudyGrowthRichTextEditor
+            html={draft.content_html}
+            placeholder={`记录${typeLabel}的具体内容，必填`}
+            onChange={({ html, text }) => onDraftChange({ ...draft, content: text, content_html: html })}
+          />
           <button className="primary-button" type="submit"><Plus size={18} />添加记录</button>
         </form>
 
@@ -1312,12 +1319,17 @@ export function StudyGrowthPanel({
                   </select>}
                   <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
                   <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
-                  <textarea value={editingDraft.content} onChange={(event) => onEditDraftChange({ ...editingDraft, content: event.target.value })} placeholder="正文，必填" required />
+                  <StudyGrowthRichTextEditor
+                    html={editingDraft.content_html}
+                    placeholder="正文，必填"
+                    autoFocus
+                    onChange={({ html, text }) => onEditDraftChange({ ...editingDraft, content: text, content_html: html })}
+                  />
                 </div>
               ) : (
                 <div className="study-growth-content">
                   <div className="study-growth-heading"><strong>{record.title}</strong><time>{record.updated_at === record.created_at ? `添加于 ${formatRecordStamp(record.created_at)}` : `更新于 ${formatRecordStamp(record.updated_at)}`}</time></div>
-                  <p>{record.content}</p>
+                  <div className="study-growth-rich-content" dangerouslySetInnerHTML={{ __html: sanitizeStudyGrowthHtml(record.content_html) }} />
                   {record.source ? <small>来源：{record.source}</small> : null}
                 </div>
               )}
