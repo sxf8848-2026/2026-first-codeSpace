@@ -1,4 +1,4 @@
-export type StudyGrowthType = "method" | "habit";
+export type StudyGrowthType = "method" | "habit" | "mental_model";
 
 export type SortableStudyGrowthRecord = {
   id: string;
@@ -22,7 +22,7 @@ export function normalizeStudyGrowthRecords(
       const createdAt = isDateTimeStamp(record.created_at) ? record.created_at : createStamp();
       return {
         id: typeof record.id === "string" ? record.id : createId(),
-        type: record.type === "method" || record.type === "habit" ? record.type : "method",
+        type: record.type === "method" || record.type === "habit" || record.type === "mental_model" ? record.type : "method",
         title: typeof record.title === "string" ? record.title.trim() : "",
         content: typeof record.content === "string" ? record.content.trim() : "",
         source: typeof record.source === "string" ? record.source.trim() : "",
@@ -52,14 +52,19 @@ export function updateStudyGrowthRecord(
   update: Pick<SortableStudyGrowthRecord, "type" | "title" | "content" | "source">,
   updatedAt: string,
 ): SortableStudyGrowthRecord[] {
-  return records.map((record) => record.id === recordId ? {
-    ...record,
-    ...update,
-    title: update.title.trim(),
-    content: update.content.trim(),
-    source: update.source.trim(),
-    updated_at: updatedAt,
-  } : record);
+  return records.map((record) => {
+    if (record.id !== recordId) return record;
+    const type = record.type === "mental_model" || update.type === "mental_model" ? record.type : update.type;
+    return {
+      ...record,
+      ...update,
+      type,
+      title: update.title.trim(),
+      content: update.content.trim(),
+      source: update.source.trim(),
+      updated_at: updatedAt,
+    };
+  });
 }
 
 function isDateTimeStamp(value: unknown): value is string {

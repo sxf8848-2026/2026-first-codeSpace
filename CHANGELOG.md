@@ -13,6 +13,43 @@
 
 ---
 
+## [28.0.0] - 2026-10-27
+
+### 改了什么
+
+- “学会当学霸”页面新增“思维模型”标签页，继续使用标题、正文和可选来源字段。
+- 思维模型支持新增、关键词搜索和编辑，并按创建时间倒序展示。
+- 学习方法与学习习惯仍可互相转换；思维模型类型固定，不能与前两类互转。
+- 数据模型的 `StudyGrowthType` 新增 `mental_model`，前端归一化和后端写入校验同步支持。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/services/studyGrowthRecords.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，181/181。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+- 已通过 1440px 桌面端和 390px 移动端截图检查，三个标签无溢出或重叠。
+
+### 注意事项
+
+- 数据版本升级至 28；现有学习方法和学习习惯数据无需迁移。
+- 不增加删除、归档、置顶、标签或统计功能。
+
+---
+
 ## [27.0.0] - 2026-10-26
 
 ### 改了什么

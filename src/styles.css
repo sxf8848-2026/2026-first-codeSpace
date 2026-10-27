@@ -1864,6 +1864,10 @@ h1 {
   gap: 12px;
 }
 
+.study-growth-edit.fixed-type {
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.7fr);
+}
+
 .study-growth-edit textarea {
   grid-column: 1 / -1;
   min-height: 96px;

@@ -172,7 +172,7 @@ export type KindnessRecord = {
   created_at: string;
 };
 
-export type StudyGrowthType = "method" | "habit";
+export type StudyGrowthType = "method" | "habit" | "mental_model";
 
 export type StudyGrowthRecord = {
   id: string;

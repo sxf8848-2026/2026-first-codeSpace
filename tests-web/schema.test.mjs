@@ -165,7 +165,7 @@ const validStudyGrowthRecord = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 27,
+    version: 28,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -879,6 +879,7 @@ test("rejects kindness record with invalid occurred_at or created_at", () => {
 
 test("accepts a valid study growth record", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [validStudyGrowthRecord] })), true);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, type: "mental_model" }] })), true);
 });
 
 test("rejects todos payload without study growth records", () => {

@@ -1257,7 +1257,7 @@ export function StudyGrowthPanel({
   onSaveEdit: (recordId: string) => void;
   onCancelEdit: () => void;
 }) {
-  const typeLabel = activeType === "method" ? "学习方法" : "学习习惯";
+  const typeLabel = activeType === "method" ? "学习方法" : activeType === "habit" ? "学习习惯" : "思维模型";
   return (
     <>
       <header className="topbar study-growth-topbar">
@@ -1275,7 +1275,7 @@ export function StudyGrowthPanel({
       <section className="study-growth-panel" aria-label="学会当学霸">
         <Segmented
           value={activeType}
-          options={[["method", "学习方法"], ["habit", "学习习惯"]]}
+          options={[["method", "学习方法"], ["habit", "学习习惯"], ["mental_model", "思维模型"]]}
           onChange={(value) => onTypeChange(value as StudyGrowthType)}
         />
 
@@ -1294,11 +1294,11 @@ export function StudyGrowthPanel({
           {records.length ? records.map((record) => (
             <article className="study-growth-item" key={record.id}>
               {editingRecordId === record.id ? (
-                <div className="study-growth-edit">
-                  <select value={editingDraft.type} onChange={(event) => onEditDraftChange({ ...editingDraft, type: event.target.value as StudyGrowthType })} aria-label="记录类型">
+                <div className={`study-growth-edit ${record.type === "mental_model" ? "fixed-type" : ""}`}>
+                  {record.type === "mental_model" ? null : <select value={editingDraft.type} onChange={(event) => onEditDraftChange({ ...editingDraft, type: event.target.value as StudyGrowthType })} aria-label="记录类型">
                     <option value="method">学习方法</option>
                     <option value="habit">学习习惯</option>
-                  </select>
+                  </select>}
                   <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
                   <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
                   <textarea value={editingDraft.content} onChange={(event) => onEditDraftChange({ ...editingDraft, content: event.target.value })} placeholder="正文，必填" required />
