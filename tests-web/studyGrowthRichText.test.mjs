@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   plainTextToStudyGrowthHtml,
@@ -24,4 +25,10 @@ test("normalizes browser color styles to fixed palette colors", () => {
 
 test("extracts searchable plain text from formatted content", () => {
   assert.equal(studyGrowthHtmlToPlainText('<strong>费曼</strong><br><span data-color="purple">复述知识</span>'), "费曼\n复述知识");
+});
+
+test("rich text editor has a visible outer border and focus state", () => {
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.study-growth-rich-editor\s*{[^}]*border:\s*1px solid var\(--border-strong\)/s);
+  assert.match(styles, /\.study-growth-rich-editor:focus-within\s*{[^}]*border-color:\s*var\(--brand\)/s);
 });
