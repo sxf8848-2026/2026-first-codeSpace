@@ -199,10 +199,19 @@ export type SkincareProductRecord = {
   updated_at: string;
 };
 
+export type RewardRuleMode = "fixed" | "tiered";
+
+export type RewardTier = {
+  name: string;
+  amount_cents: number;
+};
+
 export type RewardRuleRecord = {
   id: string;
   name: string;
-  amount_cents: number;
+  mode: RewardRuleMode;
+  amount_cents: number | null;
+  tiers: RewardTier[];
   description: string;
   active: boolean;
   created_at: string;
@@ -214,6 +223,7 @@ export type RewardClaimRecord = {
   rule_id: string;
   rule_name: string;
   amount_cents: number;
+  tier_name: string | null;
   claimed_at: string;
 };
 

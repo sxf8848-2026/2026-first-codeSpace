@@ -1456,13 +1456,42 @@ export function SkincarePanel({
   );
 }
 
-type RewardRuleDraft = { name: string; amount: string; description: string };
+type RewardTierDraft = { name: string; amount: string };
+type RewardRuleDraft = { name: string; mode: "fixed" | "tiered"; amount: string; tiers: RewardTierDraft[]; description: string };
+
+function RewardRuleFields({ draft, onChange, autoFocus = false }: { draft: RewardRuleDraft; onChange: (draft: RewardRuleDraft) => void; autoFocus?: boolean }) {
+  function updateTier(index: number, patch: Partial<RewardTierDraft>) {
+    onChange({ ...draft, tiers: draft.tiers.map((tier, tierIndex) => tierIndex === index ? { ...tier, ...patch } : tier) });
+  }
+  return (
+    <>
+      <div className="reward-mode"><Segmented value={draft.mode} options={[["fixed", "固定奖励"], ["tiered", "阶梯奖励"]]} onChange={(mode) => onChange({ ...draft, mode: mode as RewardRuleDraft["mode"] })} /></div>
+      <input value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} placeholder="规则名称，必填" required autoFocus={autoFocus} />
+      {draft.mode === "fixed" ? (
+        <input type="number" min="0.01" step="0.01" value={draft.amount} onChange={(event) => onChange({ ...draft, amount: event.target.value })} placeholder="奖励金额（元），必填" required />
+      ) : (
+        <div className="reward-tier-editor">
+          {draft.tiers.map((tier, index) => (
+            <div className="reward-tier-row" key={index}>
+              <input value={tier.name} onChange={(event) => updateTier(index, { name: event.target.value })} placeholder={`第 ${index + 1} 档名称，必填`} required />
+              <input type="number" min="0.01" step="0.01" value={tier.amount} onChange={(event) => updateTier(index, { amount: event.target.value })} placeholder="奖励金额（元）" required />
+              <button type="button" onClick={() => onChange({ ...draft, tiers: draft.tiers.filter((_, tierIndex) => tierIndex !== index) })} disabled={draft.tiers.length <= 2}>移除</button>
+            </div>
+          ))}
+          <button type="button" className="reward-add-tier" onClick={() => onChange({ ...draft, tiers: [...draft.tiers, { name: "", amount: "" }] })}><Plus size={16} />增加档位</button>
+          <small>档位按从低到高排列，后一档金额必须高于前一档。</small>
+        </div>
+      )}
+      <textarea value={draft.description} onChange={(event) => onChange({ ...draft, description: event.target.value })} placeholder="达成说明，可不填" />
+    </>
+  );
+}
 
 export function RewardPanel({
   rules,
   claims,
   claimMonths,
-  claimedRuleIds,
+  todayClaims,
   monthRewardCents,
   totalRewardCents,
   ruleDraft,
@@ -1490,7 +1519,7 @@ export function RewardPanel({
   rules: RewardRuleRecord[];
   claims: RewardClaimRecord[];
   claimMonths: string[];
-  claimedRuleIds: Set<string>;
+  todayClaims: Map<string, RewardClaimRecord>;
   monthRewardCents: number;
   totalRewardCents: number;
   ruleDraft: RewardRuleDraft;
@@ -1510,11 +1539,13 @@ export function RewardPanel({
   onSaveRule: (ruleId: string) => void;
   onCancelEdit: () => void;
   onToggleRule: (ruleId: string) => void;
-  onClaim: (ruleId: string) => void;
+  onClaim: (ruleId: string, tierIndex?: number) => void;
   onClaimQueryChange: (query: string) => void;
   onClaimMonthFilterChange: (month: string) => void;
   onDeleteClaim: (claimId: string) => void;
 }) {
+  const [tierSelections, setTierSelections] = useState<Record<string, number>>({});
+
   return (
     <>
       <header className="topbar personal-topbar"><div><div className="eyebrow"><Gift size={16} />个人管理</div><h1>个人奖励</h1></div></header>
@@ -1526,9 +1557,7 @@ export function RewardPanel({
       <section className="personal-panel reward-rules" aria-label="奖励规则">
         <h2>奖励规则</h2>
         <form className="reward-composer" onSubmit={onAddRule}>
-          <input value={ruleDraft.name} onChange={(event) => onRuleDraftChange({ ...ruleDraft, name: event.target.value })} placeholder="规则名称，必填" required />
-          <input type="number" min="0.01" step="0.01" value={ruleDraft.amount} onChange={(event) => onRuleDraftChange({ ...ruleDraft, amount: event.target.value })} placeholder="奖励金额（元），必填" required />
-          <textarea value={ruleDraft.description} onChange={(event) => onRuleDraftChange({ ...ruleDraft, description: event.target.value })} placeholder="达成说明，可不填" />
+          <RewardRuleFields draft={ruleDraft} onChange={onRuleDraftChange} />
           <button className="primary-button" type="submit"><Plus size={18} />添加规则</button>
         </form>
         <div className="personal-toolbar reward-toolbar">
@@ -1537,20 +1566,41 @@ export function RewardPanel({
         </div>
         <div className="reward-rule-list">
           {rules.length ? rules.map((rule) => {
-            const claimedToday = claimedRuleIds.has(rule.id);
+            const todayClaim = todayClaims.get(rule.id);
+            const modeChangedToday = Boolean(todayClaim) && ((rule.mode === "fixed") !== (todayClaim?.tier_name === null));
+            const nextTierIndex = rule.mode === "tiered" ? rule.tiers.findIndex((tier) => tier.amount_cents > (todayClaim?.amount_cents ?? 0)) : -1;
+            const selectedTierIndex = tierSelections[rule.id] ?? (nextTierIndex >= 0 ? nextTierIndex : Math.max(0, rule.tiers.length - 1));
+            const selectedTier = rule.mode === "tiered" ? rule.tiers[selectedTierIndex] : null;
+            const canReceive = rule.active && !modeChangedToday && (
+              rule.mode === "fixed" ? !todayClaim : Boolean(selectedTier) && (!todayClaim || selectedTier!.amount_cents > todayClaim.amount_cents)
+            );
+            const claimLabel = modeChangedToday
+              ? "明日按新规则"
+              : !todayClaim
+                ? "获得奖励"
+                : rule.mode === "tiered" && selectedTier && selectedTier.amount_cents > todayClaim.amount_cents
+                  ? `升级奖励（补 ${formatRewardAmount(selectedTier.amount_cents - todayClaim.amount_cents)}）`
+                  : "今日已领取";
             return (
               <article className={`reward-rule-item ${rule.active ? "" : "inactive"}`} key={rule.id}>
                 {editingRuleId === rule.id ? (
                   <div className="reward-edit">
-                    <input value={editingDraft.name} onChange={(event) => onEditDraftChange({ ...editingDraft, name: event.target.value })} placeholder="规则名称，必填" required autoFocus />
-                    <input type="number" min="0.01" step="0.01" value={editingDraft.amount} onChange={(event) => onEditDraftChange({ ...editingDraft, amount: event.target.value })} placeholder="奖励金额（元）" required />
-                    <textarea value={editingDraft.description} onChange={(event) => onEditDraftChange({ ...editingDraft, description: event.target.value })} placeholder="达成说明，可不填" />
+                    <RewardRuleFields draft={editingDraft} onChange={onEditDraftChange} autoFocus />
                   </div>
                 ) : (
-                  <div className="personal-content"><div className="personal-heading"><strong>{rule.name}</strong><span>{formatRewardAmount(rule.amount_cents)}</span></div>{rule.description ? <p>{rule.description}</p> : null}<small>{rule.active ? "启用中" : "已停用"}</small></div>
+                  <div className="personal-content">
+                    <div className="personal-heading"><strong>{rule.name}</strong><span>{rule.mode === "fixed" ? formatRewardAmount(rule.amount_cents!) : "阶梯奖励"}</span></div>
+                    {rule.mode === "tiered" ? <div className="reward-tier-list">{rule.tiers.map((tier, index) => <span key={`${tier.name}-${index}`}>{index + 1}. {tier.name} · {formatRewardAmount(tier.amount_cents)}</span>)}</div> : null}
+                    {rule.description ? <p>{rule.description}</p> : null}
+                    <small>{rule.active ? "启用中" : "已停用"}{todayClaim ? ` · 今日最终：${todayClaim.tier_name ? `${todayClaim.tier_name} · ` : ""}${formatRewardAmount(todayClaim.amount_cents)}` : ""}</small>
+                  </div>
                 )}
                 <div className="reward-actions">
-                  {editingRuleId === rule.id ? <><button type="button" onClick={() => onSaveRule(rule.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <><button type="button" onClick={() => onClaim(rule.id)} disabled={!rule.active || claimedToday}><CircleDollarSign size={16} />{claimedToday ? "今日已领取" : "获得奖励"}</button><button type="button" onClick={() => onStartEditRule(rule)} title="编辑规则"><Pencil size={16} /></button><button type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button></>}
+                  {editingRuleId === rule.id ? <><button type="button" onClick={() => onSaveRule(rule.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <>
+                    {rule.mode === "tiered" ? <select value={selectedTierIndex} onChange={(event) => setTierSelections((current) => ({ ...current, [rule.id]: Number(event.target.value) }))} aria-label={`${rule.name}达到的奖励档位`}>{rule.tiers.map((tier, index) => <option value={index} key={`${tier.name}-${index}`}>{tier.name} · {formatRewardAmount(tier.amount_cents)}</option>)}</select> : null}
+                    <button type="button" onClick={() => { onClaim(rule.id, rule.mode === "tiered" ? selectedTierIndex : undefined); if (rule.mode === "tiered" && selectedTierIndex < rule.tiers.length - 1) setTierSelections((current) => ({ ...current, [rule.id]: selectedTierIndex + 1 })); }} disabled={!canReceive}><CircleDollarSign size={16} />{claimLabel}</button>
+                    <button type="button" onClick={() => onStartEditRule(rule)} title="编辑规则"><Pencil size={16} /></button><button type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button>
+                  </>}
                 </div>
               </article>
             );
@@ -1560,11 +1610,11 @@ export function RewardPanel({
       <section className="personal-panel reward-history" aria-label="领取记录">
         <h2>领取记录</h2>
         <div className="personal-toolbar">
-          <div className="search-box"><Search size={16} /><input value={claimQuery} onChange={(event) => onClaimQueryChange(event.target.value)} placeholder="搜索规则名称" /></div>
+          <div className="search-box"><Search size={16} /><input value={claimQuery} onChange={(event) => onClaimQueryChange(event.target.value)} placeholder="搜索规则名称或档位" /></div>
           <select value={claimMonthFilter} onChange={(event) => onClaimMonthFilterChange(event.target.value)} aria-label="按月份筛选领取记录"><option value="all">全部月份</option>{claimMonths.map((month) => <option key={month} value={month}>{month}</option>)}</select>
         </div>
         <div className="reward-claim-list">
-          {claims.length ? claims.map((claim) => <article className="reward-claim-item" key={claim.id}><div><strong>{claim.rule_name}</strong><time>{formatArgumentDateTime(claim.claimed_at)}</time></div><span>{formatRewardAmount(claim.amount_cents)}</span><button type="button" onClick={() => onDeleteClaim(claim.id)} title="删除领取记录"><Trash2 size={16} /></button></article>) : <div className="personal-empty">还没有匹配的领取记录</div>}
+          {claims.length ? claims.map((claim) => <article className="reward-claim-item" key={claim.id}><div><strong>{claim.rule_name}{claim.tier_name ? ` · ${claim.tier_name}` : ""}</strong><time>{formatArgumentDateTime(claim.claimed_at)}</time></div><span>{formatRewardAmount(claim.amount_cents)}</span><button type="button" onClick={() => onDeleteClaim(claim.id)} title="删除领取记录"><Trash2 size={16} /></button></article>) : <div className="personal-empty">还没有匹配的领取记录</div>}
         </div>
       </section>
     </>

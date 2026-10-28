@@ -2054,6 +2054,40 @@ h1 {
   justify-self: start;
 }
 
+.reward-mode,
+.reward-tier-editor {
+  grid-column: 1 / -1;
+}
+
+.reward-mode {
+  justify-self: start;
+}
+
+.reward-tier-editor {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.reward-tier-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.5fr) auto;
+  gap: 10px;
+}
+
+.reward-add-tier {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+}
+
+.reward-tier-editor small {
+  color: var(--muted);
+}
+
 .personal-toolbar {
   display: flex;
   align-items: center;
@@ -2121,6 +2155,21 @@ h1 {
   color: var(--muted);
 }
 
+.reward-tier-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reward-tier-list span {
+  padding: 5px 8px;
+  color: var(--teal-dark);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
 .skincare-edit,
 .reward-edit {
   display: grid;
@@ -2152,6 +2201,11 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.reward-actions select {
+  min-height: 42px;
+  min-width: 170px;
 }
 
 .reward-claim-item {
@@ -3739,6 +3793,15 @@ textarea:focus {
   .skincare-edit textarea,
   .reward-edit textarea {
     grid-column: auto;
+  }
+
+  .reward-mode,
+  .reward-tier-editor {
+    grid-column: auto;
+  }
+
+  .reward-tier-row {
+    grid-template-columns: 1fr;
   }
 
   .personal-toolbar .search-box {

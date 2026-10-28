@@ -13,7 +13,7 @@ import { normalizeBooks } from "./books";
 import { normalizeKindnessRecords } from "./kindnessRecords";
 import { normalizeStudyGrowthRecords } from "./studyGrowthRecords";
 import { normalizeSkincareProducts } from "./skincareProducts";
-import { buildRewardClaim, normalizeRewardClaims, normalizeRewardRules } from "./rewards";
+import { normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import {
   AppPrefs,
@@ -29,7 +29,8 @@ import {
   SkincareCategory,
   SkincareProductRecord,
   RewardRuleRecord,
-  RewardClaimRecord,
+  RewardRuleMode,
+  RewardTier,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -446,21 +447,25 @@ export function createSkincareProduct(
   };
 }
 
-export function createRewardRule(name: string, amount_cents: number, description: string): RewardRuleRecord {
+export function createRewardRule(
+  name: string,
+  mode: RewardRuleMode,
+  amount_cents: number | null,
+  tiers: RewardTier[],
+  description: string,
+): RewardRuleRecord {
   const stamp = nowStamp();
   return {
     id: crypto.randomUUID(),
     name: name.trim(),
-    amount_cents,
+    mode,
+    amount_cents: mode === "fixed" ? amount_cents : null,
+    tiers: mode === "tiered" ? tiers : [],
     description: description.trim(),
     active: true,
     created_at: stamp,
     updated_at: stamp,
   };
-}
-
-export function createRewardClaim(rule: RewardRuleRecord, claimed_at: string): RewardClaimRecord {
-  return buildRewardClaim(rule, claimed_at, () => crypto.randomUUID());
 }
 
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {

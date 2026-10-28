@@ -45,7 +45,6 @@ import {
   createStudyGrowthRecord,
   createSkincareProduct,
   createRewardRule,
-  createRewardClaim,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -85,6 +84,7 @@ import { getVisibleStudyGrowthRecords, updateStudyGrowthRecord } from "./service
 import { studyGrowthMarkdownToPlainText } from "./services/studyGrowthMarkdown";
 import { getVisibleSkincareProducts, SkincareCategoryFilter } from "./services/skincareProducts";
 import {
+  applyRewardClaim,
   canClaimReward,
   getRewardClaimMonths,
   getRewardTotals,
@@ -136,6 +136,8 @@ import {
   SkincareCategory,
   SkincareProductRecord,
   RewardRuleRecord,
+  RewardRuleMode,
+  RewardTier,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -255,10 +257,14 @@ const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", title_size: 22, con
 const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDraft, type: "method" };
 
 type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
-type RewardRuleDraft = { name: string; amount: string; description: string };
+type RewardTierDraft = { name: string; amount: string };
+type RewardRuleDraft = { name: string; mode: RewardRuleMode; amount: string; tiers: RewardTierDraft[]; description: string };
 
 const blankSkincareDraft: SkincareDraft = { name: "", brand: "", category: "cleanser", description: "" };
-const blankRewardRuleDraft: RewardRuleDraft = { name: "", amount: "", description: "" };
+
+function createBlankRewardRuleDraft(): RewardRuleDraft {
+  return { name: "", mode: "fixed", amount: "", tiers: [{ name: "", amount: "" }, { name: "", amount: "" }], description: "" };
+}
 
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
   return {
@@ -358,11 +364,11 @@ export function App() {
   const [skincareCategoryFilter, setSkincareCategoryFilter] = useState<SkincareCategoryFilter>("all");
   const [editingSkincareId, setEditingSkincareId] = useState<string | null>(null);
   const [skincareEditDraft, setSkincareEditDraft] = useState<SkincareDraft>(blankSkincareDraft);
-  const [rewardRuleDraft, setRewardRuleDraft] = useState<RewardRuleDraft>(blankRewardRuleDraft);
+  const [rewardRuleDraft, setRewardRuleDraft] = useState<RewardRuleDraft>(createBlankRewardRuleDraft);
   const [rewardRuleQuery, setRewardRuleQuery] = useState("");
   const [rewardRuleStatusFilter, setRewardRuleStatusFilter] = useState<RewardRuleStatusFilter>("active");
   const [editingRewardRuleId, setEditingRewardRuleId] = useState<string | null>(null);
-  const [rewardRuleEditDraft, setRewardRuleEditDraft] = useState<RewardRuleDraft>(blankRewardRuleDraft);
+  const [rewardRuleEditDraft, setRewardRuleEditDraft] = useState<RewardRuleDraft>(createBlankRewardRuleDraft);
   const [rewardClaimQuery, setRewardClaimQuery] = useState("");
   const [rewardClaimMonthFilter, setRewardClaimMonthFilter] = useState("all");
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
@@ -489,8 +495,10 @@ export function App() {
   );
   const rewardClaimMonths = useMemo(() => getRewardClaimMonths(activeData.rewardClaims), [activeData.rewardClaims]);
   const rewardTotals = useMemo(() => getRewardTotals(activeData.rewardClaims, todayMonth), [activeData.rewardClaims, todayMonth]);
-  const claimedRewardRuleIds = useMemo(() => new Set(
-    activeData.rewardClaims.filter((claim) => claim.claimed_at.slice(0, 10) === todayDay).map((claim) => claim.rule_id),
+  const todayRewardClaims = useMemo(() => new Map(
+    activeData.rewardClaims
+      .filter((claim) => claim.claimed_at.slice(0, 10) === todayDay)
+      .map((claim) => [claim.rule_id, claim]),
   ), [activeData.rewardClaims, todayDay]);
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
@@ -644,7 +652,7 @@ export function App() {
       setEditingSkincareId(null);
       setSkincareEditDraft(blankSkincareDraft);
       setEditingRewardRuleId(null);
-      setRewardRuleEditDraft(blankRewardRuleDraft);
+      setRewardRuleEditDraft(createBlankRewardRuleDraft());
     });
   }
 
@@ -685,7 +693,7 @@ export function App() {
       setEditingSkincareId(null);
       setSkincareEditDraft(blankSkincareDraft);
       setEditingRewardRuleId(null);
-      setRewardRuleEditDraft(blankRewardRuleDraft);
+      setRewardRuleEditDraft(createBlankRewardRuleDraft());
     });
   }
 
@@ -1305,46 +1313,62 @@ export function App() {
   function addRewardRule(event: FormEvent) {
     event.preventDefault();
     const name = rewardRuleDraft.name.trim();
-    const amountCents = parseRewardAmount(rewardRuleDraft.amount);
-    if (!name || amountCents === null) return;
-    replaceRewardRules([createRewardRule(name, amountCents, rewardRuleDraft.description), ...activeData.rewardRules]);
-    setRewardRuleDraft(blankRewardRuleDraft);
+    const values = parseRewardRuleValues(rewardRuleDraft);
+    if (!name || !values) {
+      window.alert("请填写有效奖励金额；阶梯奖励至少需要两个金额递增的完整档位。");
+      return;
+    }
+    replaceRewardRules([createRewardRule(name, rewardRuleDraft.mode, values.amountCents, values.tiers, rewardRuleDraft.description), ...activeData.rewardRules]);
+    setRewardRuleDraft(createBlankRewardRuleDraft());
   }
 
   function startRewardRuleEdit(rule: RewardRuleRecord) {
     setEditingRewardRuleId(rule.id);
-    setRewardRuleEditDraft({ name: rule.name, amount: (rule.amount_cents / 100).toFixed(2), description: rule.description });
+    setRewardRuleEditDraft({
+      name: rule.name,
+      mode: rule.mode,
+      amount: rule.amount_cents === null ? "" : (rule.amount_cents / 100).toFixed(2),
+      tiers: rule.mode === "tiered" ? rule.tiers.map((tier) => ({ name: tier.name, amount: (tier.amount_cents / 100).toFixed(2) })) : [{ name: "", amount: "" }, { name: "", amount: "" }],
+      description: rule.description,
+    });
   }
 
   function saveRewardRule(ruleId: string) {
     const name = rewardRuleEditDraft.name.trim();
-    const amountCents = parseRewardAmount(rewardRuleEditDraft.amount);
-    if (!name || amountCents === null) return;
+    const values = parseRewardRuleValues(rewardRuleEditDraft);
+    if (!name || !values) {
+      window.alert("请填写有效奖励金额；阶梯奖励至少需要两个金额递增的完整档位。");
+      return;
+    }
     replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? {
       ...rule,
       name,
-      amount_cents: amountCents,
+      mode: rewardRuleEditDraft.mode,
+      amount_cents: values.amountCents,
+      tiers: values.tiers,
       description: rewardRuleEditDraft.description.trim(),
       updated_at: nowStamp(),
     } : rule));
     setEditingRewardRuleId(null);
-    setRewardRuleEditDraft(blankRewardRuleDraft);
+    setRewardRuleEditDraft(createBlankRewardRuleDraft());
   }
 
   function toggleRewardRule(ruleId: string) {
     replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? { ...rule, active: !rule.active, updated_at: nowStamp() } : rule));
   }
 
-  function claimReward(ruleId: string) {
+  function claimReward(ruleId: string, tierIndex?: number) {
     const rule = activeData.rewardRules.find((item) => item.id === ruleId);
     if (!rule) return;
     const now = new Date();
     const localDay = dateKey(now);
-    if (!canClaimReward(rule, activeData.rewardClaims, localDay)) {
-      if (rule.active) window.alert("这条奖励今天已经领取过了。");
+    const tier = rule.mode === "tiered" ? rule.tiers[tierIndex ?? -1] ?? null : null;
+    if (!canClaimReward(rule, activeData.rewardClaims, localDay, tier)) {
+      if (rule.active) window.alert("今天已经领取过相同或更高档位，不能重复领取或降档。");
       return;
     }
-    updateData((value) => ({ ...value, rewardClaims: [createRewardClaim(rule, toLocalDateTime(now)), ...value.rewardClaims] }));
+    const result = applyRewardClaim(rule, activeData.rewardClaims, toLocalDateTime(now), tier);
+    if (result) updateData((value) => ({ ...value, rewardClaims: result.claims }));
   }
 
   function deleteRewardClaim(claimId: string) {
@@ -2463,7 +2487,7 @@ export function App() {
             rules={visibleRewardRules}
             claims={visibleRewardClaims}
             claimMonths={rewardClaimMonths}
-            claimedRuleIds={claimedRewardRuleIds}
+            todayClaims={todayRewardClaims}
             monthRewardCents={rewardTotals.monthCents}
             totalRewardCents={rewardTotals.totalCents}
             ruleDraft={rewardRuleDraft}
@@ -2481,7 +2505,7 @@ export function App() {
             onStartEditRule={startRewardRuleEdit}
             onEditDraftChange={setRewardRuleEditDraft}
             onSaveRule={saveRewardRule}
-            onCancelEdit={() => { setEditingRewardRuleId(null); setRewardRuleEditDraft(blankRewardRuleDraft); }}
+            onCancelEdit={() => { setEditingRewardRuleId(null); setRewardRuleEditDraft(createBlankRewardRuleDraft()); }}
             onToggleRule={toggleRewardRule}
             onClaim={claimReward}
             onClaimQueryChange={setRewardClaimQuery}
@@ -2614,6 +2638,19 @@ function parseRewardAmount(value: string): number | null {
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
   const cents = Math.round(Number(normalized) * 100);
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+}
+
+function parseRewardRuleValues(draft: RewardRuleDraft): { amountCents: number | null; tiers: RewardTier[] } | null {
+  if (draft.mode === "fixed") {
+    const amountCents = parseRewardAmount(draft.amount);
+    return amountCents === null ? null : { amountCents, tiers: [] };
+  }
+  if (draft.tiers.length < 2) return null;
+  const tiers = draft.tiers.map((tier) => ({ name: tier.name.trim(), amount_cents: parseRewardAmount(tier.amount) }));
+  if (tiers.some((tier) => !tier.name || tier.amount_cents === null)) return null;
+  const normalized = tiers as RewardTier[];
+  if (normalized.some((tier, index) => index > 0 && tier.amount_cents <= normalized[index - 1].amount_cents)) return null;
+  return { amountCents: null, tiers: normalized };
 }
 
 function matchesFilters(task: TodoTask, filters: Filters): boolean {

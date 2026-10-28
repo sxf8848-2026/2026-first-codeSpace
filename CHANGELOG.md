@@ -13,6 +13,43 @@
 
 ---
 
+## [33.0.0] - 2026-10-28
+
+### 改了什么
+
+- 个人奖励规则新增“固定奖励”和“阶梯奖励”两种模式，阶梯档位支持自定义名称与递增金额。
+- 阶梯奖励由用户手动选择达到的档位；同一天升级时只补领差额，并更新当天唯一领取记录的最终档位、总金额和时间。
+- 固定规则与阶梯规则可以互相转换；当天已经领取时，新模式从次日生效，历史领取快照不受规则编辑影响。
+- 领取记录支持展示和搜索档位名称，停用、误领删除、本月金额和历史累计逻辑保持不变。
+- 旧固定奖励规则与领取记录会自动补齐新字段，数据版本升级至 `33`。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/rewards.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/rewards.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，207/207。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 阶梯达成情况由用户手动选择，不与每日待办或习惯打卡自动关联。
+- 金额继续以整数分保存；升级领取只更新当天最终记录，不额外生成差额流水。
+- 后端数据校验已更新，完成代码更新后需要重启 `npm run dev`。
+
 ## [32.1.0] - 2026-10-28
 
 ### 改了什么
