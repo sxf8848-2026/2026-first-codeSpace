@@ -82,6 +82,7 @@ import { getVisibleDivorcePlans } from "./services/divorcePlans";
 import { BookStatusFilter, getVisibleBooks } from "./services/books";
 import { getVisibleKindnessRecords } from "./services/kindnessRecords";
 import { getVisibleStudyGrowthRecords, updateStudyGrowthRecord } from "./services/studyGrowthRecords";
+import { studyGrowthMarkdownToPlainText } from "./services/studyGrowthMarkdown";
 import { getVisibleSkincareProducts, SkincareCategoryFilter } from "./services/skincareProducts";
 import {
   canClaimReward,
@@ -236,7 +237,7 @@ type StudyGrowthDraft = {
   title: string;
   title_size: StudyGrowthTitleSize;
   content: string;
-  content_html: string;
+  content_markdown: string;
   source: string;
 };
 
@@ -244,7 +245,7 @@ type StudyGrowthEditDraft = StudyGrowthDraft & {
   type: StudyGrowthType;
 };
 
-const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", title_size: 22, content: "", content_html: "", source: "" };
+const blankStudyGrowthDraft: StudyGrowthDraft = { title: "", title_size: 22, content: "", content_markdown: "", source: "" };
 const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDraft, type: "method" };
 
 type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
@@ -1228,7 +1229,7 @@ export function App() {
     const content = studyGrowthDraft.content.trim();
     if (!title || !content) return;
     replaceStudyGrowthRecords([
-      createStudyGrowthRecord(studyGrowthType, title, studyGrowthDraft.title_size, content, studyGrowthDraft.content_html, studyGrowthDraft.source),
+      createStudyGrowthRecord(studyGrowthType, title, studyGrowthDraft.title_size, content, studyGrowthDraft.content_markdown, studyGrowthDraft.source),
       ...activeData.studyGrowthRecords,
     ]);
     setStudyGrowthDraft(blankStudyGrowthDraft);
@@ -1236,19 +1237,19 @@ export function App() {
 
   function startStudyGrowthEdit(record: StudyGrowthRecord) {
     setEditingStudyGrowthId(record.id);
-    setStudyGrowthEditDraft({ type: record.type, title: record.title, title_size: record.title_size, content: record.content, content_html: record.content_html, source: record.source });
+    setStudyGrowthEditDraft({ type: record.type, title: record.title, title_size: record.title_size, content: record.content, content_markdown: record.content_markdown, source: record.source });
   }
 
   function saveStudyGrowthEdit(recordId: string) {
     const title = studyGrowthEditDraft.title.trim();
-    const content = studyGrowthEditDraft.content.trim();
+    const content = studyGrowthMarkdownToPlainText(studyGrowthEditDraft.content_markdown);
     if (!title || !content) return;
     replaceStudyGrowthRecords(updateStudyGrowthRecord(activeData.studyGrowthRecords, recordId, {
       type: studyGrowthEditDraft.type,
       title,
       title_size: studyGrowthEditDraft.title_size,
       content,
-      content_html: studyGrowthEditDraft.content_html,
+      content_markdown: studyGrowthEditDraft.content_markdown,
       source: studyGrowthEditDraft.source,
     }, nowStamp()));
     setEditingStudyGrowthId(null);

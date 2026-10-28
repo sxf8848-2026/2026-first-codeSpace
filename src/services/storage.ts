@@ -411,7 +411,7 @@ export function createStudyGrowthRecord(
   title: string,
   title_size: StudyGrowthRecord["title_size"],
   content: string,
-  content_html: string,
+  content_markdown: string,
   source: string,
 ): StudyGrowthRecord {
   const stamp = nowStamp();
@@ -421,7 +421,7 @@ export function createStudyGrowthRecord(
     title: title.trim(),
     title_size,
     content: content.trim(),
-    content_html,
+    content_markdown: content_markdown.trim(),
     source: source.trim(),
     created_at: stamp,
     updated_at: stamp,

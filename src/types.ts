@@ -181,7 +181,7 @@ export type StudyGrowthRecord = {
   title: string;
   title_size: StudyGrowthTitleSize;
   content: string;
-  content_html: string;
+  content_markdown: string;
   source: string;
   created_at: string;
   updated_at: string;

@@ -13,6 +13,46 @@
 
 ---
 
+## [32.0.0] - 2026-10-28
+
+### 改了什么
+
+- “学会当学霸”的正文编辑改为 Markdown，桌面端左侧编辑、右侧实时预览，窄屏自动切换为上下布局。
+- 支持标题、粗体、斜体、列表、引用、代码块、分隔线和链接；原始 HTML 不会被渲染。
+- 保存后的学习方法、学习习惯和思维模型正文统一按 Markdown 展示，关键词搜索继续基于纯文本内容。
+- 旧版富文本自动迁移：加粗转换为 Markdown 粗体，颜色格式移除但保留原文字和段落。
+- 正文字段从 `content_html` 调整为 `content_markdown`，`TodoData.version` 升级至 `32`，并新增 `react-markdown` 渲染依赖。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/StudyGrowthMarkdownEditor.tsx`
+- `src/services/studyGrowthMarkdown.ts`
+- `src/services/studyGrowthRecords.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/`
+- `tests-web/`
+- `package.json`
+- `package-lock.json`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，200/200。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- 本地 API 健康检查：通过，后端数据版本为 `32`。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧颜色样式无法用标准 Markdown 等价表示，迁移时只保留文字内容。
+- 原始 HTML 使用 `skipHtml` 禁止渲染，避免把任意 HTML 注入预览区域。
+
 ## [31.0.0] - 2026-10-28
 
 ### 改了什么

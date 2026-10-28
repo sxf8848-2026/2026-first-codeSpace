@@ -1,4 +1,4 @@
-import { plainTextToStudyGrowthHtml, sanitizeStudyGrowthHtml, studyGrowthHtmlToPlainText } from "./studyGrowthRichText.ts";
+import { studyGrowthHtmlToMarkdown, studyGrowthMarkdownToPlainText } from "./studyGrowthMarkdown.ts";
 
 export type StudyGrowthType = "method" | "habit" | "mental_model";
 export type StudyGrowthTitleSize = 18 | 22 | 26 | 30;
@@ -11,7 +11,7 @@ export type SortableStudyGrowthRecord = {
   title: string;
   title_size: StudyGrowthTitleSize;
   content: string;
-  content_html: string;
+  content_markdown: string;
   source: string;
   created_at: string;
   updated_at: string;
@@ -24,19 +24,22 @@ export function normalizeStudyGrowthRecords(
 ): SortableStudyGrowthRecord[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((record): record is Partial<SortableStudyGrowthRecord> => Boolean(record) && typeof record === "object")
+    .filter((record): record is Partial<SortableStudyGrowthRecord> & { content_html?: unknown } => Boolean(record) && typeof record === "object")
     .map((record) => {
       const createdAt = isDateTimeStamp(record.created_at) ? record.created_at : createStamp();
       const plainContent = typeof record.content === "string" ? record.content.trim() : "";
-      const savedHtml = typeof record.content_html === "string" ? sanitizeStudyGrowthHtml(record.content_html) : "";
-      const contentHtml = studyGrowthHtmlToPlainText(savedHtml) ? savedHtml : plainTextToStudyGrowthHtml(plainContent);
+      const contentMarkdown = typeof record.content_markdown === "string" && record.content_markdown.trim()
+        ? record.content_markdown.trim()
+        : typeof record.content_html === "string" && record.content_html.trim()
+          ? studyGrowthHtmlToMarkdown(record.content_html)
+          : plainContent;
       return {
         id: typeof record.id === "string" ? record.id : createId(),
         type: record.type === "method" || record.type === "habit" || record.type === "mental_model" ? record.type : "method",
         title: typeof record.title === "string" ? record.title.trim() : "",
         title_size: normalizeStudyGrowthTitleSize(record.title_size),
-        content: studyGrowthHtmlToPlainText(contentHtml),
-        content_html: contentHtml,
+        content: studyGrowthMarkdownToPlainText(contentMarkdown),
+        content_markdown: contentMarkdown,
         source: typeof record.source === "string" ? record.source.trim() : "",
         created_at: createdAt,
         updated_at: isDateTimeStamp(record.updated_at) ? record.updated_at : createdAt,
@@ -61,7 +64,7 @@ export function getVisibleStudyGrowthRecords<T extends SortableStudyGrowthRecord
 export function updateStudyGrowthRecord(
   records: SortableStudyGrowthRecord[],
   recordId: string,
-  update: Pick<SortableStudyGrowthRecord, "type" | "title" | "title_size" | "content" | "content_html" | "source">,
+  update: Pick<SortableStudyGrowthRecord, "type" | "title" | "title_size" | "content" | "content_markdown" | "source">,
   updatedAt: string,
 ): SortableStudyGrowthRecord[] {
   return records.map((record) => {
@@ -74,7 +77,7 @@ export function updateStudyGrowthRecord(
       title: update.title.trim(),
       title_size: normalizeStudyGrowthTitleSize(update.title_size),
       content: update.content.trim(),
-      content_html: sanitizeStudyGrowthHtml(update.content_html),
+      content_markdown: update.content_markdown.trim(),
       source: update.source.trim(),
       updated_at: updatedAt,
     };

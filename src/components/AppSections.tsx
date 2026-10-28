@@ -93,8 +93,8 @@ import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
 import { RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
-import { StudyGrowthRichTextEditor } from "./StudyGrowthRichTextEditor";
-import { sanitizeStudyGrowthHtml } from "../services/studyGrowthRichText";
+import { StudyGrowthMarkdownEditor, StudyGrowthMarkdownPreview } from "./StudyGrowthMarkdownEditor";
+import { studyGrowthMarkdownToPlainText } from "../services/studyGrowthMarkdown";
 import { STUDY_GROWTH_TITLE_SIZES } from "../services/studyGrowthRecords";
 
 export type { AppView } from "../services/sidebarNavigation";
@@ -1231,7 +1231,7 @@ type StudyGrowthDraft = {
   title: string;
   title_size: StudyGrowthTitleSize;
   content: string;
-  content_html: string;
+  content_markdown: string;
   source: string;
 };
 
@@ -1302,10 +1302,10 @@ export function StudyGrowthPanel({
             {STUDY_GROWTH_TITLE_SIZES.map((size) => <option key={size} value={size}>{size}px</option>)}
           </select>
           <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
-          <StudyGrowthRichTextEditor
-            html={draft.content_html}
+          <StudyGrowthMarkdownEditor
+            markdown={draft.content_markdown}
             placeholder={`记录${typeLabel}的具体内容，必填`}
-            onChange={({ html, text }) => onDraftChange({ ...draft, content: text, content_html: html })}
+            onChange={(markdown) => onDraftChange({ ...draft, content: studyGrowthMarkdownToPlainText(markdown), content_markdown: markdown })}
           />
           <button className="primary-button" type="submit"><Plus size={18} />添加记录</button>
         </form>
@@ -1328,17 +1328,17 @@ export function StudyGrowthPanel({
                     {STUDY_GROWTH_TITLE_SIZES.map((size) => <option key={size} value={size}>{size}px</option>)}
                   </select>
                   <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
-                  <StudyGrowthRichTextEditor
-                    html={editingDraft.content_html}
+                  <StudyGrowthMarkdownEditor
+                    markdown={editingDraft.content_markdown}
                     placeholder="正文，必填"
                     autoFocus
-                    onChange={({ html, text }) => onEditDraftChange({ ...editingDraft, content: text, content_html: html })}
+                    onChange={(markdown) => onEditDraftChange({ ...editingDraft, content: studyGrowthMarkdownToPlainText(markdown), content_markdown: markdown })}
                   />
                 </div>
               ) : (
                 <div className="study-growth-content">
                   <div className="study-growth-heading"><strong style={{ fontSize: `${record.title_size}px` }}>{record.title}</strong><time>{record.updated_at === record.created_at ? `添加于 ${formatRecordStamp(record.created_at)}` : `更新于 ${formatRecordStamp(record.updated_at)}`}</time></div>
-                  <div className="study-growth-rich-content" dangerouslySetInnerHTML={{ __html: sanitizeStudyGrowthHtml(record.content_html) }} />
+                  <StudyGrowthMarkdownPreview markdown={record.content_markdown} />
                   {record.source ? <small>来源：{record.source}</small> : null}
                 </div>
               )}
