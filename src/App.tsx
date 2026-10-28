@@ -94,6 +94,12 @@ import {
 } from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
+  canReorderDailyTasks,
+  moveDailyTaskBeforeWithinStatus,
+  moveDailyTaskWithinStatus,
+  sortDailyTasksByStatus,
+} from "./services/dailyTasks";
+import {
   Filters,
   AppPrefs,
   DefaultTask,
@@ -410,7 +416,10 @@ export function App() {
   const todayDeliveryTasks = activeData.weeklyDeliveries[todayDeliveryWeek] ?? [];
   const weekRange = formatWeekRange(currentDate);
   const deliveryWeekRange = formatWeekRange(deliveryDate);
-  const visibleTasks = useMemo(() => allTasks.filter((task) => matchesFilters(task, filters)), [allTasks, filters]);
+  const visibleTasks = useMemo(
+    () => sortDailyTasksByStatus(allTasks.filter((task) => matchesFilters(task, filters))),
+    [allTasks, filters],
+  );
   const visibleDeliveryTasks = useMemo(
     () => deliveryTasks.filter((task) => matchesDeliveryFilter(task, deliveryFilter)),
     [deliveryTasks, deliveryFilter],
@@ -1765,11 +1774,8 @@ export function App() {
 
   function moveSelected(delta: number) {
     if (!selectedId) return;
-    const index = allTasks.findIndex((task) => task.id === selectedId);
-    const nextIndex = index + delta;
-    if (index < 0 || nextIndex < 0 || nextIndex >= allTasks.length) return;
-    const next = [...allTasks];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    const next = moveDailyTaskWithinStatus(allTasks, selectedId, delta);
+    if (next === allTasks) return;
     replaceTasks(currentDay, next);
   }
 
@@ -1786,12 +1792,15 @@ export function App() {
   }
 
   function enterTaskDropTarget(taskId: string) {
-    if (!canDragTasks || !draggedTaskId || draggedTaskId === taskId) return;
+    if (!canDragTasks || !draggedTaskId || !canReorderTaskPair(draggedTaskId, taskId)) {
+      setDragOverTaskId(null);
+      return;
+    }
     setDragOverTaskId(taskId);
   }
 
   function hoverTaskDropTarget(event: DragEvent<HTMLElement>, taskId: string) {
-    if (!canDragTasks || !draggedTaskId || draggedTaskId === taskId) return;
+    if (!canDragTasks || !draggedTaskId || !canReorderTaskPair(draggedTaskId, taskId)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     setDragOverTaskId(taskId);
@@ -1809,7 +1818,7 @@ export function App() {
     const sourceTaskId = draggedTaskId ?? event.dataTransfer.getData("text/plain");
     setDraggedTaskId(null);
     setDragOverTaskId(null);
-    if (!sourceTaskId || sourceTaskId === targetTaskId) return;
+    if (!sourceTaskId || !canReorderTaskPair(sourceTaskId, targetTaskId)) return;
     moveTaskBefore(sourceTaskId, targetTaskId);
   }
 
@@ -1819,14 +1828,17 @@ export function App() {
   }
 
   function moveTaskBefore(sourceTaskId: string, targetTaskId: string) {
-    const sourceIndex = allTasks.findIndex((task) => task.id === sourceTaskId);
-    const targetIndex = allTasks.findIndex((task) => task.id === targetTaskId);
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
-    const next = [...allTasks];
-    const [movedTask] = next.splice(sourceIndex, 1);
-    next.splice(targetIndex, 0, movedTask);
+    const next = moveDailyTaskBeforeWithinStatus(allTasks, sourceTaskId, targetTaskId);
+    if (next === allTasks) return;
     replaceTasks(currentDay, next);
     setSelectedId(sourceTaskId);
+  }
+
+  function canReorderTaskPair(sourceTaskId: string, targetTaskId: string): boolean {
+    return canReorderDailyTasks(
+      allTasks.find((task) => task.id === sourceTaskId),
+      allTasks.find((task) => task.id === targetTaskId),
+    );
   }
 
   function carryOver() {
