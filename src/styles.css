@@ -1796,7 +1796,7 @@ h1 {
 
 .study-growth-composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.45fr);
+  grid-template-columns: minmax(0, 1fr) 120px minmax(220px, 0.45fr);
   gap: 12px;
 }
 
@@ -1916,6 +1916,10 @@ h1 {
   gap: 12px;
 }
 
+.study-growth-heading strong {
+  line-height: 1.35;
+}
+
 .study-growth-heading time,
 .study-growth-content small {
   color: var(--muted);
@@ -1944,12 +1948,12 @@ h1 {
 
 .study-growth-edit {
   display: grid;
-  grid-template-columns: 180px minmax(240px, 1fr) minmax(220px, 0.7fr);
+  grid-template-columns: 180px minmax(240px, 1fr) 120px minmax(220px, 0.7fr);
   gap: 12px;
 }
 
 .study-growth-edit.fixed-type {
-  grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.7fr);
+  grid-template-columns: minmax(240px, 1fr) 120px minmax(220px, 0.7fr);
 }
 
 .study-growth-edit textarea {

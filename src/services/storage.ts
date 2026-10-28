@@ -409,6 +409,7 @@ export function createKindnessRecord(title: string, occurred_at: string, content
 export function createStudyGrowthRecord(
   type: StudyGrowthType,
   title: string,
+  title_size: StudyGrowthRecord["title_size"],
   content: string,
   content_html: string,
   source: string,
@@ -418,6 +419,7 @@ export function createStudyGrowthRecord(
     id: crypto.randomUUID(),
     type,
     title: title.trim(),
+    title_size,
     content: content.trim(),
     content_html,
     source: source.trim(),

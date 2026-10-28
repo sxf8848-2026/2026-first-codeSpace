@@ -157,6 +157,7 @@ const validStudyGrowthRecord = {
   id: "study-growth-1",
   type: "method",
   title: "费曼学习法",
+  title_size: 22,
   content: "用自己的话解释知识点。",
   content_html: "用自己的话解释知识点。",
   source: "学习笔记",
@@ -194,7 +195,7 @@ const validRewardClaim = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 30,
+    version: 31,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -923,6 +924,8 @@ test("rejects todos payload without study growth records", () => {
 test("rejects invalid study growth fields", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, type: "other" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, title: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, title_size: 24 }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, title_size: undefined }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, content: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, content_html: '<img src=x onerror="alert(1)">' }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ studyGrowthRecords: [{ ...validStudyGrowthRecord, content_html: '<span data-color="pink">内容</span>' }] })), false);

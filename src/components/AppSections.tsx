@@ -82,6 +82,7 @@ import {
   BookRecord,
   KindnessRecord,
   StudyGrowthRecord,
+  StudyGrowthTitleSize,
   StudyGrowthType,
   SkincareCategory,
   SkincareProductRecord,
@@ -94,6 +95,7 @@ import { RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
 import { StudyGrowthRichTextEditor } from "./StudyGrowthRichTextEditor";
 import { sanitizeStudyGrowthHtml } from "../services/studyGrowthRichText";
+import { STUDY_GROWTH_TITLE_SIZES } from "../services/studyGrowthRecords";
 
 export type { AppView } from "../services/sidebarNavigation";
 
@@ -1227,6 +1229,7 @@ export function KindnessRecordsPanel({
 
 type StudyGrowthDraft = {
   title: string;
+  title_size: StudyGrowthTitleSize;
   content: string;
   content_html: string;
   source: string;
@@ -1294,7 +1297,10 @@ export function StudyGrowthPanel({
         />
 
         <form className="study-growth-composer" onSubmit={onAdd}>
-          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder={`${typeLabel}标题，必填`} required />
+          <input style={{ fontSize: `${draft.title_size}px` }} value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder={`${typeLabel}标题，必填`} required />
+          <select value={draft.title_size} onChange={(event) => onDraftChange({ ...draft, title_size: Number(event.target.value) as StudyGrowthTitleSize })} aria-label="标题字号">
+            {STUDY_GROWTH_TITLE_SIZES.map((size) => <option key={size} value={size}>{size}px</option>)}
+          </select>
           <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
           <StudyGrowthRichTextEditor
             html={draft.content_html}
@@ -1317,7 +1323,10 @@ export function StudyGrowthPanel({
                     <option value="method">学习方法</option>
                     <option value="habit">学习习惯</option>
                   </select>}
-                  <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
+                  <input style={{ fontSize: `${editingDraft.title_size}px` }} value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="标题，必填" autoFocus required />
+                  <select value={editingDraft.title_size} onChange={(event) => onEditDraftChange({ ...editingDraft, title_size: Number(event.target.value) as StudyGrowthTitleSize })} aria-label="标题字号">
+                    {STUDY_GROWTH_TITLE_SIZES.map((size) => <option key={size} value={size}>{size}px</option>)}
+                  </select>
                   <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
                   <StudyGrowthRichTextEditor
                     html={editingDraft.content_html}
@@ -1328,7 +1337,7 @@ export function StudyGrowthPanel({
                 </div>
               ) : (
                 <div className="study-growth-content">
-                  <div className="study-growth-heading"><strong>{record.title}</strong><time>{record.updated_at === record.created_at ? `添加于 ${formatRecordStamp(record.created_at)}` : `更新于 ${formatRecordStamp(record.updated_at)}`}</time></div>
+                  <div className="study-growth-heading"><strong style={{ fontSize: `${record.title_size}px` }}>{record.title}</strong><time>{record.updated_at === record.created_at ? `添加于 ${formatRecordStamp(record.created_at)}` : `更新于 ${formatRecordStamp(record.updated_at)}`}</time></div>
                   <div className="study-growth-rich-content" dangerouslySetInnerHTML={{ __html: sanitizeStudyGrowthHtml(record.content_html) }} />
                   {record.source ? <small>来源：{record.source}</small> : null}
                 </div>

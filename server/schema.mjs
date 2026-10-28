@@ -4,6 +4,7 @@ const allowedTagTones = new Set(["neutral", "green", "blue", "amber"]);
 const allowedThemes = new Set(["light", "dark"]);
 const allowedMetaLearningMasteries = new Set(["todo", "learning", "mastered", "skilled"]);
 const allowedStudyGrowthTypes = new Set(["method", "habit", "mental_model"]);
+const allowedStudyGrowthTitleSizes = new Set([18, 22, 26, 30]);
 const allowedSkincareCategories = new Set(["cleanser", "toner", "serum", "lotion", "cream", "sunscreen", "mask", "other"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
@@ -283,6 +284,7 @@ function isValidStudyGrowthRecord(record) {
   if (!isNonEmptyString(record.id)) return false;
   if (!allowedStudyGrowthTypes.has(record.type)) return false;
   if (!isNonEmptyString(record.title)) return false;
+  if (!allowedStudyGrowthTitleSizes.has(record.title_size)) return false;
   if (!isNonEmptyString(record.content)) return false;
   if (!isValidStudyGrowthRichText(record.content_html)) return false;
   if (typeof record.source !== "string") return false;

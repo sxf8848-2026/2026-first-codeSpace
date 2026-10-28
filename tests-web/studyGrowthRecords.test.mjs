@@ -11,6 +11,7 @@ const records = [
     id: "study-1",
     type: "method",
     title: "费曼学习法",
+    title_size: 22,
     content: "用自己的话解释知识点。",
     content_html: "用自己的话解释知识点。",
     source: "学习笔记",
@@ -21,6 +22,7 @@ const records = [
     id: "study-2",
     type: "habit",
     title: "每日复习",
+    title_size: 22,
     content: "睡前回顾当天学到的内容。",
     content_html: "睡前回顾当天学到的内容。",
     source: "",
@@ -31,6 +33,7 @@ const records = [
     id: "study-3",
     type: "method",
     title: "间隔重复",
+    title_size: 22,
     content: "按遗忘曲线安排复习。",
     content_html: "按遗忘曲线安排复习。",
     source: "认知科学课程",
@@ -41,6 +44,7 @@ const records = [
     id: "study-4",
     type: "mental_model",
     title: "二阶思维",
+    title_size: 22,
     content: "不仅考虑直接结果，也考虑后续影响。",
     content_html: "不仅考虑直接结果，也考虑后续影响。",
     source: "思维模型课程",
@@ -51,10 +55,19 @@ const records = [
 
 test("normalizes old data and falls back updated time to created time", () => {
   assert.deepEqual(normalizeStudyGrowthRecords(undefined), []);
-  const [{ updated_at, ...normalized }] = normalizeStudyGrowthRecords([{ ...records[0], content_html: undefined, updated_at: undefined }]);
+  const [{ updated_at, ...normalized }] = normalizeStudyGrowthRecords([{ ...records[0], title_size: undefined, content_html: undefined, updated_at: undefined }]);
   assert.equal(updated_at, records[0].created_at);
   assert.equal(normalized.content_html, records[0].content);
   assert.deepEqual(normalized, Object.fromEntries(Object.entries(records[0]).filter(([key]) => key !== "updated_at")));
+});
+
+test("keeps supported title sizes and defaults invalid values to 22px", () => {
+  const normalized = normalizeStudyGrowthRecords([
+    { ...records[0], id: "size-18", title_size: 18 },
+    { ...records[0], id: "size-30", title_size: 30 },
+    { ...records[0], id: "size-invalid", title_size: 24 },
+  ]);
+  assert.deepEqual(normalized.map((record) => record.title_size), [18, 30, 22]);
 });
 
 test("filters by the active type and sorts by creation time descending", () => {
@@ -76,6 +89,7 @@ test("editing the type moves a record to the other tab", () => {
   const updated = updateStudyGrowthRecord(records, "study-1", {
     type: "habit",
     title: "  费曼学习习惯  ",
+    title_size: 26,
     content: "  每天主动讲解一个知识点。  ",
     content_html: "<strong>每天主动讲解一个知识点。</strong>",
     source: "  学习笔记  ",
@@ -83,12 +97,14 @@ test("editing the type moves a record to the other tab", () => {
   assert.deepEqual(getVisibleStudyGrowthRecords(updated, "method").map((record) => record.id), ["study-3"]);
   assert.deepEqual(getVisibleStudyGrowthRecords(updated, "habit").map((record) => record.id), ["study-2", "study-1"]);
   assert.equal(updated.find((record) => record.id === "study-1").title, "费曼学习习惯");
+  assert.equal(updated.find((record) => record.id === "study-1").title_size, 26);
 });
 
 test("does not move records into or out of the mental model tab", () => {
   const attemptedMoveIn = updateStudyGrowthRecord(records, "study-1", {
     type: "mental_model",
     title: records[0].title,
+    title_size: records[0].title_size,
     content: records[0].content,
     content_html: records[0].content_html,
     source: records[0].source,
@@ -96,6 +112,7 @@ test("does not move records into or out of the mental model tab", () => {
   const attemptedMoveOut = updateStudyGrowthRecord(attemptedMoveIn, "study-4", {
     type: "method",
     title: records[3].title,
+    title_size: records[3].title_size,
     content: records[3].content,
     content_html: records[3].content_html,
     source: records[3].source,

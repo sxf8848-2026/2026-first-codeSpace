@@ -13,6 +13,40 @@
 
 ---
 
+## [31.0.0] - 2026-10-28
+
+### 改了什么
+
+- “学会当学霸”的学习方法、学习习惯和思维模型均支持为每条记录单独选择标题字号。
+- 标题字号固定为 `18px`、`22px`、`26px` 和 `30px`，新增记录与旧记录默认使用 `22px`。
+- 新增和编辑时标题输入框会即时按所选字号显示，保存后的标题继续使用该记录自己的字号。
+- 新增 `title_size` 数据字段，`TodoData.version` 升级至 `31`，前端归一化和后端写入校验同步更新。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/studyGrowthRecords.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/`
+- `tests-web/`
+- `CHANGELOG.md`
+
+### 验证结果
+
+- `npm run test`：通过，202/202。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧版记录没有 `title_size` 时会自动补为 `22px`，不会修改原有标题、正文和富文本格式。
+- 字号使用四档固定选项，不提供自由输入，避免标题过大导致列表布局失控。
+
 ## [30.0.1] - 2026-10-28
 
 ### 改了什么

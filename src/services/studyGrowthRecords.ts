@@ -1,11 +1,15 @@
 import { plainTextToStudyGrowthHtml, sanitizeStudyGrowthHtml, studyGrowthHtmlToPlainText } from "./studyGrowthRichText.ts";
 
 export type StudyGrowthType = "method" | "habit" | "mental_model";
+export type StudyGrowthTitleSize = 18 | 22 | 26 | 30;
+
+export const STUDY_GROWTH_TITLE_SIZES: StudyGrowthTitleSize[] = [18, 22, 26, 30];
 
 export type SortableStudyGrowthRecord = {
   id: string;
   type: StudyGrowthType;
   title: string;
+  title_size: StudyGrowthTitleSize;
   content: string;
   content_html: string;
   source: string;
@@ -30,6 +34,7 @@ export function normalizeStudyGrowthRecords(
         id: typeof record.id === "string" ? record.id : createId(),
         type: record.type === "method" || record.type === "habit" || record.type === "mental_model" ? record.type : "method",
         title: typeof record.title === "string" ? record.title.trim() : "",
+        title_size: normalizeStudyGrowthTitleSize(record.title_size),
         content: studyGrowthHtmlToPlainText(contentHtml),
         content_html: contentHtml,
         source: typeof record.source === "string" ? record.source.trim() : "",
@@ -56,7 +61,7 @@ export function getVisibleStudyGrowthRecords<T extends SortableStudyGrowthRecord
 export function updateStudyGrowthRecord(
   records: SortableStudyGrowthRecord[],
   recordId: string,
-  update: Pick<SortableStudyGrowthRecord, "type" | "title" | "content" | "content_html" | "source">,
+  update: Pick<SortableStudyGrowthRecord, "type" | "title" | "title_size" | "content" | "content_html" | "source">,
   updatedAt: string,
 ): SortableStudyGrowthRecord[] {
   return records.map((record) => {
@@ -67,12 +72,17 @@ export function updateStudyGrowthRecord(
       ...update,
       type,
       title: update.title.trim(),
+      title_size: normalizeStudyGrowthTitleSize(update.title_size),
       content: update.content.trim(),
       content_html: sanitizeStudyGrowthHtml(update.content_html),
       source: update.source.trim(),
       updated_at: updatedAt,
     };
   });
+}
+
+function normalizeStudyGrowthTitleSize(value: unknown): StudyGrowthTitleSize {
+  return STUDY_GROWTH_TITLE_SIZES.includes(value as StudyGrowthTitleSize) ? value as StudyGrowthTitleSize : 22;
 }
 
 function isDateTimeStamp(value: unknown): value is string {

@@ -173,11 +173,13 @@ export type KindnessRecord = {
 };
 
 export type StudyGrowthType = "method" | "habit" | "mental_model";
+export type StudyGrowthTitleSize = 18 | 22 | 26 | 30;
 
 export type StudyGrowthRecord = {
   id: string;
   type: StudyGrowthType;
   title: string;
+  title_size: StudyGrowthTitleSize;
   content: string;
   content_html: string;
   source: string;
