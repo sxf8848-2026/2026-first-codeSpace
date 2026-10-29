@@ -8,6 +8,7 @@ import {
   getRewardTotals,
   getVisibleRewardClaims,
   getVisibleRewardRules,
+  isRewardBackfillDateAllowed,
   normalizeRewardClaims,
   normalizeRewardRules,
 } from "../src/services/rewards.ts";
@@ -34,9 +35,9 @@ const tieredRule = {
 };
 
 const claims = [
-  { id: "claim-1", rule_id: "rule-1", rule_name: "早起早睡", amount_cents: 200, tier_name: null, claimed_at: "2026-10-27T07:30" },
-  { id: "claim-2", rule_id: "rule-2", rule_name: "完成学习计划", amount_cents: 500, tier_name: null, claimed_at: "2026-09-30T21:00" },
-  { id: "claim-3", rule_id: "rule-1", rule_name: "早起早睡", amount_cents: 200, tier_name: null, claimed_at: "2026-10-26T07:20" },
+  { id: "claim-1", rule_id: "rule-1", rule_name: "早起早睡", amount_cents: 200, tier_name: null, reward_date: "2026-10-27", claimed_at: "2026-10-27T07:30" },
+  { id: "claim-2", rule_id: "rule-2", rule_name: "完成学习计划", amount_cents: 500, tier_name: null, reward_date: "2026-09-30", claimed_at: "2026-10-01T08:00" },
+  { id: "claim-3", rule_id: "rule-1", rule_name: "早起早睡", amount_cents: 200, tier_name: null, reward_date: "2026-10-26", claimed_at: "2026-10-26T07:20" },
 ];
 
 test("normalizes reward rules and claims", () => {
@@ -45,7 +46,8 @@ test("normalizes reward rules and claims", () => {
   assert.deepEqual(normalizeRewardRules([tieredRule]), [tieredRule]);
   assert.deepEqual(normalizeRewardRules([{ ...tieredRule, tiers: [tieredRule.tiers[1], tieredRule.tiers[0]] }]), []);
   assert.deepEqual(normalizeRewardRules([{ ...rules[0], amount_cents: 0 }]), []);
-  assert.equal(normalizeRewardClaims([{ ...claims[0], tier_name: undefined }])[0].tier_name, null);
+  const legacyClaim = { ...claims[0], tier_name: undefined, reward_date: undefined };
+  assert.deepEqual(normalizeRewardClaims([legacyClaim])[0], { ...claims[0], tier_name: null });
   assert.deepEqual(normalizeRewardClaims([{ ...claims[0], claimed_at: "invalid" }]), []);
   assert.deepEqual(normalizeRewardRules(undefined), []);
   assert.deepEqual(normalizeRewardClaims(undefined), []);
@@ -66,29 +68,31 @@ test("prevents duplicate same-day claims and disabled rule claims", () => {
 });
 
 test("builds reward claims with rule name and amount snapshots", () => {
-  const claim = buildRewardClaim(rules[0], "2026-10-28T07:30", null, () => "claim-new");
+  const claim = buildRewardClaim(rules[0], "2026-10-27", "2026-10-28T07:30", null, () => "claim-new");
   assert.deepEqual(claim, {
     id: "claim-new",
     rule_id: "rule-1",
     rule_name: "早起早睡",
     amount_cents: 200,
     tier_name: null,
+    reward_date: "2026-10-27",
     claimed_at: "2026-10-28T07:30",
   });
-  assert.deepEqual(buildRewardClaim(tieredRule, "2026-10-28T08:00", tieredRule.tiers[1], () => "claim-tiered"), {
+  assert.deepEqual(buildRewardClaim(tieredRule, "2026-10-28", "2026-10-28T08:00", tieredRule.tiers[1], () => "claim-tiered"), {
     id: "claim-tiered",
     rule_id: "rule-3",
     rule_name: "每日读书",
     amount_cents: 200,
     tier_name: "读书20分钟",
+    reward_date: "2026-10-28",
     claimed_at: "2026-10-28T08:00",
   });
 });
 
 test("upgrades a tiered reward by the difference while keeping one daily claim", () => {
-  const first = applyRewardClaim(tieredRule, [], "2026-10-28T08:00", tieredRule.tiers[0], () => "claim-tiered");
+  const first = applyRewardClaim(tieredRule, [], "2026-10-27", "2026-10-28T08:00", tieredRule.tiers[0], () => "claim-tiered");
   assert.equal(first.added_cents, 100);
-  const upgraded = applyRewardClaim(tieredRule, first.claims, "2026-10-28T09:30", tieredRule.tiers[2]);
+  const upgraded = applyRewardClaim(tieredRule, first.claims, "2026-10-27", "2026-10-28T09:30", tieredRule.tiers[2]);
   assert.equal(upgraded.added_cents, 200);
   assert.equal(upgraded.claims.length, 1);
   assert.deepEqual(upgraded.claims[0], {
@@ -97,14 +101,15 @@ test("upgrades a tiered reward by the difference while keeping one daily claim",
     rule_name: "每日读书",
     amount_cents: 300,
     tier_name: "读书30分钟",
+    reward_date: "2026-10-27",
     claimed_at: "2026-10-28T09:30",
   });
-  assert.equal(applyRewardClaim(tieredRule, upgraded.claims, "2026-10-28T10:00", tieredRule.tiers[1]), null);
-  assert.equal(applyRewardClaim(tieredRule, upgraded.claims, "2026-10-28T10:00", tieredRule.tiers[2]), null);
+  assert.equal(applyRewardClaim(tieredRule, upgraded.claims, "2026-10-27", "2026-10-28T10:00", tieredRule.tiers[1]), null);
+  assert.equal(applyRewardClaim(tieredRule, upgraded.claims, "2026-10-27", "2026-10-28T10:00", tieredRule.tiers[2]), null);
 });
 
 test("does not apply a converted rule mode until the next day", () => {
-  const fixedSnapshot = [{ ...claims[0], rule_id: tieredRule.id, claimed_at: "2026-10-28T07:30" }];
+  const fixedSnapshot = [{ ...claims[0], rule_id: tieredRule.id, reward_date: "2026-10-28", claimed_at: "2026-10-28T07:30" }];
   assert.equal(canClaimReward(tieredRule, fixedSnapshot, "2026-10-28", tieredRule.tiers[2]), false);
   assert.equal(canClaimReward(tieredRule, fixedSnapshot, "2026-10-29", tieredRule.tiers[0]), true);
 });
@@ -112,6 +117,14 @@ test("does not apply a converted rule mode until the next day", () => {
 test("calculates current-month and all-time totals", () => {
   assert.deepEqual(getRewardTotals(claims, "2026-10"), { monthCents: 400, totalCents: 900 });
   assert.deepEqual(getRewardTotals(claims.filter((claim) => claim.id !== "claim-1"), "2026-10"), { monthCents: 200, totalCents: 700 });
+});
+
+test("allows backfill only for the previous seven complete local days", () => {
+  assert.equal(isRewardBackfillDateAllowed("2026-10-28", "2026-10-29"), true);
+  assert.equal(isRewardBackfillDateAllowed("2026-10-22", "2026-10-29"), true);
+  assert.equal(isRewardBackfillDateAllowed("2026-10-29", "2026-10-29"), false);
+  assert.equal(isRewardBackfillDateAllowed("2026-10-21", "2026-10-29"), false);
+  assert.equal(isRewardBackfillDateAllowed("2026-02-31", "2026-10-29"), false);
 });
 
 test("filters and sorts reward claims and collects months", () => {

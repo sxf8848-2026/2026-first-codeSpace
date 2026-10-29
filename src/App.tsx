@@ -90,6 +90,7 @@ import {
   getRewardTotals,
   getVisibleRewardClaims,
   getVisibleRewardRules,
+  isRewardBackfillDateAllowed,
   RewardRuleStatusFilter,
 } from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
@@ -497,7 +498,7 @@ export function App() {
   const rewardTotals = useMemo(() => getRewardTotals(activeData.rewardClaims, todayMonth), [activeData.rewardClaims, todayMonth]);
   const todayRewardClaims = useMemo(() => new Map(
     activeData.rewardClaims
-      .filter((claim) => claim.claimed_at.slice(0, 10) === todayDay)
+      .filter((claim) => claim.reward_date === todayDay)
       .map((claim) => [claim.rule_id, claim]),
   ), [activeData.rewardClaims, todayDay]);
   const videoInspirationChannels = useMemo(
@@ -1357,18 +1358,24 @@ export function App() {
     replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? { ...rule, active: !rule.active, updated_at: nowStamp() } : rule));
   }
 
-  function claimReward(ruleId: string, tierIndex?: number) {
+  function claimReward(ruleId: string, tierIndex?: number, rewardDate?: string): boolean {
     const rule = activeData.rewardRules.find((item) => item.id === ruleId);
-    if (!rule) return;
+    if (!rule) return false;
     const now = new Date();
     const localDay = dateKey(now);
-    const tier = rule.mode === "tiered" ? rule.tiers[tierIndex ?? -1] ?? null : null;
-    if (!canClaimReward(rule, activeData.rewardClaims, localDay, tier)) {
-      if (rule.active) window.alert("今天已经领取过相同或更高档位，不能重复领取或降档。");
-      return;
+    const rewardDay = rewardDate ?? localDay;
+    if (rewardDate && !isRewardBackfillDateAllowed(rewardDay, localDay)) {
+      window.alert("只能补领昨天至 7 天前的奖励。");
+      return false;
     }
-    const result = applyRewardClaim(rule, activeData.rewardClaims, toLocalDateTime(now), tier);
+    const tier = rule.mode === "tiered" ? rule.tiers[tierIndex ?? -1] ?? null : null;
+    if (!canClaimReward(rule, activeData.rewardClaims, rewardDay, tier)) {
+      if (rule.active) window.alert(`${rewardDay} 已领取过相同或更高档位，不能重复领取、降档或跨模式升级。`);
+      return false;
+    }
+    const result = applyRewardClaim(rule, activeData.rewardClaims, rewardDay, toLocalDateTime(now), tier);
     if (result) updateData((value) => ({ ...value, rewardClaims: result.claims }));
+    return Boolean(result);
   }
 
   function deleteRewardClaim(claimId: string) {
@@ -2486,8 +2493,10 @@ export function App() {
           <RewardPanel
             rules={visibleRewardRules}
             claims={visibleRewardClaims}
+            allClaims={activeData.rewardClaims}
             claimMonths={rewardClaimMonths}
             todayClaims={todayRewardClaims}
+            todayDay={todayDay}
             monthRewardCents={rewardTotals.monthCents}
             totalRewardCents={rewardTotals.totalCents}
             ruleDraft={rewardRuleDraft}

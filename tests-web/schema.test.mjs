@@ -205,12 +205,13 @@ const validRewardClaim = {
   rule_name: "早起早睡",
   amount_cents: 200,
   tier_name: null,
+  reward_date: "2026-10-27",
   claimed_at: "2026-10-27T07:30",
 };
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 33,
+    version: 34,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -984,6 +985,8 @@ test("rejects invalid reward rules and claims", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, active: "yes" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, rule_name: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, tier_name: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, reward_date: undefined }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, reward_date: "2026-10" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, claimed_at: "2026-10-27" }] })), false);
 });
 

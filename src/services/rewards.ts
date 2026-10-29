@@ -23,6 +23,7 @@ export type SortableRewardClaim = {
   rule_name: string;
   amount_cents: number;
   tier_name: string | null;
+  reward_date: string;
   claimed_at: string;
 };
 
@@ -63,25 +64,31 @@ export function normalizeRewardClaims(
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((record): record is Partial<SortableRewardClaim> => Boolean(record) && typeof record === "object")
-    .map((record) => ({
-      id: typeof record.id === "string" ? record.id : createId(),
-      rule_id: typeof record.rule_id === "string" ? record.rule_id : "",
-      rule_name: typeof record.rule_name === "string" ? record.rule_name.trim() : "",
-      amount_cents: isPositiveCents(record.amount_cents) ? record.amount_cents : 0,
-      tier_name: record.tier_name === null || record.tier_name === undefined
-        ? null
-        : typeof record.tier_name === "string" ? record.tier_name.trim() : "",
-      claimed_at: typeof record.claimed_at === "string" ? record.claimed_at : "",
-    }))
-    .filter((record) => record.rule_id && record.rule_name && record.amount_cents > 0 && record.tier_name !== "" && isLocalDateTime(record.claimed_at));
+    .map((record) => {
+      const claimedAt = typeof record.claimed_at === "string" ? record.claimed_at : "";
+      return {
+        id: typeof record.id === "string" ? record.id : createId(),
+        rule_id: typeof record.rule_id === "string" ? record.rule_id : "",
+        rule_name: typeof record.rule_name === "string" ? record.rule_name.trim() : "",
+        amount_cents: isPositiveCents(record.amount_cents) ? record.amount_cents : 0,
+        tier_name: record.tier_name === null || record.tier_name === undefined
+          ? null
+          : typeof record.tier_name === "string" ? record.tier_name.trim() : "",
+        reward_date: isDateKey(record.reward_date) ? record.reward_date : claimedAt.slice(0, 10),
+        claimed_at: claimedAt,
+      };
+    })
+    .filter((record) => record.rule_id && record.rule_name && record.amount_cents > 0 && record.tier_name !== "" && isDateKey(record.reward_date) && isLocalDateTime(record.claimed_at));
 }
 
 export function buildRewardClaim(
   rule: SortableRewardRule,
+  rewardDate: string,
   claimedAt: string,
   tier: SortableRewardTier | null = null,
   createId: () => string = () => crypto.randomUUID(),
 ): SortableRewardClaim {
+  if (!isDateKey(rewardDate)) throw new Error("奖励归属日期无效");
   if (rule.mode === "tiered" && (!tier || !hasTier(rule, tier))) throw new Error("阶梯奖励必须选择有效档位");
   if (rule.mode === "fixed" && !isPositiveCents(rule.amount_cents)) throw new Error("固定奖励金额无效");
   return {
@@ -90,6 +97,7 @@ export function buildRewardClaim(
     rule_name: rule.name,
     amount_cents: rule.mode === "tiered" ? tier!.amount_cents : rule.amount_cents!,
     tier_name: rule.mode === "tiered" ? tier!.name : null,
+    reward_date: rewardDate,
     claimed_at: claimedAt,
   };
 }
@@ -97,15 +105,15 @@ export function buildRewardClaim(
 export function applyRewardClaim<T extends SortableRewardClaim>(
   rule: SortableRewardRule,
   claims: T[],
+  rewardDate: string,
   claimedAt: string,
   tier: SortableRewardTier | null = null,
   createId: () => string = () => crypto.randomUUID(),
 ): { claims: Array<T | SortableRewardClaim>; added_cents: number } | null {
-  const localDay = claimedAt.slice(0, 10);
-  if (!canClaimReward(rule, claims, localDay, tier)) return null;
-  const existing = getRewardClaimForDay(claims, rule.id, localDay);
+  if (!canClaimReward(rule, claims, rewardDate, tier)) return null;
+  const existing = getRewardClaimForDay(claims, rule.id, rewardDate);
   if (!existing) {
-    const claim = buildRewardClaim(rule, claimedAt, tier, createId);
+    const claim = buildRewardClaim(rule, rewardDate, claimedAt, tier, createId);
     return { claims: [claim, ...claims], added_cents: claim.amount_cents };
   }
   const updated = {
@@ -137,26 +145,34 @@ export function getVisibleRewardRules<T extends SortableRewardRule>(
 export function getVisibleRewardClaims<T extends SortableRewardClaim>(claims: T[], query = "", monthFilter = "all"): T[] {
   const normalizedQuery = query.trim().toLowerCase();
   return claims
-    .filter((claim) => monthFilter === "all" || claim.claimed_at.startsWith(monthFilter))
+    .filter((claim) => monthFilter === "all" || claim.reward_date.startsWith(monthFilter))
     .filter((claim) => !normalizedQuery || `${claim.rule_name} ${claim.tier_name ?? ""}`.toLowerCase().includes(normalizedQuery))
     .slice()
-    .sort((first, second) => second.claimed_at.localeCompare(first.claimed_at));
+    .sort((first, second) => second.reward_date.localeCompare(first.reward_date) || second.claimed_at.localeCompare(first.claimed_at));
 }
 
 export function getRewardClaimMonths(claims: SortableRewardClaim[]): string[] {
-  return Array.from(new Set(claims.map((claim) => claim.claimed_at.slice(0, 7)).filter((month) => /^\d{4}-\d{2}$/.test(month))))
+  return Array.from(new Set(claims.map((claim) => claim.reward_date.slice(0, 7)).filter((month) => /^\d{4}-\d{2}$/.test(month))))
     .sort((first, second) => second.localeCompare(first));
 }
 
 export function getRewardTotals(claims: SortableRewardClaim[], currentMonth: string): { monthCents: number; totalCents: number } {
   return claims.reduce((totals, claim) => ({
-    monthCents: totals.monthCents + (claim.claimed_at.startsWith(currentMonth) ? claim.amount_cents : 0),
+    monthCents: totals.monthCents + (claim.reward_date.startsWith(currentMonth) ? claim.amount_cents : 0),
     totalCents: totals.totalCents + claim.amount_cents,
   }), { monthCents: 0, totalCents: 0 });
 }
 
 export function getRewardClaimForDay<T extends SortableRewardClaim>(claims: T[], ruleId: string, localDay: string): T | undefined {
-  return claims.find((claim) => claim.rule_id === ruleId && claim.claimed_at.slice(0, 10) === localDay);
+  return claims.find((claim) => claim.rule_id === ruleId && claim.reward_date === localDay);
+}
+
+export function isRewardBackfillDateAllowed(rewardDate: string, todayDay: string): boolean {
+  const rewardOrdinal = dateOrdinal(rewardDate);
+  const todayOrdinal = dateOrdinal(todayDay);
+  if (rewardOrdinal === null || todayOrdinal === null) return false;
+  const daysAgo = todayOrdinal - rewardOrdinal;
+  return daysAgo >= 1 && daysAgo <= 7;
 }
 
 export function canClaimReward(
@@ -198,6 +214,18 @@ function isPositiveCents(value: unknown): value is number {
 
 function isLocalDateTime(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value);
+}
+
+function isDateKey(value: unknown): value is string {
+  return typeof value === "string" && dateOrdinal(value) !== null;
+}
+
+function dateOrdinal(value: unknown): number | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return Math.floor(date.getTime() / 86400000);
 }
 
 function isDateTimeStamp(value: unknown): value is string {

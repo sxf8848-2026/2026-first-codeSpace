@@ -224,6 +224,7 @@ export type RewardClaimRecord = {
   rule_name: string;
   amount_cents: number;
   tier_name: string | null;
+  reward_date: string;
   claimed_at: string;
 };
 

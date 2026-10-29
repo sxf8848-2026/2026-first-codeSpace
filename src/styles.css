@@ -2189,6 +2189,8 @@ h1 {
   display: flex;
   align-items: start;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .personal-actions button,
@@ -2226,6 +2228,18 @@ h1 {
 .reward-claim-item > span {
   color: var(--teal-dark);
   font-weight: 800;
+}
+
+.reward-backfill-dialog {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.reward-backfill-summary {
+  padding: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
 }
 
 .personal-empty {

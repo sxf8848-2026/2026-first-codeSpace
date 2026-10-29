@@ -332,6 +332,7 @@ function isValidRewardClaim(record) {
   if (!isNonEmptyString(record.rule_name)) return false;
   if (!isPositiveCents(record.amount_cents)) return false;
   if (record.tier_name !== null && !isNonEmptyString(record.tier_name)) return false;
+  if (typeof record.reward_date !== "string" || !dateKeyPattern.test(record.reward_date)) return false;
   if (typeof record.claimed_at !== "string" || !localDateTimePattern.test(record.claimed_at)) return false;
   return true;
 }

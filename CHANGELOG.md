@@ -13,6 +13,43 @@
 
 ---
 
+## [34.0.0] - 2026-10-29
+
+### 改了什么
+
+- 个人奖励规则新增“补领”入口，可补领昨天至 7 天前遗漏的固定奖励或阶梯奖励。
+- 补领继续遵守同一规则同一天一条记录；阶梯奖励可以在历史日期升级档位，并且只增加差额。
+- 领取记录新增奖励归属日期，同时保留实际领取或升级时间；跨日操作会显示“补领于”。
+- 本月金额、历史累计、月份筛选和流水排序统一按奖励归属日期计算。
+- 旧领取记录会从原领取时间自动补齐奖励归属日期，数据版本升级至 `34`。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/rewards.ts`
+- `src/types.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/rewards.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，208/208。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+- 当前项目数据经前端归一化后通过后端 Schema 校验。
+
+### 注意事项
+
+- 补领仅支持过去 7 个完整自然日，今天仍使用现有领取按钮。
+- 补领采用当前启用规则，不保存奖励规则历史版本，也不与每日待办或习惯打卡自动关联。
+- 后端数据校验已更新，完成代码更新后需要重启 `npm run dev`。
+
 ## [33.0.0] - 2026-10-28
 
 ### 改了什么

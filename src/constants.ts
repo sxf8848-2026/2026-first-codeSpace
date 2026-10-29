@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { DEFAULT_DELIVERY_PLATFORMS } from "./services/deliveryPlatforms";
 
-export const DATA_VERSION = 33;
+export const DATA_VERSION = 34;
 
 export const TAG_TONES: Array<{ value: TagTone; label: string }> = [
   { value: "neutral", label: "灰" },

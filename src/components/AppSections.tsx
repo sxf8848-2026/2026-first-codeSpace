@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { STATUSES, TAGS } from "../constants";
-import { addDays, dayLabel, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
+import { addDays, dateKey, dayLabel, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
 import type { HabitView } from "../services/habits";
 import { META_LEARNING_MASTERY_OPTIONS, MetaLearningMasteryFilter, metaLearningMasteryLabel } from "../services/metaLearning";
 import { VideoInspirationChannelFilter } from "../services/videoInspirations";
@@ -91,7 +91,7 @@ import {
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
-import { RewardRuleStatusFilter } from "../services/rewards";
+import { isRewardBackfillDateAllowed, RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
 import { StudyGrowthMarkdownEditor, StudyGrowthMarkdownPreview } from "./StudyGrowthMarkdownEditor";
 import { studyGrowthMarkdownToPlainText } from "../services/studyGrowthMarkdown";
@@ -1490,8 +1490,10 @@ function RewardRuleFields({ draft, onChange, autoFocus = false }: { draft: Rewar
 export function RewardPanel({
   rules,
   claims,
+  allClaims,
   claimMonths,
   todayClaims,
+  todayDay,
   monthRewardCents,
   totalRewardCents,
   ruleDraft,
@@ -1518,8 +1520,10 @@ export function RewardPanel({
 }: {
   rules: RewardRuleRecord[];
   claims: RewardClaimRecord[];
+  allClaims: RewardClaimRecord[];
   claimMonths: string[];
   todayClaims: Map<string, RewardClaimRecord>;
+  todayDay: string;
   monthRewardCents: number;
   totalRewardCents: number;
   ruleDraft: RewardRuleDraft;
@@ -1539,12 +1543,42 @@ export function RewardPanel({
   onSaveRule: (ruleId: string) => void;
   onCancelEdit: () => void;
   onToggleRule: (ruleId: string) => void;
-  onClaim: (ruleId: string, tierIndex?: number) => void;
+  onClaim: (ruleId: string, tierIndex?: number, rewardDate?: string) => boolean;
   onClaimQueryChange: (query: string) => void;
   onClaimMonthFilterChange: (month: string) => void;
   onDeleteClaim: (claimId: string) => void;
 }) {
   const [tierSelections, setTierSelections] = useState<Record<string, number>>({});
+  const [backfillRuleId, setBackfillRuleId] = useState<string | null>(null);
+  const [backfillDate, setBackfillDate] = useState(() => dateKey(addDays(fromDateKey(todayDay), -1)));
+  const [backfillTierIndex, setBackfillTierIndex] = useState(0);
+  const backfillRule = rules.find((rule) => rule.id === backfillRuleId) ?? null;
+  const backfillExisting = backfillRule
+    ? allClaims.find((claim) => claim.rule_id === backfillRule.id && claim.reward_date === backfillDate)
+    : undefined;
+  const backfillModeChanged = Boolean(backfillExisting) && Boolean(backfillRule)
+    && ((backfillRule!.mode === "fixed") !== (backfillExisting?.tier_name === null));
+  const backfillTier = backfillRule?.mode === "tiered" ? backfillRule.tiers[backfillTierIndex] ?? null : null;
+  const canBackfill = Boolean(backfillRule?.active)
+    && isRewardBackfillDateAllowed(backfillDate, todayDay)
+    && !backfillModeChanged
+    && (backfillRule?.mode === "fixed"
+      ? !backfillExisting
+      : Boolean(backfillTier) && (!backfillExisting || backfillTier!.amount_cents > backfillExisting.amount_cents));
+  const backfillAddedCents = backfillRule?.mode === "fixed"
+    ? backfillRule.amount_cents ?? 0
+    : Math.max(0, (backfillTier?.amount_cents ?? 0) - (backfillExisting?.amount_cents ?? 0));
+  const backfillMin = dateKey(addDays(fromDateKey(todayDay), -7));
+  const backfillMax = dateKey(addDays(fromDateKey(todayDay), -1));
+
+  useEffect(() => {
+    if (!backfillRuleId) return;
+    const rule = rules.find((item) => item.id === backfillRuleId);
+    if (!rule || rule.mode !== "tiered") return;
+    const existing = allClaims.find((claim) => claim.rule_id === rule.id && claim.reward_date === backfillDate);
+    const nextTierIndex = rule.tiers.findIndex((tier) => tier.amount_cents > (existing?.amount_cents ?? 0));
+    setBackfillTierIndex(nextTierIndex >= 0 ? nextTierIndex : Math.max(0, rule.tiers.length - 1));
+  }, [allClaims, backfillDate, backfillRuleId, rules]);
 
   return (
     <>
@@ -1599,6 +1633,7 @@ export function RewardPanel({
                   {editingRuleId === rule.id ? <><button type="button" onClick={() => onSaveRule(rule.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <>
                     {rule.mode === "tiered" ? <select value={selectedTierIndex} onChange={(event) => setTierSelections((current) => ({ ...current, [rule.id]: Number(event.target.value) }))} aria-label={`${rule.name}达到的奖励档位`}>{rule.tiers.map((tier, index) => <option value={index} key={`${tier.name}-${index}`}>{tier.name} · {formatRewardAmount(tier.amount_cents)}</option>)}</select> : null}
                     <button type="button" onClick={() => { onClaim(rule.id, rule.mode === "tiered" ? selectedTierIndex : undefined); if (rule.mode === "tiered" && selectedTierIndex < rule.tiers.length - 1) setTierSelections((current) => ({ ...current, [rule.id]: selectedTierIndex + 1 })); }} disabled={!canReceive}><CircleDollarSign size={16} />{claimLabel}</button>
+                    <button type="button" onClick={() => { setBackfillDate(backfillMax); setBackfillRuleId(rule.id); }} disabled={!rule.active}><History size={16} />补领</button>
                     <button type="button" onClick={() => onStartEditRule(rule)} title="编辑规则"><Pencil size={16} /></button><button type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button>
                   </>}
                 </div>
@@ -1614,9 +1649,32 @@ export function RewardPanel({
           <select value={claimMonthFilter} onChange={(event) => onClaimMonthFilterChange(event.target.value)} aria-label="按月份筛选领取记录"><option value="all">全部月份</option>{claimMonths.map((month) => <option key={month} value={month}>{month}</option>)}</select>
         </div>
         <div className="reward-claim-list">
-          {claims.length ? claims.map((claim) => <article className="reward-claim-item" key={claim.id}><div><strong>{claim.rule_name}{claim.tier_name ? ` · ${claim.tier_name}` : ""}</strong><time>{formatArgumentDateTime(claim.claimed_at)}</time></div><span>{formatRewardAmount(claim.amount_cents)}</span><button type="button" onClick={() => onDeleteClaim(claim.id)} title="删除领取记录"><Trash2 size={16} /></button></article>) : <div className="personal-empty">还没有匹配的领取记录</div>}
+          {claims.length ? claims.map((claim) => {
+            const isBackfill = claim.reward_date !== claim.claimed_at.slice(0, 10);
+            return <article className="reward-claim-item" key={claim.id}><div><strong>{claim.rule_name}{claim.tier_name ? ` · ${claim.tier_name}` : ""}</strong><time>奖励日期：{claim.reward_date} · {isBackfill ? "补领于" : "领取于"} {formatArgumentDateTime(claim.claimed_at)}</time></div><span>{formatRewardAmount(claim.amount_cents)}</span><button type="button" onClick={() => onDeleteClaim(claim.id)} title="删除领取记录"><Trash2 size={16} /></button></article>;
+          }) : <div className="personal-empty">还没有匹配的领取记录</div>}
         </div>
       </section>
+      {backfillRule ? (
+        <div className="dialog-backdrop" role="presentation" onClick={() => setBackfillRuleId(null)}>
+          <form className="dialog reward-backfill-dialog" onClick={(event) => event.stopPropagation()} onSubmit={(event) => {
+            event.preventDefault();
+            if (onClaim(backfillRule.id, backfillRule.mode === "tiered" ? backfillTierIndex : undefined, backfillDate)) setBackfillRuleId(null);
+          }}>
+            <header><strong>补领“{backfillRule.name}”</strong><button type="button" className="icon-button compact" onClick={() => setBackfillRuleId(null)}><X size={18} /></button></header>
+            <label>奖励归属日期<input type="date" min={backfillMin} max={backfillMax} value={backfillDate} onChange={(event) => setBackfillDate(event.target.value)} /></label>
+            {backfillRule.mode === "tiered" ? <label>达到的档位<select value={backfillTierIndex} onChange={(event) => setBackfillTierIndex(Number(event.target.value))}>{backfillRule.tiers.map((tier, index) => <option value={index} key={`${tier.name}-${index}`}>{tier.name} · {formatRewardAmount(tier.amount_cents)}</option>)}</select></label> : null}
+            <div className="reward-backfill-summary">
+              {backfillModeChanged
+                ? "该日期已按另一种奖励模式领取，不能继续补领或升级。"
+                : backfillExisting
+                  ? backfillRule.mode === "fixed" ? "该日期已经领取过该奖励。" : `该日期当前为 ${backfillExisting.tier_name} · ${formatRewardAmount(backfillExisting.amount_cents)}`
+                  : `该日期尚未领取，补领后计入 ${backfillDate}。`}
+            </div>
+            <footer><button type="button" onClick={() => setBackfillRuleId(null)}>取消</button><button className="primary-button" type="submit" disabled={!canBackfill}>{canBackfill ? `确认补领 ${formatRewardAmount(backfillAddedCents)}` : "当前不可补领"}</button></footer>
+          </form>
+        </div>
+      ) : null}
     </>
   );
 }
