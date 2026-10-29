@@ -2009,10 +2009,27 @@ h1 {
 }
 
 .personal-summary > div:first-child,
-.reward-summary > div:not(.storage-status) {
+.reward-summary > div:not(.storage-status),
+.reward-summary-button {
   display: flex;
   align-items: baseline;
   gap: 10px;
+}
+
+.reward-summary-button {
+  padding: 10px 12px;
+  color: inherit;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.reward-summary-button:hover,
+.reward-summary-button:focus-visible {
+  border-color: var(--brand);
+  background: var(--panel);
+  outline: none;
 }
 
 .personal-summary strong,
@@ -2232,6 +2249,82 @@ h1 {
 
 .reward-backfill-dialog {
   width: min(520px, calc(100vw - 32px));
+}
+
+.reward-breakdown-dialog {
+  width: min(820px, calc(100vw - 32px));
+  max-height: calc(100vh - 36px);
+}
+
+.reward-breakdown-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.reward-breakdown-summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-subtle);
+}
+
+.reward-breakdown-summary span,
+.reward-breakdown-group-heading span,
+.reward-breakdown-detail span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.reward-breakdown-list {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.reward-breakdown-group {
+  border: 1px solid var(--border);
+  background: var(--panel-subtle);
+}
+
+.reward-breakdown-group-heading,
+.reward-breakdown-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+}
+
+.reward-breakdown-group-heading {
+  border-bottom: 1px solid var(--border);
+}
+
+.reward-breakdown-group-heading > div,
+.reward-breakdown-detail > div {
+  display: grid;
+  gap: 4px;
+}
+
+.reward-breakdown-group-heading > strong,
+.reward-breakdown-detail > strong {
+  color: var(--brand-strong);
+  white-space: nowrap;
+}
+
+.reward-breakdown-detail + .reward-breakdown-detail {
+  border-top: 1px solid var(--border);
+}
+
+.reward-backfill-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  color: var(--brand-strong) !important;
+  font-weight: 700;
+  background: var(--brand-soft);
 }
 
 .reward-backfill-summary {
@@ -3791,6 +3884,18 @@ textarea:focus {
   .personal-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .reward-summary-button {
+    width: 100%;
+  }
+
+  .reward-breakdown-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-breakdown-detail {
+    align-items: flex-start;
   }
 
   .skincare-composer,

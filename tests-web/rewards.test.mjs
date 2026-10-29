@@ -4,6 +4,7 @@ import {
   applyRewardClaim,
   canClaimReward,
   buildRewardClaim,
+  getRewardBreakdown,
   getRewardClaimMonths,
   getRewardTotals,
   getVisibleRewardClaims,
@@ -117,6 +118,31 @@ test("does not apply a converted rule mode until the next day", () => {
 test("calculates current-month and all-time totals", () => {
   assert.deepEqual(getRewardTotals(claims, "2026-10"), { monthCents: 400, totalCents: 900 });
   assert.deepEqual(getRewardTotals(claims.filter((claim) => claim.id !== "claim-1"), "2026-10"), { monthCents: 200, totalCents: 700 });
+});
+
+test("groups the historical total by rule without mutating claims", () => {
+  const history = [
+    { id: "claim-a1", rule_id: "rule-a", rule_name: "旧名称", amount_cents: 100, tier_name: "10分钟", reward_date: "2026-10-27", claimed_at: "2026-10-27T08:00" },
+    { id: "claim-b1", rule_id: "rule-b", rule_name: "早睡", amount_cents: 200, tier_name: null, reward_date: "2026-10-28", claimed_at: "2026-10-28T22:00" },
+    { id: "claim-a2", rule_id: "rule-a", rule_name: "每日读书", amount_cents: 200, tier_name: "20分钟", reward_date: "2026-10-26", claimed_at: "2026-10-29T09:00" },
+    { id: "claim-c1", rule_id: "rule-c", rule_name: "运动", amount_cents: 200, tier_name: null, reward_date: "2026-10-29", claimed_at: "2026-10-29T10:00" },
+  ];
+  const original = structuredClone(history);
+
+  const breakdown = getRewardBreakdown(history);
+
+  assert.deepEqual(breakdown.map((group) => group.rule_id), ["rule-a", "rule-c", "rule-b"]);
+  assert.deepEqual(breakdown[0], {
+    rule_id: "rule-a",
+    rule_name: "每日读书",
+    total_cents: 300,
+    completion_count: 2,
+    latest_reward_date: "2026-10-27",
+    claims: [history[0], history[2]],
+  });
+  assert.equal(breakdown.reduce((total, group) => total + group.total_cents, 0), 700);
+  assert.equal(breakdown.reduce((total, group) => total + group.completion_count, 0), history.length);
+  assert.deepEqual(history, original);
 });
 
 test("allows backfill only for the previous seven complete local days", () => {

@@ -27,6 +27,15 @@ export type SortableRewardClaim = {
   claimed_at: string;
 };
 
+export type RewardBreakdownGroup<T extends SortableRewardClaim = SortableRewardClaim> = {
+  rule_id: string;
+  rule_name: string;
+  total_cents: number;
+  completion_count: number;
+  latest_reward_date: string;
+  claims: T[];
+};
+
 export function normalizeRewardRules(
   raw: unknown,
   createId: () => string = () => crypto.randomUUID(),
@@ -161,6 +170,32 @@ export function getRewardTotals(claims: SortableRewardClaim[], currentMonth: str
     monthCents: totals.monthCents + (claim.reward_date.startsWith(currentMonth) ? claim.amount_cents : 0),
     totalCents: totals.totalCents + claim.amount_cents,
   }), { monthCents: 0, totalCents: 0 });
+}
+
+export function getRewardBreakdown<T extends SortableRewardClaim>(claims: T[]): RewardBreakdownGroup<T>[] {
+  const grouped = new Map<string, T[]>();
+  claims.forEach((claim) => grouped.set(claim.rule_id, [...(grouped.get(claim.rule_id) ?? []), claim]));
+
+  return Array.from(grouped.entries())
+    .map(([ruleId, ruleClaims]) => {
+      const sortedClaims = ruleClaims.slice().sort((first, second) => (
+        second.reward_date.localeCompare(first.reward_date) || second.claimed_at.localeCompare(first.claimed_at)
+      ));
+      const latestClaim = ruleClaims.reduce((latest, claim) => claim.claimed_at > latest.claimed_at ? claim : latest);
+      return {
+        rule_id: ruleId,
+        rule_name: latestClaim.rule_name,
+        total_cents: ruleClaims.reduce((total, claim) => total + claim.amount_cents, 0),
+        completion_count: ruleClaims.length,
+        latest_reward_date: sortedClaims[0].reward_date,
+        claims: sortedClaims,
+      };
+    })
+    .sort((first, second) => (
+      second.total_cents - first.total_cents
+      || second.latest_reward_date.localeCompare(first.latest_reward_date)
+      || first.rule_name.localeCompare(second.rule_name, "zh-CN")
+    ));
 }
 
 export function getRewardClaimForDay<T extends SortableRewardClaim>(claims: T[], ruleId: string, localDay: string): T | undefined {

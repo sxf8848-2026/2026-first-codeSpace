@@ -39,7 +39,7 @@ import {
   Gift,
   CircleDollarSign,
 } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { STATUSES, TAGS } from "../constants";
 import { addDays, dateKey, dayLabel, formatDisplayDate, formatMonthTitle, fromDateKey, fromMonthKey } from "../date";
 import type { HabitView } from "../services/habits";
@@ -91,7 +91,7 @@ import {
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
-import { isRewardBackfillDateAllowed, RewardRuleStatusFilter } from "../services/rewards";
+import { getRewardBreakdown, isRewardBackfillDateAllowed, RewardRuleStatusFilter } from "../services/rewards";
 import { Segmented, TagButton } from "./Controls";
 import { StudyGrowthMarkdownEditor, StudyGrowthMarkdownPreview } from "./StudyGrowthMarkdownEditor";
 import { studyGrowthMarkdownToPlainText } from "../services/studyGrowthMarkdown";
@@ -1550,8 +1550,10 @@ export function RewardPanel({
 }) {
   const [tierSelections, setTierSelections] = useState<Record<string, number>>({});
   const [backfillRuleId, setBackfillRuleId] = useState<string | null>(null);
+  const [showRewardBreakdown, setShowRewardBreakdown] = useState(false);
   const [backfillDate, setBackfillDate] = useState(() => dateKey(addDays(fromDateKey(todayDay), -1)));
   const [backfillTierIndex, setBackfillTierIndex] = useState(0);
+  const rewardBreakdown = useMemo(() => getRewardBreakdown(allClaims), [allClaims]);
   const backfillRule = rules.find((rule) => rule.id === backfillRuleId) ?? null;
   const backfillExisting = backfillRule
     ? allClaims.find((claim) => claim.rule_id === backfillRule.id && claim.reward_date === backfillDate)
@@ -1585,7 +1587,9 @@ export function RewardPanel({
       <header className="topbar personal-topbar"><div><div className="eyebrow"><Gift size={16} />个人管理</div><h1>个人奖励</h1></div></header>
       <section className="reward-summary">
         <div><span>本月奖励</span><strong>{formatRewardAmount(monthRewardCents)}</strong></div>
-        <div><span>历史累计</span><strong>{formatRewardAmount(totalRewardCents)}</strong></div>
+        <button type="button" className="reward-summary-button" onClick={() => setShowRewardBreakdown(true)} aria-label="查看历史累计金额构成">
+          <span>历史累计</span><strong>{formatRewardAmount(totalRewardCents)}</strong>
+        </button>
         <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
       </section>
       <section className="personal-panel reward-rules" aria-label="奖励规则">
@@ -1655,6 +1659,43 @@ export function RewardPanel({
           }) : <div className="personal-empty">还没有匹配的领取记录</div>}
         </div>
       </section>
+      {showRewardBreakdown ? (
+        <div className="dialog-backdrop" role="presentation" onClick={() => setShowRewardBreakdown(false)}>
+          <section className="dialog reward-breakdown-dialog" role="dialog" aria-modal="true" aria-labelledby="reward-breakdown-title" onClick={(event) => event.stopPropagation()}>
+            <header><strong id="reward-breakdown-title">历史累计金额构成</strong><button type="button" className="icon-button compact" onClick={() => setShowRewardBreakdown(false)} aria-label="关闭历史累计明细"><X size={18} /></button></header>
+            <div className="reward-breakdown-summary">
+              <div><span>历史累计</span><strong>{formatRewardAmount(totalRewardCents)}</strong></div>
+              <div><span>完成次数</span><strong>{allClaims.length} 次</strong></div>
+              <div><span>奖励规则</span><strong>{rewardBreakdown.length} 个</strong></div>
+            </div>
+            <div className="reward-breakdown-list">
+              {rewardBreakdown.length ? rewardBreakdown.map((group) => (
+                <article className="reward-breakdown-group" key={group.rule_id}>
+                  <div className="reward-breakdown-group-heading">
+                    <div><strong>{group.rule_name}</strong><span>完成 {group.completion_count} 次</span></div>
+                    <strong>{formatRewardAmount(group.total_cents)}</strong>
+                  </div>
+                  <div className="reward-breakdown-details">
+                    {group.claims.map((claim) => {
+                      const isBackfill = claim.reward_date !== claim.claimed_at.slice(0, 10);
+                      return (
+                        <div className="reward-breakdown-detail" key={claim.id}>
+                          <div>
+                            <strong>{claim.reward_date}{claim.tier_name ? ` · ${claim.tier_name}` : ""}{isBackfill ? <span className="reward-backfill-badge">补领</span> : null}</strong>
+                            <span>{isBackfill ? "实际补领于" : "领取于"} {formatArgumentDateTime(claim.claimed_at)}</span>
+                          </div>
+                          <strong>{formatRewardAmount(claim.amount_cents)}</strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              )) : <div className="personal-empty">还没有奖励领取记录</div>}
+            </div>
+            <footer><button type="button" onClick={() => setShowRewardBreakdown(false)}>关闭</button></footer>
+          </section>
+        </div>
+      ) : null}
       {backfillRule ? (
         <div className="dialog-backdrop" role="presentation" onClick={() => setBackfillRuleId(null)}>
           <form className="dialog reward-backfill-dialog" onClick={(event) => event.stopPropagation()} onSubmit={(event) => {
