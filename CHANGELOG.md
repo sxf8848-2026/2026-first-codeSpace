@@ -13,6 +13,31 @@
 
 ---
 
+## [35.0.2] - 2026-10-30
+
+### 改了什么
+
+- 个人奖励规则列表在宽屏下调整为两列等宽卡片，中等屏和移动端继续保持单列。
+- 双列卡片的档位选择和操作区移至内容下方；编辑中的规则临时跨越整行，空状态也占满列表宽度。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `tests-web/rewards.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，218/218。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 双列布局仅在视口宽度达到 `1400px` 时启用，不修改奖励数据结构或业务逻辑，无需重启后端。
+
 ## [35.0.1] - 2026-10-30
 
 ### 改了什么

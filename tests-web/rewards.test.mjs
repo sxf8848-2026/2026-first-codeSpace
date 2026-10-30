@@ -232,3 +232,13 @@ test("renders reward rules as elevated cards with valid theme tokens", () => {
   assert.match(styles, /\.reward-rule-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*box-shadow:/s);
   assert.match(styles, /\.reward-rule-item\.inactive\s*\{[^}]*border-left-color:\s*var\(--muted\);[^}]*opacity:\s*0\.72;/s);
 });
+
+test("uses a two-column reward rule grid only on wide screens", () => {
+  const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(component, /reward-rule-item[^`]*editingRuleId === rule\.id \? "editing" : ""/);
+  assert.match(styles, /@media \(min-width: 1400px\)\s*\{[\s\S]*?\.reward-rule-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(styles, /\.reward-rule-item\.editing\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
+  assert.match(styles, /\.reward-rule-item:not\(\.editing\) \.reward-actions select\s*\{[^}]*flex:\s*1 1 100%;/s);
+  assert.match(styles, /\.reward-rule-list > \.personal-empty\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
+});

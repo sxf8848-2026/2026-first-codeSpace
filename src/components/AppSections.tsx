@@ -1660,7 +1660,7 @@ export function RewardPanel({
                   ? `升级奖励（补 ${formatRewardAmount(selectedTier.amount_cents - currentClaim.amount_cents)}）`
                   : isWeekly ? "本周已领取" : "今日已领取";
             return (
-              <article className={`reward-rule-item ${rule.active ? "" : "inactive"}`} key={rule.id}>
+              <article className={`reward-rule-item ${rule.active ? "" : "inactive"} ${editingRuleId === rule.id ? "editing" : ""}`} key={rule.id}>
                 {editingRuleId === rule.id ? (
                   <div className="reward-edit">
                     <RewardRuleFields

@@ -3680,6 +3680,37 @@ textarea:focus {
   color: var(--muted);
 }
 
+@media (min-width: 1400px) {
+  .reward-rule-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .reward-rule-item {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: start;
+  }
+
+  .reward-rule-item.editing {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+  }
+
+  .reward-rule-item:not(.editing) .reward-actions {
+    align-self: end;
+  }
+
+  .reward-rule-item:not(.editing) .reward-actions select {
+    flex: 1 1 100%;
+  }
+
+  .reward-rule-list > .personal-empty {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
