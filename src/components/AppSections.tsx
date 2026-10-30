@@ -1584,7 +1584,7 @@ export function RewardPanel({
 
   return (
     <>
-      <header className="topbar personal-topbar"><div><div className="eyebrow"><Gift size={16} />个人管理</div><h1>个人奖励</h1></div></header>
+      <header className="topbar personal-topbar"><div><div className="eyebrow"><Gift size={16} />个人管理</div><h1>个人奖励</h1><p className="reward-start-note">个人奖励系统从2026-10-28开始计算</p></div></header>
       <section className="reward-summary">
         <div><span>本月奖励</span><strong>{formatRewardAmount(monthRewardCents)}</strong></div>
         <button type="button" className="reward-summary-button" onClick={() => setShowRewardBreakdown(true)} aria-label="查看历史累计金额构成">

@@ -13,6 +13,31 @@
 
 ---
 
+## [34.1.1] - 2026-10-30
+
+### 改了什么
+
+- 在“个人奖励”页面标题下方增加“个人奖励系统从2026-10-28开始计算”说明。
+- 说明采用低对比度提示样式，并位于本月奖励与历史累计统计上方。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `tests-web/rewards.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，210/210。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 本次仅增加静态页面说明，不修改奖励计算逻辑、数据结构或数据版本。
+
 ## [34.1.0] - 2026-10-29
 
 ### 改了什么

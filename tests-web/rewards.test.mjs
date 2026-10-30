@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   applyRewardClaim,
@@ -157,4 +158,11 @@ test("filters and sorts reward claims and collects months", () => {
   assert.deepEqual(getVisibleRewardClaims(claims, "早起", "2026-10").map((claim) => claim.id), ["claim-1", "claim-3"]);
   assert.deepEqual(getVisibleRewardClaims([{ ...claims[0], tier_name: "读书30分钟" }], "30分钟").map((claim) => claim.id), ["claim-1"]);
   assert.deepEqual(getRewardClaimMonths(claims), ["2026-10", "2026-09"]);
+});
+
+test("shows the personal reward calculation start note below the page title", () => {
+  const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(component, /<h1>个人奖励<\/h1><p className="reward-start-note">个人奖励系统从2026-10-28开始计算<\/p>/);
+  assert.match(styles, /\.reward-start-note\s*\{[^}]*color:\s*var\(--muted\)/s);
 });
