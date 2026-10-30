@@ -13,6 +13,44 @@
 
 ---
 
+## [35.0.0] - 2026-10-30
+
+### 改了什么
+
+- 阶梯奖励新增“每日 / 每周”周期；每周奖励按周一至周日计算，同一自然周只保留一条最终领取记录，升级档位时只补差额。
+- 每周阶梯奖励支持补领上一完整自然周，并在规则卡片、领取流水和历史累计明细中展示自然周范围与补领状态。
+- 固定奖励继续仅支持每日领取；新规则周期保存后锁定，旧阶梯规则可在首次编辑时选择一次周期。
+- 每周领取记录以周一作为奖励归属日期，跨月自然周按周一所在月份计入统计和筛选；数据版本升级至 `35`。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/rewards.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/rewards.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，216/216。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- 当前 `todo-data/todos.json` 通过新版后端 Schema 校验。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧固定奖励和领取记录自动按“每日”处理；旧阶梯奖励在周期确认前继续按“每日”处理。
+- 修改后需要重启 `npm run dev`，使后端版本与 Schema 更新生效。
+- 第一版不支持每周固定奖励，也不支持补领上一周之前的周奖励。
+
 ## [34.1.1] - 2026-10-30
 
 ### 改了什么

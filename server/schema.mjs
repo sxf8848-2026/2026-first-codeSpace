@@ -7,6 +7,7 @@ const allowedStudyGrowthTypes = new Set(["method", "habit", "mental_model"]);
 const allowedStudyGrowthTitleSizes = new Set([18, 22, 26, 30]);
 const allowedSkincareCategories = new Set(["cleanser", "toner", "serum", "lotion", "cream", "sunscreen", "mask", "other"]);
 const allowedRewardRuleModes = new Set(["fixed", "tiered"]);
+const allowedRewardRulePeriods = new Set(["daily", "weekly"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
 const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -313,8 +314,10 @@ function isValidRewardRule(record) {
   if (!allowedRewardRuleModes.has(record.mode)) return false;
   if (!Array.isArray(record.tiers)) return false;
   if (record.mode === "fixed") {
+    if (record.period !== "daily") return false;
     if (!isPositiveCents(record.amount_cents) || record.tiers.length !== 0) return false;
   } else {
+    if (record.period !== null && !allowedRewardRulePeriods.has(record.period)) return false;
     if (record.amount_cents !== null || record.tiers.length < 2 || !record.tiers.every(isValidRewardTier)) return false;
     if (record.tiers.some((tier, index) => index > 0 && tier.amount_cents <= record.tiers[index - 1].amount_cents)) return false;
   }
@@ -332,6 +335,8 @@ function isValidRewardClaim(record) {
   if (!isNonEmptyString(record.rule_name)) return false;
   if (!isPositiveCents(record.amount_cents)) return false;
   if (record.tier_name !== null && !isNonEmptyString(record.tier_name)) return false;
+  if (!allowedRewardRulePeriods.has(record.period)) return false;
+  if (record.period === "weekly" && record.tier_name === null) return false;
   if (typeof record.reward_date !== "string" || !dateKeyPattern.test(record.reward_date)) return false;
   if (typeof record.claimed_at !== "string" || !localDateTimePattern.test(record.claimed_at)) return false;
   return true;

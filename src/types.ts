@@ -200,6 +200,7 @@ export type SkincareProductRecord = {
 };
 
 export type RewardRuleMode = "fixed" | "tiered";
+export type RewardRulePeriod = "daily" | "weekly";
 
 export type RewardTier = {
   name: string;
@@ -210,6 +211,7 @@ export type RewardRuleRecord = {
   id: string;
   name: string;
   mode: RewardRuleMode;
+  period: RewardRulePeriod | null;
   amount_cents: number | null;
   tiers: RewardTier[];
   description: string;
@@ -224,6 +226,7 @@ export type RewardClaimRecord = {
   rule_name: string;
   amount_cents: number;
   tier_name: string | null;
+  period: RewardRulePeriod;
   reward_date: string;
   claimed_at: string;
 };

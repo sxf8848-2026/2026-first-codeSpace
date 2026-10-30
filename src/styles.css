@@ -2087,6 +2087,28 @@ h1 {
   justify-self: start;
 }
 
+.reward-period-editor {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reward-period-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--brand-strong);
+  font-weight: 700;
+  border: 1px solid var(--brand);
+  background: var(--brand-soft);
+}
+
+.reward-period-editor small {
+  flex-basis: 100%;
+}
+
 .reward-tier-editor {
   display: grid;
   gap: 10px;
@@ -2194,6 +2216,11 @@ h1 {
   background: var(--panel);
 }
 
+.reward-week-range {
+  color: var(--brand-strong) !important;
+  font-weight: 700;
+}
+
 .skincare-edit,
 .reward-edit {
   display: grid;
@@ -2256,6 +2283,19 @@ h1 {
 
 .reward-backfill-dialog {
   width: min(520px, calc(100vw - 32px));
+}
+
+.reward-backfill-period {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.reward-backfill-period span {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .reward-breakdown-dialog {

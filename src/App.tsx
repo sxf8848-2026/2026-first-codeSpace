@@ -86,11 +86,14 @@ import { getVisibleSkincareProducts, SkincareCategoryFilter } from "./services/s
 import {
   applyRewardClaim,
   canClaimReward,
+  getEffectiveRewardPeriod,
   getRewardClaimMonths,
+  getRewardPeriodKey,
   getRewardTotals,
   getVisibleRewardClaims,
   getVisibleRewardRules,
   isRewardBackfillDateAllowed,
+  isWeeklyRewardBackfillAllowed,
   RewardRuleStatusFilter,
 } from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
@@ -138,6 +141,8 @@ import {
   SkincareProductRecord,
   RewardRuleRecord,
   RewardRuleMode,
+  RewardRulePeriod,
+  RewardClaimRecord,
   RewardTier,
 } from "./types";
 
@@ -259,12 +264,12 @@ const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDra
 
 type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
 type RewardTierDraft = { name: string; amount: string };
-type RewardRuleDraft = { name: string; mode: RewardRuleMode; amount: string; tiers: RewardTierDraft[]; description: string };
+type RewardRuleDraft = { name: string; mode: RewardRuleMode; period: RewardRulePeriod; amount: string; tiers: RewardTierDraft[]; description: string };
 
 const blankSkincareDraft: SkincareDraft = { name: "", brand: "", category: "cleanser", description: "" };
 
 function createBlankRewardRuleDraft(): RewardRuleDraft {
-  return { name: "", mode: "fixed", amount: "", tiers: [{ name: "", amount: "" }, { name: "", amount: "" }], description: "" };
+  return { name: "", mode: "fixed", period: "daily", amount: "", tiers: [{ name: "", amount: "" }, { name: "", amount: "" }], description: "" };
 }
 
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
@@ -496,11 +501,15 @@ export function App() {
   );
   const rewardClaimMonths = useMemo(() => getRewardClaimMonths(activeData.rewardClaims), [activeData.rewardClaims]);
   const rewardTotals = useMemo(() => getRewardTotals(activeData.rewardClaims, todayMonth), [activeData.rewardClaims, todayMonth]);
-  const todayRewardClaims = useMemo(() => new Map(
-    activeData.rewardClaims
-      .filter((claim) => claim.reward_date === todayDay)
-      .map((claim) => [claim.rule_id, claim]),
-  ), [activeData.rewardClaims, todayDay]);
+  const currentRewardClaims = useMemo(() => {
+    const claims = new Map<string, RewardClaimRecord>();
+    activeData.rewardRules.forEach((rule) => {
+      const periodKey = getRewardPeriodKey(rule, todayDay);
+      const claim = activeData.rewardClaims.find((item) => item.rule_id === rule.id && item.reward_date === periodKey);
+      if (claim) claims.set(rule.id, claim);
+    });
+    return claims;
+  }, [activeData.rewardClaims, activeData.rewardRules, todayDay]);
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
     [activeData.videoInspirations],
@@ -1319,7 +1328,7 @@ export function App() {
       window.alert("请填写有效奖励金额；阶梯奖励至少需要两个金额递增的完整档位。");
       return;
     }
-    replaceRewardRules([createRewardRule(name, rewardRuleDraft.mode, values.amountCents, values.tiers, rewardRuleDraft.description), ...activeData.rewardRules]);
+    replaceRewardRules([createRewardRule(name, rewardRuleDraft.mode, rewardRuleDraft.period, values.amountCents, values.tiers, rewardRuleDraft.description), ...activeData.rewardRules]);
     setRewardRuleDraft(createBlankRewardRuleDraft());
   }
 
@@ -1328,6 +1337,7 @@ export function App() {
     setRewardRuleEditDraft({
       name: rule.name,
       mode: rule.mode,
+      period: rule.period ?? "daily",
       amount: rule.amount_cents === null ? "" : (rule.amount_cents / 100).toFixed(2),
       tiers: rule.mode === "tiered" ? rule.tiers.map((tier) => ({ name: tier.name, amount: (tier.amount_cents / 100).toFixed(2) })) : [{ name: "", amount: "" }, { name: "", amount: "" }],
       description: rule.description,
@@ -1335,16 +1345,25 @@ export function App() {
   }
 
   function saveRewardRule(ruleId: string) {
+    const currentRule = activeData.rewardRules.find((rule) => rule.id === ruleId);
+    if (!currentRule) return;
     const name = rewardRuleEditDraft.name.trim();
     const values = parseRewardRuleValues(rewardRuleEditDraft);
     if (!name || !values) {
       window.alert("请填写有效奖励金额；阶梯奖励至少需要两个金额递增的完整档位。");
       return;
     }
+    if (currentRule.period === "weekly" && rewardRuleEditDraft.mode !== "tiered") {
+      window.alert("每周阶梯奖励创建后不能改为固定奖励。");
+      return;
+    }
+    const nextMode = currentRule.period === "weekly" ? "tiered" : rewardRuleEditDraft.mode;
+    const nextPeriod = nextMode === "fixed" ? "daily" : currentRule.period ?? rewardRuleEditDraft.period;
     replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? {
       ...rule,
       name,
-      mode: rewardRuleEditDraft.mode,
+      mode: nextMode,
+      period: nextPeriod,
       amount_cents: values.amountCents,
       tiers: values.tiers,
       description: rewardRuleEditDraft.description.trim(),
@@ -1363,9 +1382,13 @@ export function App() {
     if (!rule) return false;
     const now = new Date();
     const localDay = dateKey(now);
-    const rewardDay = rewardDate ?? localDay;
-    if (rewardDate && !isRewardBackfillDateAllowed(rewardDay, localDay)) {
-      window.alert("只能补领昨天至 7 天前的奖励。");
+    const rewardDay = rewardDate ?? getRewardPeriodKey(rule, localDay);
+    const rewardPeriod = getEffectiveRewardPeriod(rule);
+    const backfillAllowed = rewardPeriod === "weekly"
+      ? isWeeklyRewardBackfillAllowed(rewardDay, localDay)
+      : isRewardBackfillDateAllowed(rewardDay, localDay);
+    if (rewardDate && !backfillAllowed) {
+      window.alert(rewardPeriod === "weekly" ? "每周奖励只能补领上一完整自然周。" : "只能补领昨天至 7 天前的奖励。");
       return false;
     }
     const tier = rule.mode === "tiered" ? rule.tiers[tierIndex ?? -1] ?? null : null;
@@ -2495,7 +2518,7 @@ export function App() {
             claims={visibleRewardClaims}
             allClaims={activeData.rewardClaims}
             claimMonths={rewardClaimMonths}
-            todayClaims={todayRewardClaims}
+            currentClaims={currentRewardClaims}
             todayDay={todayDay}
             monthRewardCents={rewardTotals.monthCents}
             totalRewardCents={rewardTotals.totalCents}

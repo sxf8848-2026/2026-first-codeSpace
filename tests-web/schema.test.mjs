@@ -179,6 +179,7 @@ const validRewardRule = {
   id: "reward-rule-1",
   name: "早起早睡",
   mode: "fixed",
+  period: "daily",
   amount_cents: 200,
   tiers: [],
   description: "当天按计划作息",
@@ -192,6 +193,7 @@ const validTieredRewardRule = {
   id: "reward-rule-2",
   name: "每日读书",
   mode: "tiered",
+  period: "daily",
   amount_cents: null,
   tiers: [
     { name: "读书10分钟", amount_cents: 100 },
@@ -205,13 +207,14 @@ const validRewardClaim = {
   rule_name: "早起早睡",
   amount_cents: 200,
   tier_name: null,
+  period: "daily",
   reward_date: "2026-10-27",
   claimed_at: "2026-10-27T07:30",
 };
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 34,
+    version: 35,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -952,8 +955,8 @@ test("rejects invalid study growth fields", () => {
 test("accepts valid personal management records", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({
     skincareProducts: [validSkincareProduct],
-    rewardRules: [validRewardRule, validTieredRewardRule],
-    rewardClaims: [validRewardClaim],
+    rewardRules: [validRewardRule, validTieredRewardRule, { ...validTieredRewardRule, id: "reward-rule-weekly", period: "weekly" }, { ...validTieredRewardRule, id: "reward-rule-legacy", period: null }],
+    rewardClaims: [validRewardClaim, { ...validRewardClaim, id: "reward-claim-weekly", rule_id: "reward-rule-weekly", tier_name: "读书20分钟", period: "weekly", reward_date: "2026-10-26" }],
   })), true);
 });
 
@@ -975,6 +978,9 @@ test("rejects invalid reward rules and claims", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, amount_cents: 0 }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, amount_cents: 1.5 }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, mode: "unknown" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, period: "weekly" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, period: undefined }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validTieredRewardRule, period: "monthly" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, tiers: [{ name: "错误档位", amount_cents: 100 }] }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validTieredRewardRule, amount_cents: 100 }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validTieredRewardRule, tiers: [validTieredRewardRule.tiers[0]] }] })), false);
@@ -985,6 +991,9 @@ test("rejects invalid reward rules and claims", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, active: "yes" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, rule_name: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, tier_name: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, period: undefined }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, period: "monthly" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, period: "weekly" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, reward_date: undefined }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, reward_date: "2026-10" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, claimed_at: "2026-10-27" }] })), false);

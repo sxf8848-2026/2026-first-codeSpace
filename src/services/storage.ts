@@ -30,6 +30,7 @@ import {
   SkincareProductRecord,
   RewardRuleRecord,
   RewardRuleMode,
+  RewardRulePeriod,
   RewardTier,
   Habit,
   InspirationRecord,
@@ -450,6 +451,7 @@ export function createSkincareProduct(
 export function createRewardRule(
   name: string,
   mode: RewardRuleMode,
+  period: RewardRulePeriod,
   amount_cents: number | null,
   tiers: RewardTier[],
   description: string,
@@ -459,6 +461,7 @@ export function createRewardRule(
     id: crypto.randomUUID(),
     name: name.trim(),
     mode,
+    period: mode === "fixed" ? "daily" : period,
     amount_cents: mode === "fixed" ? amount_cents : null,
     tiers: mode === "tiered" ? tiers : [],
     description: description.trim(),

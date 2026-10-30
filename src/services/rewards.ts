@@ -1,3 +1,6 @@
+import { addDays, dateKey, fromDateKey, weekKey } from "../date.ts";
+import type { RewardRulePeriod } from "../types.ts";
+
 export type RewardRuleStatusFilter = "active" | "all" | "inactive";
 
 export type SortableRewardTier = {
@@ -9,6 +12,7 @@ export type SortableRewardRule = {
   id: string;
   name: string;
   mode: "fixed" | "tiered";
+  period: RewardRulePeriod | null;
   amount_cents: number | null;
   tiers: SortableRewardTier[];
   description: string;
@@ -23,6 +27,7 @@ export type SortableRewardClaim = {
   rule_name: string;
   amount_cents: number;
   tier_name: string | null;
+  period: RewardRulePeriod;
   reward_date: string;
   claimed_at: string;
 };
@@ -47,10 +52,14 @@ export function normalizeRewardRules(
     .map((record) => {
       const createdAt = isDateTimeStamp(record.created_at) ? record.created_at : createStamp();
       const mode: SortableRewardRule["mode"] = record.mode === "tiered" ? "tiered" : "fixed";
+      const period = mode === "fixed"
+        ? "daily"
+        : record.period === "daily" || record.period === "weekly" ? record.period : null;
       return {
         id: typeof record.id === "string" ? record.id : createId(),
         name: typeof record.name === "string" ? record.name.trim() : "",
         mode,
+        period,
         amount_cents: mode === "fixed" && isPositiveCents(record.amount_cents) ? record.amount_cents : null,
         tiers: mode === "tiered" ? normalizeRewardTiers(record.tiers) : [],
         description: typeof record.description === "string" ? record.description.trim() : "",
@@ -75,6 +84,7 @@ export function normalizeRewardClaims(
     .filter((record): record is Partial<SortableRewardClaim> => Boolean(record) && typeof record === "object")
     .map((record) => {
       const claimedAt = typeof record.claimed_at === "string" ? record.claimed_at : "";
+      const period: RewardRulePeriod = record.period === "weekly" ? "weekly" : "daily";
       return {
         id: typeof record.id === "string" ? record.id : createId(),
         rule_id: typeof record.rule_id === "string" ? record.rule_id : "",
@@ -83,6 +93,7 @@ export function normalizeRewardClaims(
         tier_name: record.tier_name === null || record.tier_name === undefined
           ? null
           : typeof record.tier_name === "string" ? record.tier_name.trim() : "",
+        period,
         reward_date: isDateKey(record.reward_date) ? record.reward_date : claimedAt.slice(0, 10),
         claimed_at: claimedAt,
       };
@@ -106,6 +117,7 @@ export function buildRewardClaim(
     rule_name: rule.name,
     amount_cents: rule.mode === "tiered" ? tier!.amount_cents : rule.amount_cents!,
     tier_name: rule.mode === "tiered" ? tier!.name : null,
+    period: getEffectiveRewardPeriod(rule),
     reward_date: rewardDate,
     claimed_at: claimedAt,
   };
@@ -130,6 +142,7 @@ export function applyRewardClaim<T extends SortableRewardClaim>(
     rule_name: rule.name,
     amount_cents: tier!.amount_cents,
     tier_name: tier!.name,
+    period: getEffectiveRewardPeriod(rule),
     claimed_at: claimedAt,
   };
   return {
@@ -202,12 +215,34 @@ export function getRewardClaimForDay<T extends SortableRewardClaim>(claims: T[],
   return claims.find((claim) => claim.rule_id === ruleId && claim.reward_date === localDay);
 }
 
+export function getEffectiveRewardPeriod(rule: SortableRewardRule): RewardRulePeriod {
+  return rule.mode === "tiered" && rule.period === "weekly" ? "weekly" : "daily";
+}
+
+export function getRewardPeriodKey(rule: SortableRewardRule, localDay: string): string {
+  return getEffectiveRewardPeriod(rule) === "weekly" ? weekKey(fromDateKey(localDay)) : localDay;
+}
+
+export function getPreviousWeeklyRewardKey(todayDay: string): string {
+  return dateKey(addDays(fromDateKey(weekKey(fromDateKey(todayDay))), -7));
+}
+
 export function isRewardBackfillDateAllowed(rewardDate: string, todayDay: string): boolean {
   const rewardOrdinal = dateOrdinal(rewardDate);
   const todayOrdinal = dateOrdinal(todayDay);
   if (rewardOrdinal === null || todayOrdinal === null) return false;
   const daysAgo = todayOrdinal - rewardOrdinal;
   return daysAgo >= 1 && daysAgo <= 7;
+}
+
+export function isWeeklyRewardBackfillAllowed(rewardDate: string, todayDay: string): boolean {
+  return rewardDate === getPreviousWeeklyRewardKey(todayDay);
+}
+
+export function isRewardClaimBackfill(claim: SortableRewardClaim): boolean {
+  const claimedDay = claim.claimed_at.slice(0, 10);
+  const claimedPeriodKey = claim.period === "weekly" ? weekKey(fromDateKey(claimedDay)) : claimedDay;
+  return claim.reward_date !== claimedPeriodKey;
 }
 
 export function canClaimReward(
@@ -221,7 +256,7 @@ export function canClaimReward(
   if (rule.mode === "fixed") return !existing;
   if (!tier || !hasTier(rule, tier)) return false;
   if (!existing) return true;
-  return existing.tier_name !== null && tier.amount_cents > existing.amount_cents;
+  return existing.period === getEffectiveRewardPeriod(rule) && existing.tier_name !== null && tier.amount_cents > existing.amount_cents;
 }
 
 function normalizeRewardTiers(raw: unknown): SortableRewardTier[] {
