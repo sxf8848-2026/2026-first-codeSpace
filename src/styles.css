@@ -2164,6 +2164,7 @@ h1 {
 }
 
 .reward-rule-item {
+  position: relative;
   border: 1px solid var(--border);
   border-left: 3px solid var(--brand);
   border-radius: 6px;
@@ -2173,6 +2174,47 @@ h1 {
     border-color 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
+}
+
+.reward-drag-handle {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reward-rule-item.can-drag {
+    padding-top: 48px;
+  }
+
+  .reward-drag-handle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    background: var(--panel);
+    cursor: grab;
+  }
+
+  .reward-drag-handle:active {
+    cursor: grabbing;
+  }
+}
+
+.reward-rule-item.dragging {
+  opacity: 0.48;
+  transform: scale(0.99);
+}
+
+.reward-rule-item.drag-over {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent), 0 8px 22px color-mix(in srgb, var(--text) 11%, transparent);
 }
 
 .reward-rule-item:hover {

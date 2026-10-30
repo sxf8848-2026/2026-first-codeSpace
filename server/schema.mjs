@@ -323,6 +323,7 @@ function isValidRewardRule(record) {
   }
   if (typeof record.description !== "string") return false;
   if (typeof record.active !== "boolean") return false;
+  if (!Number.isInteger(record.sort_order) || record.sort_order < 1) return false;
   if (!isDateTimeStamp(record.created_at)) return false;
   if (!isDateTimeStamp(record.updated_at)) return false;
   return true;

@@ -17,6 +17,7 @@ export type SortableRewardRule = {
   tiers: SortableRewardTier[];
   description: string;
   active: boolean;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
 };
@@ -45,9 +46,9 @@ export function normalizeRewardRules(
   raw: unknown,
   createId: () => string = () => crypto.randomUUID(),
   createStamp: () => string = () => new Date().toISOString(),
-): SortableRewardRule[] {
+): Array<SortableRewardRule & { sort_order: number }> {
   if (!Array.isArray(raw)) return [];
-  return raw
+  const records = raw
     .filter((record): record is Partial<SortableRewardRule> => Boolean(record) && typeof record === "object")
     .map((record) => {
       const createdAt = isDateTimeStamp(record.created_at) ? record.created_at : createStamp();
@@ -64,6 +65,7 @@ export function normalizeRewardRules(
         tiers: mode === "tiered" ? normalizeRewardTiers(record.tiers) : [],
         description: typeof record.description === "string" ? record.description.trim() : "",
         active: typeof record.active === "boolean" ? record.active : true,
+        sort_order: isSortOrder(record.sort_order) ? record.sort_order : undefined,
         created_at: createdAt,
         updated_at: isDateTimeStamp(record.updated_at) ? record.updated_at : createdAt,
       };
@@ -73,6 +75,65 @@ export function normalizeRewardRules(
         ? record.amount_cents !== null
         : record.tiers.length >= 2 && hasStrictlyIncreasingAmounts(record.tiers)
     ));
+  return normalizeRewardRuleOrder(records);
+}
+
+export function normalizeRewardRuleOrder<T extends SortableRewardRule>(rules: T[]): Array<T & { sort_order: number }> {
+  const positions = new Map<string, number>();
+  for (const active of [true, false]) {
+    rules
+      .filter((rule) => rule.active === active)
+      .slice()
+      .sort((first, second) => (
+        rewardRuleOrder(first) - rewardRuleOrder(second)
+        || timestamp(second.created_at) - timestamp(first.created_at)
+        || first.id.localeCompare(second.id)
+      ))
+      .forEach((rule, index) => positions.set(rule.id, index + 1));
+  }
+  return rules.map((rule) => ({ ...rule, sort_order: positions.get(rule.id) ?? 1 }));
+}
+
+export function prependRewardRule<T extends SortableRewardRule>(rules: T[], rule: T): T[] {
+  const normalized = normalizeRewardRuleOrder(rules);
+  return [
+    { ...rule, active: true, sort_order: 1 },
+    ...normalized.map((item) => item.active ? { ...item, sort_order: item.sort_order + 1 } : item),
+  ];
+}
+
+export function reorderRewardRules<T extends SortableRewardRule>(rules: T[], sourceId: string, targetId: string): T[] {
+  const normalized = normalizeRewardRuleOrder(rules);
+  const source = normalized.find((rule) => rule.id === sourceId);
+  const target = normalized.find((rule) => rule.id === targetId);
+  if (!source || !target || source.id === target.id || source.active !== target.active) return normalized;
+
+  const group = normalized
+    .filter((rule) => rule.active === source.active)
+    .sort((first, second) => first.sort_order - second.sort_order);
+  const sourceIndex = group.findIndex((rule) => rule.id === sourceId);
+  const targetIndex = group.findIndex((rule) => rule.id === targetId);
+  const [moved] = group.splice(sourceIndex, 1);
+  group.splice(targetIndex, 0, moved);
+  const positions = new Map(group.map((rule, index) => [rule.id, index + 1]));
+  return normalized.map((rule) => positions.has(rule.id) ? { ...rule, sort_order: positions.get(rule.id)! } : rule);
+}
+
+export function toggleRewardRuleStatus<T extends SortableRewardRule>(rules: T[], ruleId: string): T[] {
+  const normalized = normalizeRewardRuleOrder(rules);
+  const current = normalized.find((rule) => rule.id === ruleId);
+  if (!current) return normalized;
+  const nextActive = !current.active;
+  const targetOrder = normalized.filter((rule) => rule.active === nextActive).length + 1;
+  return normalized.map((rule) => {
+    if (rule.id === ruleId) return { ...rule, active: nextActive, sort_order: targetOrder };
+    if (rule.active === current.active && rule.sort_order > current.sort_order) return { ...rule, sort_order: rule.sort_order - 1 };
+    return rule;
+  });
+}
+
+export function canReorderRewardRules(query: string, statusFilter: RewardRuleStatusFilter, editingRuleId: string | null): boolean {
+  return !query.trim() && statusFilter !== "all" && editingRuleId === null;
 }
 
 export function normalizeRewardClaims(
@@ -161,7 +222,11 @@ export function getVisibleRewardRules<T extends SortableRewardRule>(
     .filter((rule) => statusFilter === "all" || (statusFilter === "active" ? rule.active : !rule.active))
     .filter((rule) => !normalizedQuery || `${rule.name} ${rule.description}`.toLowerCase().includes(normalizedQuery))
     .slice()
-    .sort((first, second) => Number(second.active) - Number(first.active) || timestamp(second.created_at) - timestamp(first.created_at));
+    .sort((first, second) => (
+      Number(second.active) - Number(first.active)
+      || rewardRuleOrder(first) - rewardRuleOrder(second)
+      || timestamp(second.created_at) - timestamp(first.created_at)
+    ));
 }
 
 export function getVisibleRewardClaims<T extends SortableRewardClaim>(claims: T[], query = "", monthFilter = "all"): T[] {
@@ -280,6 +345,14 @@ function hasTier(rule: SortableRewardRule, tier: SortableRewardTier): boolean {
 
 function isPositiveCents(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isSortOrder(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
+function rewardRuleOrder(rule: SortableRewardRule): number {
+  return isSortOrder(rule.sort_order) ? rule.sort_order : Number.MAX_SAFE_INTEGER;
 }
 
 function isLocalDateTime(value: unknown): value is string {

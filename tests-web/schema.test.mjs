@@ -184,6 +184,7 @@ const validRewardRule = {
   tiers: [],
   description: "当天按计划作息",
   active: true,
+  sort_order: 1,
   created_at: "2026-10-27T08:00:00.000Z",
   updated_at: "2026-10-27T08:00:00.000Z",
 };
@@ -214,7 +215,7 @@ const validRewardClaim = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 35,
+    version: 36,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -989,6 +990,9 @@ test("rejects invalid reward rules and claims", () => {
     rewardRules: [{ ...validTieredRewardRule, tiers: [{ name: " ", amount_cents: 100 }, validTieredRewardRule.tiers[1]] }],
   })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, active: "yes" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, sort_order: undefined }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, sort_order: 0 }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ rewardRules: [{ ...validRewardRule, sort_order: 1.5 }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, rule_name: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, tier_name: " " }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ rewardClaims: [{ ...validRewardClaim, period: undefined }] })), false);

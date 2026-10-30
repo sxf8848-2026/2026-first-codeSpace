@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   applyRewardClaim,
+  canReorderRewardRules,
   canClaimReward,
   buildRewardClaim,
   getRewardBreakdown,
@@ -16,12 +17,16 @@ import {
   isRewardClaimBackfill,
   isWeeklyRewardBackfillAllowed,
   normalizeRewardClaims,
+  normalizeRewardRuleOrder,
   normalizeRewardRules,
+  prependRewardRule,
+  reorderRewardRules,
+  toggleRewardRuleStatus,
 } from "../src/services/rewards.ts";
 
 const rules = [
-  { id: "rule-1", name: "早起早睡", mode: "fixed", period: "daily", amount_cents: 200, tiers: [], description: "当天按计划作息", active: true, created_at: "2026-10-25T08:00:00.000Z", updated_at: "2026-10-25T08:00:00.000Z" },
-  { id: "rule-2", name: "完成学习计划", mode: "fixed", period: "daily", amount_cents: 500, tiers: [], description: "完成今日学习", active: false, created_at: "2026-10-26T08:00:00.000Z", updated_at: "2026-10-26T08:00:00.000Z" },
+  { id: "rule-1", name: "早起早睡", mode: "fixed", period: "daily", amount_cents: 200, tiers: [], description: "当天按计划作息", active: true, sort_order: 1, created_at: "2026-10-25T08:00:00.000Z", updated_at: "2026-10-25T08:00:00.000Z" },
+  { id: "rule-2", name: "完成学习计划", mode: "fixed", period: "daily", amount_cents: 500, tiers: [], description: "完成今日学习", active: false, sort_order: 1, created_at: "2026-10-26T08:00:00.000Z", updated_at: "2026-10-26T08:00:00.000Z" },
 ];
 
 const tieredRule = {
@@ -37,6 +42,7 @@ const tieredRule = {
   ],
   description: "按当天阅读时长领取",
   active: true,
+  sort_order: 2,
   created_at: "2026-10-27T08:00:00.000Z",
   updated_at: "2026-10-27T08:00:00.000Z",
 };
@@ -50,9 +56,9 @@ const claims = [
 const weeklyTieredRule = { ...tieredRule, id: "rule-weekly", name: "每周跑步", period: "weekly" };
 
 test("normalizes reward rules and claims", () => {
-  const legacyRule = { ...rules[0], mode: undefined, period: undefined, tiers: undefined, updated_at: undefined };
+  const legacyRule = { ...rules[0], mode: undefined, period: undefined, tiers: undefined, sort_order: undefined, updated_at: undefined };
   assert.deepEqual(normalizeRewardRules([legacyRule])[0], { ...rules[0], updated_at: rules[0].created_at });
-  assert.deepEqual(normalizeRewardRules([tieredRule]), [tieredRule]);
+  assert.deepEqual(normalizeRewardRules([tieredRule]), [{ ...tieredRule, sort_order: 1 }]);
   assert.equal(normalizeRewardRules([{ ...tieredRule, period: undefined }])[0].period, null);
   assert.deepEqual(normalizeRewardRules([{ ...tieredRule, tiers: [tieredRule.tiers[1], tieredRule.tiers[0]] }]), []);
   assert.deepEqual(normalizeRewardRules([{ ...rules[0], amount_cents: 0 }]), []);
@@ -67,6 +73,53 @@ test("filters reward rules by status and keyword", () => {
   assert.deepEqual(getVisibleRewardRules(rules).map((rule) => rule.id), ["rule-1"]);
   assert.deepEqual(getVisibleRewardRules(rules, "学习", "all").map((rule) => rule.id), ["rule-2"]);
   assert.deepEqual(getVisibleRewardRules(rules, "", "inactive").map((rule) => rule.id), ["rule-2"]);
+});
+
+test("normalizes active and inactive reward rule order independently", () => {
+  const oldRules = [
+    { ...rules[0], id: "active-old", sort_order: undefined, created_at: "2026-10-20T08:00:00.000Z" },
+    { ...rules[0], id: "active-new", sort_order: undefined, created_at: "2026-10-28T08:00:00.000Z" },
+    { ...rules[1], id: "inactive-old", sort_order: undefined, created_at: "2026-10-21T08:00:00.000Z" },
+    { ...rules[1], id: "inactive-new", sort_order: undefined, created_at: "2026-10-29T08:00:00.000Z" },
+  ];
+  const normalized = normalizeRewardRuleOrder(oldRules);
+  const positions = Object.fromEntries(normalized.map((rule) => [rule.id, rule.sort_order]));
+  assert.deepEqual(positions, { "active-old": 2, "active-new": 1, "inactive-old": 2, "inactive-new": 1 });
+});
+
+test("reorders reward rules only inside the same status group without mutating input", () => {
+  const source = [
+    { ...rules[0], id: "active-1", sort_order: 1 },
+    { ...rules[0], id: "active-2", sort_order: 2 },
+    { ...rules[0], id: "active-3", sort_order: 3 },
+    { ...rules[1], id: "inactive-1", sort_order: 1 },
+    { ...rules[1], id: "inactive-2", sort_order: 2 },
+  ];
+  const original = structuredClone(source);
+  const movedToEnd = reorderRewardRules(source, "active-1", "active-3");
+  assert.deepEqual(getVisibleRewardRules(movedToEnd, "", "active").map((rule) => rule.id), ["active-2", "active-3", "active-1"]);
+  const movedToFront = reorderRewardRules(movedToEnd, "active-1", "active-2");
+  assert.deepEqual(getVisibleRewardRules(movedToFront, "", "active").map((rule) => rule.id), ["active-1", "active-2", "active-3"]);
+  assert.deepEqual(getVisibleRewardRules(movedToFront, "", "inactive").map((rule) => rule.id), ["inactive-1", "inactive-2"]);
+  assert.deepEqual(reorderRewardRules(source, "active-1", "inactive-1"), source);
+  assert.deepEqual(source, original);
+});
+
+test("places new rules first and moved-status rules at the target group end", () => {
+  const newRule = { ...rules[0], id: "active-new", sort_order: 1 };
+  const prepended = prependRewardRule(rules, newRule);
+  assert.deepEqual(getVisibleRewardRules(prepended, "", "active").map((rule) => rule.id), ["active-new", "rule-1"]);
+  const disabled = toggleRewardRuleStatus(prepended, "active-new");
+  assert.deepEqual(getVisibleRewardRules(disabled, "", "active").map((rule) => rule.id), ["rule-1"]);
+  assert.deepEqual(getVisibleRewardRules(disabled, "", "inactive").map((rule) => rule.id), ["rule-2", "active-new"]);
+});
+
+test("enables reward rule dragging only for an unfiltered status group outside edit mode", () => {
+  assert.equal(canReorderRewardRules("", "active", null), true);
+  assert.equal(canReorderRewardRules("", "inactive", null), true);
+  assert.equal(canReorderRewardRules("关键词", "active", null), false);
+  assert.equal(canReorderRewardRules("", "all", null), false);
+  assert.equal(canReorderRewardRules("", "active", "rule-1"), false);
 });
 
 test("prevents duplicate same-day claims and disabled rule claims", () => {
@@ -241,4 +294,16 @@ test("uses a two-column reward rule grid only on wide screens", () => {
   assert.match(styles, /\.reward-rule-item\.editing\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
   assert.match(styles, /\.reward-rule-item:not\(\.editing\) \.reward-actions select\s*\{[^}]*flex:\s*1 1 100%;/s);
   assert.match(styles, /\.reward-rule-list > \.personal-empty\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
+});
+
+test("uses a desktop-only reward rule drag handle with clear feedback", () => {
+  const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(component, /canReorderRewardRules\(ruleQuery, ruleStatusFilter, editingRuleId\)/);
+  assert.match(component, /className="reward-drag-handle"[\s\S]*?draggable[\s\S]*?onDragStart=/);
+  assert.match(component, /onDrop=\{\(event\) => \{[\s\S]*?onReorderRule\(draggingRuleId, rule\.id\)/);
+  assert.match(styles, /\.reward-drag-handle\s*\{[^}]*display:\s*none;/s);
+  assert.match(styles, /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.reward-drag-handle\s*\{[^}]*display:\s*inline-flex;/);
+  assert.match(styles, /\.reward-rule-item\.dragging\s*\{[^}]*opacity:/s);
+  assert.match(styles, /\.reward-rule-item\.drag-over\s*\{[^}]*border-color:\s*var\(--brand\)/s);
 });

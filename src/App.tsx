@@ -94,7 +94,10 @@ import {
   getVisibleRewardRules,
   isRewardBackfillDateAllowed,
   isWeeklyRewardBackfillAllowed,
+  prependRewardRule,
+  reorderRewardRules,
   RewardRuleStatusFilter,
+  toggleRewardRuleStatus,
 } from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
@@ -1328,7 +1331,10 @@ export function App() {
       window.alert("请填写有效奖励金额；阶梯奖励至少需要两个金额递增的完整档位。");
       return;
     }
-    replaceRewardRules([createRewardRule(name, rewardRuleDraft.mode, rewardRuleDraft.period, values.amountCents, values.tiers, rewardRuleDraft.description), ...activeData.rewardRules]);
+    replaceRewardRules(prependRewardRule(
+      activeData.rewardRules,
+      createRewardRule(name, rewardRuleDraft.mode, rewardRuleDraft.period, values.amountCents, values.tiers, rewardRuleDraft.description),
+    ));
     setRewardRuleDraft(createBlankRewardRuleDraft());
   }
 
@@ -1374,7 +1380,12 @@ export function App() {
   }
 
   function toggleRewardRule(ruleId: string) {
-    replaceRewardRules(activeData.rewardRules.map((rule) => rule.id === ruleId ? { ...rule, active: !rule.active, updated_at: nowStamp() } : rule));
+    const toggled = toggleRewardRuleStatus(activeData.rewardRules, ruleId);
+    replaceRewardRules(toggled.map((rule) => rule.id === ruleId ? { ...rule, updated_at: nowStamp() } : rule));
+  }
+
+  function reorderRewardRule(sourceId: string, targetId: string) {
+    replaceRewardRules(reorderRewardRules(activeData.rewardRules, sourceId, targetId));
   }
 
   function claimReward(ruleId: string, tierIndex?: number, rewardDate?: string): boolean {
@@ -2539,6 +2550,7 @@ export function App() {
             onSaveRule={saveRewardRule}
             onCancelEdit={() => { setEditingRewardRuleId(null); setRewardRuleEditDraft(createBlankRewardRuleDraft()); }}
             onToggleRule={toggleRewardRule}
+            onReorderRule={reorderRewardRule}
             onClaim={claimReward}
             onClaimQueryChange={setRewardClaimQuery}
             onClaimMonthFilterChange={setRewardClaimMonthFilter}

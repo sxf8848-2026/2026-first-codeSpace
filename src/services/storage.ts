@@ -466,6 +466,7 @@ export function createRewardRule(
     tiers: mode === "tiered" ? tiers : [],
     description: description.trim(),
     active: true,
+    sort_order: 1,
     created_at: stamp,
     updated_at: stamp,
   };

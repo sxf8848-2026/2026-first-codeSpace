@@ -216,6 +216,7 @@ export type RewardRuleRecord = {
   tiers: RewardTier[];
   description: string;
   active: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };

@@ -38,6 +38,7 @@ import {
   Droplets,
   Gift,
   CircleDollarSign,
+  GripVertical,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { STATUSES, TAGS } from "../constants";
@@ -93,6 +94,7 @@ import {
 import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
 import {
+  canReorderRewardRules,
   getEffectiveRewardPeriod,
   getPreviousWeeklyRewardKey,
   getRewardBreakdown,
@@ -1545,6 +1547,7 @@ export function RewardPanel({
   onSaveRule,
   onCancelEdit,
   onToggleRule,
+  onReorderRule,
   onClaim,
   onClaimQueryChange,
   onClaimMonthFilterChange,
@@ -1575,6 +1578,7 @@ export function RewardPanel({
   onSaveRule: (ruleId: string) => void;
   onCancelEdit: () => void;
   onToggleRule: (ruleId: string) => void;
+  onReorderRule: (sourceId: string, targetId: string) => void;
   onClaim: (ruleId: string, tierIndex?: number, rewardDate?: string) => boolean;
   onClaimQueryChange: (query: string) => void;
   onClaimMonthFilterChange: (month: string) => void;
@@ -1583,6 +1587,8 @@ export function RewardPanel({
   const [tierSelections, setTierSelections] = useState<Record<string, number>>({});
   const [backfillRuleId, setBackfillRuleId] = useState<string | null>(null);
   const [showRewardBreakdown, setShowRewardBreakdown] = useState(false);
+  const [draggingRuleId, setDraggingRuleId] = useState<string | null>(null);
+  const [dragOverRuleId, setDragOverRuleId] = useState<string | null>(null);
   const [backfillDate, setBackfillDate] = useState(() => dateKey(addDays(fromDateKey(todayDay), -1)));
   const [backfillTierIndex, setBackfillTierIndex] = useState(0);
   const rewardBreakdown = useMemo(() => getRewardBreakdown(allClaims), [allClaims]);
@@ -1607,6 +1613,7 @@ export function RewardPanel({
     : Math.max(0, (backfillTier?.amount_cents ?? 0) - (backfillExisting?.amount_cents ?? 0));
   const backfillMin = dateKey(addDays(fromDateKey(todayDay), -7));
   const backfillMax = dateKey(addDays(fromDateKey(todayDay), -1));
+  const dragEnabled = canReorderRewardRules(ruleQuery, ruleStatusFilter, editingRuleId);
 
   useEffect(() => {
     if (!backfillRuleId) return;
@@ -1660,7 +1667,45 @@ export function RewardPanel({
                   ? `升级奖励（补 ${formatRewardAmount(selectedTier.amount_cents - currentClaim.amount_cents)}）`
                   : isWeekly ? "本周已领取" : "今日已领取";
             return (
-              <article className={`reward-rule-item ${rule.active ? "" : "inactive"} ${editingRuleId === rule.id ? "editing" : ""}`} key={rule.id}>
+              <article
+                className={`reward-rule-item ${rule.active ? "" : "inactive"} ${editingRuleId === rule.id ? "editing" : ""} ${dragEnabled ? "can-drag" : ""} ${draggingRuleId === rule.id ? "dragging" : ""} ${dragOverRuleId === rule.id ? "drag-over" : ""}`}
+                key={rule.id}
+                onDragOver={(event) => {
+                  if (!dragEnabled || !draggingRuleId || draggingRuleId === rule.id) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDragOverRuleId(rule.id);
+                }}
+                onDrop={(event) => {
+                  if (!dragEnabled || !draggingRuleId || draggingRuleId === rule.id) return;
+                  event.preventDefault();
+                  onReorderRule(draggingRuleId, rule.id);
+                  setDraggingRuleId(null);
+                  setDragOverRuleId(null);
+                }}
+              >
+                {dragEnabled ? (
+                  <button
+                    type="button"
+                    className="reward-drag-handle"
+                    draggable
+                    tabIndex={-1}
+                    aria-label={`拖动排序：${rule.name}`}
+                    title="拖动调整规则顺序"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", rule.id);
+                      setDraggingRuleId(rule.id);
+                      setDragOverRuleId(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingRuleId(null);
+                      setDragOverRuleId(null);
+                    }}
+                  >
+                    <GripVertical size={18} />
+                  </button>
+                ) : null}
                 {editingRuleId === rule.id ? (
                   <div className="reward-edit">
                     <RewardRuleFields

@@ -13,6 +13,42 @@
 
 ---
 
+## [36.0.0] - 2026-10-30
+
+### 改了什么
+
+- 个人奖励规则新增可持久化的手动排序，启用规则与已停用规则分别维护独立顺序。
+- 桌面端在“启用”或“已停用”筛选下提供专用拖动手柄；搜索、“全部”筛选、编辑状态和移动端不提供拖拽。
+- 新规则排在启用组首位；停用或重新启用后进入目标状态组末尾；旧规则按各状态组当前创建时间倒序自动补齐连续序号。
+
+### 涉及文件
+
+- `src/types.ts`
+- `src/constants.ts`
+- `src/services/rewards.ts`
+- `src/services/storage.ts`
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/rewards.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，223/223。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- `TodoData.version` 已升级至 `36`，旧奖励规则会在加载时自动迁移排序序号。
+- 后端 Schema 新增 `sort_order` 校验，更新后需要重启 `npm run dev`。
+- 拖拽排序只改变规则序号，不修改规则的 `updated_at`，也不影响领取记录和历史累计。
+
 ## [35.0.2] - 2026-10-30
 
 ### 改了什么
