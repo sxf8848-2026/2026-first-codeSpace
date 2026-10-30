@@ -8,6 +8,7 @@ const allowedStudyGrowthTitleSizes = new Set([18, 22, 26, 30]);
 const allowedSkincareCategories = new Set(["cleanser", "toner", "serum", "lotion", "cream", "sunscreen", "mask", "other"]);
 const allowedRewardRuleModes = new Set(["fixed", "tiered"]);
 const allowedRewardRulePeriods = new Set(["daily", "weekly"]);
+const allowedLearnedContentTypes = new Set(["article", "course", "book", "video", "other"]);
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
 const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -36,6 +37,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.skincareProducts)) return false;
   if (!Array.isArray(payload.rewardRules)) return false;
   if (!Array.isArray(payload.rewardClaims)) return false;
+  if (!Array.isArray(payload.learnedContents)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -54,6 +56,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.skincareProducts.every(isValidSkincareProduct)) return false;
   if (!payload.rewardRules.every(isValidRewardRule)) return false;
   if (!payload.rewardClaims.every(isValidRewardClaim)) return false;
+  if (!payload.learnedContents.every(isValidLearnedContent)) return false;
 
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
@@ -347,6 +350,20 @@ function isValidRewardTier(tier) {
   return isPlainObject(tier) && isNonEmptyString(tier.name) && isPositiveCents(tier.amount_cents);
 }
 
+function isValidLearnedContent(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!allowedLearnedContentTypes.has(record.type)) return false;
+  if (!isNonEmptyString(record.title)) return false;
+  if (!isCalendarDateKey(record.completed_on)) return false;
+  if (typeof record.source !== "string") return false;
+  if (typeof record.url !== "string") return false;
+  if (!isNonEmptyString(record.takeaway)) return false;
+  if (!isDateTimeStamp(record.created_at)) return false;
+  if (!isDateTimeStamp(record.updated_at)) return false;
+  return true;
+}
+
 function isValidTag(tag) {
   if (!isPlainObject(tag)) return false;
   if (!isValidTagId(tag.id)) return false;
@@ -371,6 +388,13 @@ function isPlainObject(value) {
 
 function isDateKey(value) {
   return typeof value === "string" && dateKeyPattern.test(value);
+}
+
+function isCalendarDateKey(value) {
+  if (!isDateKey(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
 }
 
 function isMonthKey(value) {

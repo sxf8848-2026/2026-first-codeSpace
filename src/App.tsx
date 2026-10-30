@@ -14,6 +14,7 @@ import {
   StudyGrowthPanel,
   SkincarePanel,
   RewardPanel,
+  LearnedContentsPanel,
   LoadingScreen,
   MetaLearningPanel,
   MonthlyPanel,
@@ -45,6 +46,7 @@ import {
   createStudyGrowthRecord,
   createSkincareProduct,
   createRewardRule,
+  createLearnedContent,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -101,6 +103,13 @@ import {
 } from "./services/rewards";
 import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
 import {
+  getLearnedContentMonths,
+  getLearnedContentStats,
+  getVisibleLearnedContents,
+  LearnedContentMonthFilter,
+  LearnedContentTypeFilter,
+} from "./services/learnedContents";
+import {
   canReorderDailyTasks,
   moveDailyTaskBeforeWithinStatus,
   moveDailyTaskWithinStatus,
@@ -147,6 +156,8 @@ import {
   RewardRulePeriod,
   RewardClaimRecord,
   RewardTier,
+  LearnedContentRecord,
+  LearnedContentType,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -268,11 +279,16 @@ const blankStudyGrowthEditDraft: StudyGrowthEditDraft = { ...blankStudyGrowthDra
 type SkincareDraft = { name: string; brand: string; category: SkincareCategory; description: string };
 type RewardTierDraft = { name: string; amount: string };
 type RewardRuleDraft = { name: string; mode: RewardRuleMode; period: RewardRulePeriod; amount: string; tiers: RewardTierDraft[]; description: string };
+type LearnedContentDraft = { type: LearnedContentType; title: string; completed_on: string; source: string; url: string; takeaway: string };
 
 const blankSkincareDraft: SkincareDraft = { name: "", brand: "", category: "cleanser", description: "" };
 
 function createBlankRewardRuleDraft(): RewardRuleDraft {
   return { name: "", mode: "fixed", period: "daily", amount: "", tiers: [{ name: "", amount: "" }, { name: "", amount: "" }], description: "" };
+}
+
+function createBlankLearnedContentDraft(): LearnedContentDraft {
+  return { type: "article", title: "", completed_on: dateKey(new Date()), source: "", url: "", takeaway: "" };
 }
 
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
@@ -380,6 +396,12 @@ export function App() {
   const [rewardRuleEditDraft, setRewardRuleEditDraft] = useState<RewardRuleDraft>(createBlankRewardRuleDraft);
   const [rewardClaimQuery, setRewardClaimQuery] = useState("");
   const [rewardClaimMonthFilter, setRewardClaimMonthFilter] = useState("all");
+  const [learnedContentDraft, setLearnedContentDraft] = useState<LearnedContentDraft>(createBlankLearnedContentDraft);
+  const [learnedContentQuery, setLearnedContentQuery] = useState("");
+  const [learnedContentTypeFilter, setLearnedContentTypeFilter] = useState<LearnedContentTypeFilter>("all");
+  const [learnedContentMonthFilter, setLearnedContentMonthFilter] = useState<LearnedContentMonthFilter>("all");
+  const [editingLearnedContentId, setEditingLearnedContentId] = useState<string | null>(null);
+  const [learnedContentEditDraft, setLearnedContentEditDraft] = useState<LearnedContentDraft>(createBlankLearnedContentDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -513,6 +535,15 @@ export function App() {
     });
     return claims;
   }, [activeData.rewardClaims, activeData.rewardRules, todayDay]);
+  const visibleLearnedContents = useMemo(
+    () => getVisibleLearnedContents(activeData.learnedContents, learnedContentQuery, learnedContentTypeFilter, learnedContentMonthFilter),
+    [activeData.learnedContents, learnedContentMonthFilter, learnedContentQuery, learnedContentTypeFilter],
+  );
+  const learnedContentMonths = useMemo(() => getLearnedContentMonths(activeData.learnedContents), [activeData.learnedContents]);
+  const learnedContentStats = useMemo(
+    () => getLearnedContentStats(activeData.learnedContents, todayMonth),
+    [activeData.learnedContents, todayMonth],
+  );
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
     [activeData.videoInspirations],
@@ -848,6 +879,10 @@ export function App() {
 
   function replaceRewardRules(rewardRules: RewardRuleRecord[]) {
     updateData((value) => ({ ...value, rewardRules }));
+  }
+
+  function replaceLearnedContents(learnedContents: LearnedContentRecord[]) {
+    updateData((value) => ({ ...value, learnedContents }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -1336,6 +1371,64 @@ export function App() {
       createRewardRule(name, rewardRuleDraft.mode, rewardRuleDraft.period, values.amountCents, values.tiers, rewardRuleDraft.description),
     ));
     setRewardRuleDraft(createBlankRewardRuleDraft());
+  }
+
+  function addLearnedContent(event: FormEvent) {
+    event.preventDefault();
+    const title = learnedContentDraft.title.trim();
+    const takeaway = learnedContentDraft.takeaway.trim();
+    if (!title || !takeaway || !learnedContentDraft.completed_on) return;
+    replaceLearnedContents([
+      createLearnedContent(
+        learnedContentDraft.type,
+        title,
+        learnedContentDraft.completed_on,
+        learnedContentDraft.source,
+        learnedContentDraft.url,
+        takeaway,
+      ),
+      ...activeData.learnedContents,
+    ]);
+    setLearnedContentDraft(createBlankLearnedContentDraft());
+  }
+
+  function startLearnedContentEdit(record: LearnedContentRecord) {
+    setEditingLearnedContentId(record.id);
+    setLearnedContentEditDraft({
+      type: record.type,
+      title: record.title,
+      completed_on: record.completed_on,
+      source: record.source,
+      url: record.url,
+      takeaway: record.takeaway,
+    });
+  }
+
+  function saveLearnedContentEdit(recordId: string) {
+    const title = learnedContentEditDraft.title.trim();
+    const takeaway = learnedContentEditDraft.takeaway.trim();
+    if (!title || !takeaway || !learnedContentEditDraft.completed_on) return;
+    replaceLearnedContents(activeData.learnedContents.map((record) => record.id === recordId ? {
+      ...record,
+      ...learnedContentEditDraft,
+      title,
+      source: learnedContentEditDraft.source.trim(),
+      url: learnedContentEditDraft.url.trim(),
+      takeaway,
+      updated_at: nowStamp(),
+    } : record));
+    setEditingLearnedContentId(null);
+    setLearnedContentEditDraft(createBlankLearnedContentDraft());
+  }
+
+  function deleteLearnedContent(recordId: string) {
+    const record = activeData.learnedContents.find((item) => item.id === recordId);
+    if (!record || !window.confirm(`确定删除“${record.title}”吗？`)) return;
+    replaceLearnedContents(activeData.learnedContents.filter((item) => item.id !== recordId));
+    if (editingLearnedContentId === recordId) {
+      setEditingLearnedContentId(null);
+      setLearnedContentEditDraft(createBlankLearnedContentDraft());
+    }
   }
 
   function startRewardRuleEdit(rule: RewardRuleRecord) {
@@ -2556,6 +2649,30 @@ export function App() {
             onClaimMonthFilterChange={setRewardClaimMonthFilter}
             onDeleteClaim={deleteRewardClaim}
           />
+        ) : activeView === "learnedContents" ? (
+          <LearnedContentsPanel
+            records={visibleLearnedContents}
+            totalCount={activeData.learnedContents.length}
+            stats={learnedContentStats}
+            months={learnedContentMonths}
+            draft={learnedContentDraft}
+            query={learnedContentQuery}
+            typeFilter={learnedContentTypeFilter}
+            monthFilter={learnedContentMonthFilter}
+            editingRecordId={editingLearnedContentId}
+            editingDraft={learnedContentEditDraft}
+            saveStatus={projectSaveStatus}
+            onDraftChange={setLearnedContentDraft}
+            onAdd={addLearnedContent}
+            onQueryChange={setLearnedContentQuery}
+            onTypeFilterChange={setLearnedContentTypeFilter}
+            onMonthFilterChange={setLearnedContentMonthFilter}
+            onStartEdit={startLearnedContentEdit}
+            onEditDraftChange={setLearnedContentEditDraft}
+            onSaveEdit={saveLearnedContentEdit}
+            onCancelEdit={() => { setEditingLearnedContentId(null); setLearnedContentEditDraft(createBlankLearnedContentDraft()); }}
+            onDelete={deleteLearnedContent}
+          />
         ) : (
           <WeeklyDeliveryPanel
             weekRange={deliveryWeekRange}
@@ -2674,6 +2791,7 @@ const emptyData: TodoData = {
   skincareProducts: [],
   rewardRules: [],
   rewardClaims: [],
+  learnedContents: [],
   default_applied: [],
 };
 

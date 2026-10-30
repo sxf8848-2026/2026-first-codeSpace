@@ -90,6 +90,8 @@ import {
   RewardRuleRecord,
   RewardClaimRecord,
   RewardRulePeriod,
+  LearnedContentRecord,
+  LearnedContentType,
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
@@ -107,6 +109,13 @@ import { Segmented, TagButton } from "./Controls";
 import { StudyGrowthMarkdownEditor, StudyGrowthMarkdownPreview } from "./StudyGrowthMarkdownEditor";
 import { studyGrowthMarkdownToPlainText } from "../services/studyGrowthMarkdown";
 import { STUDY_GROWTH_TITLE_SIZES } from "../services/studyGrowthRecords";
+import {
+  LEARNED_CONTENT_TYPE_OPTIONS,
+  learnedContentTypeLabel,
+  LearnedContentMonthFilter,
+  LearnedContentStats,
+  LearnedContentTypeFilter,
+} from "../services/learnedContents";
 
 export type { AppView } from "../services/sidebarNavigation";
 
@@ -124,6 +133,7 @@ const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
   studyGrowth: BrainCircuit,
   skincare: Droplets,
   reward: Gift,
+  learnedContents: BookOpen,
   reflection: MessagesSquare,
   divorcePlan: ClipboardList,
 };
@@ -1840,6 +1850,153 @@ export function RewardPanel({
 
 function formatRewardAmount(cents: number): string {
   return `${(cents / 100).toFixed(2)} 元`;
+}
+
+type LearnedContentDraft = {
+  type: LearnedContentType;
+  title: string;
+  completed_on: string;
+  source: string;
+  url: string;
+  takeaway: string;
+};
+
+export function LearnedContentsPanel({
+  records,
+  totalCount,
+  stats,
+  months,
+  draft,
+  query,
+  typeFilter,
+  monthFilter,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onTypeFilterChange,
+  onMonthFilterChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+}: {
+  records: LearnedContentRecord[];
+  totalCount: number;
+  stats: LearnedContentStats;
+  months: string[];
+  draft: LearnedContentDraft;
+  query: string;
+  typeFilter: LearnedContentTypeFilter;
+  monthFilter: LearnedContentMonthFilter;
+  editingRecordId: string | null;
+  editingDraft: LearnedContentDraft;
+  saveStatus: SaveStatus;
+  onDraftChange: (draft: LearnedContentDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onTypeFilterChange: (filter: LearnedContentTypeFilter) => void;
+  onMonthFilterChange: (filter: LearnedContentMonthFilter) => void;
+  onStartEdit: (record: LearnedContentRecord) => void;
+  onEditDraftChange: (draft: LearnedContentDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onDelete: (recordId: string) => void;
+}) {
+  const maxTrendCount = Math.max(1, ...stats.trend.map((item) => item.count));
+  const hasFilters = Boolean(query.trim()) || typeFilter !== "all" || monthFilter !== "all";
+  return (
+    <>
+      <header className="topbar personal-topbar">
+        <div><div className="eyebrow"><BookOpen size={16} />个人管理</div><h1>个人已学习</h1></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </header>
+
+      <section className="learned-stats" aria-label="学习成果统计">
+        <article><span>历史累计</span><strong>{stats.total}</strong><small>条学习成果</small></article>
+        <article><span>本月完成</span><strong>{stats.currentMonth}</strong><small>条学习成果</small></article>
+        <div className="learned-type-stats">
+          {LEARNED_CONTENT_TYPE_OPTIONS.map(([type, label]) => <div key={type}><span>{label}</span><strong>{stats.typeCounts[type]}</strong></div>)}
+        </div>
+      </section>
+
+      <section className="learned-trend" aria-label="最近12个月学习趋势">
+        <div className="learned-section-heading"><strong>最近12个月</strong><span>按完成日期统计</span></div>
+        <div className="learned-trend-chart">
+          {stats.trend.map((item) => (
+            <div className="learned-trend-column" key={item.month} title={`${item.month}：${item.count} 条`}>
+              <span>{item.count}</span>
+              <div><i style={{ height: `${item.count ? Math.max(10, item.count / maxTrendCount * 100) : 0}%` }} /></div>
+              <small>{item.month.slice(5)}月</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="personal-panel learned-panel" aria-label="个人已学习">
+        <form className="learned-composer" onSubmit={onAdd}>
+          <input value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="学习内容标题，必填" required />
+          <select value={draft.type} onChange={(event) => onDraftChange({ ...draft, type: event.target.value as LearnedContentType })} aria-label="内容类型">
+            {LEARNED_CONTENT_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <input type="date" value={draft.completed_on} onChange={(event) => onDraftChange({ ...draft, completed_on: event.target.value })} aria-label="完成日期" required />
+          <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
+          <input value={draft.url} onChange={(event) => onDraftChange({ ...draft, url: event.target.value })} placeholder="原文或课程链接，可不填" />
+          <textarea value={draft.takeaway} onChange={(event) => onDraftChange({ ...draft, takeaway: event.target.value })} placeholder="学习收获，必填" required />
+          <button className="primary-button" type="submit"><Plus size={18} />添加记录</button>
+        </form>
+
+        <div className="personal-toolbar learned-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题、来源或学习收获" /></div>
+          <select value={typeFilter} onChange={(event) => onTypeFilterChange(event.target.value as LearnedContentTypeFilter)} aria-label="按内容类型筛选">
+            <option value="all">全部类型</option>
+            {LEARNED_CONTENT_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <select value={monthFilter} onChange={(event) => onMonthFilterChange(event.target.value)} aria-label="按完成月份筛选">
+            <option value="all">全部月份</option>
+            {months.map((month) => <option key={month} value={month}>{month.replace("-", " 年 ")} 月</option>)}
+          </select>
+          <span>当前展示 <strong>{records.length}</strong> 条</span>
+        </div>
+
+        <div className="personal-list learned-list">
+          {records.length ? records.map((record) => (
+            <article className="personal-item learned-item" key={record.id}>
+              {editingRecordId === record.id ? (
+                <div className="learned-edit">
+                  <input value={editingDraft.title} onChange={(event) => onEditDraftChange({ ...editingDraft, title: event.target.value })} placeholder="学习内容标题，必填" required autoFocus />
+                  <select value={editingDraft.type} onChange={(event) => onEditDraftChange({ ...editingDraft, type: event.target.value as LearnedContentType })}>
+                    {LEARNED_CONTENT_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                  <input type="date" value={editingDraft.completed_on} onChange={(event) => onEditDraftChange({ ...editingDraft, completed_on: event.target.value })} required />
+                  <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                  <input value={editingDraft.url} onChange={(event) => onEditDraftChange({ ...editingDraft, url: event.target.value })} placeholder="原文或课程链接，可不填" />
+                  <textarea value={editingDraft.takeaway} onChange={(event) => onEditDraftChange({ ...editingDraft, takeaway: event.target.value })} placeholder="学习收获，必填" required />
+                </div>
+              ) : (
+                <div className="personal-content learned-content">
+                  <div className="personal-heading"><strong>{record.title}</strong><span>{learnedContentTypeLabel(record.type)}</span></div>
+                  <div className="learned-meta"><time>完成于 {record.completed_on}</time>{record.source ? <span>来源：{record.source}</span> : null}</div>
+                  <p>{record.takeaway}</p>
+                  {record.url ? <a href={normalizeExternalHref(record.url)} target="_blank" rel="noreferrer"><ExternalLink size={15} />查看原文或课程</a> : null}
+                </div>
+              )}
+              <div className="personal-actions learned-actions">
+                {editingRecordId === record.id ? (
+                  <><button type="button" onClick={() => onSaveEdit(record.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></>
+                ) : (
+                  <><button type="button" onClick={() => onStartEdit(record)} title="编辑记录"><Pencil size={16} /></button><button type="button" className="danger" onClick={() => onDelete(record.id)} title="删除记录"><Trash2 size={16} /></button></>
+                )}
+              </div>
+            </article>
+          )) : <div className="personal-empty">{totalCount && hasFilters ? "没有匹配的学习记录" : "还没有学习记录"}</div>}
+        </div>
+      </section>
+    </>
+  );
 }
 
 export function ArgumentReflectionPanel({

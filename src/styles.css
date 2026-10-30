@@ -2059,6 +2059,185 @@ h1 {
   font-size: 18px;
 }
 
+.learned-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 0.45fr)) minmax(420px, 1.5fr);
+  gap: 12px;
+}
+
+.learned-stats > article,
+.learned-type-stats,
+.learned-trend {
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-subtle);
+}
+
+.learned-stats > article {
+  display: grid;
+  gap: 4px;
+}
+
+.learned-stats > article span,
+.learned-stats > article small,
+.learned-section-heading span,
+.learned-toolbar > span {
+  color: var(--muted);
+}
+
+.learned-stats > article strong {
+  color: var(--text);
+  font-size: 30px;
+}
+
+.learned-type-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(70px, 1fr));
+  gap: 8px;
+}
+
+.learned-type-stats > div {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.learned-type-stats strong {
+  color: var(--brand-strong);
+  font-size: 20px;
+}
+
+.learned-trend {
+  display: grid;
+  gap: 16px;
+}
+
+.learned-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learned-trend-chart {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(42px, 1fr));
+  gap: 8px;
+  min-height: 170px;
+}
+
+.learned-trend-column {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.learned-trend-column > span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.learned-trend-column > div {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 110px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.learned-trend-column i {
+  display: block;
+  width: min(34px, 70%);
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--brand), var(--brand-strong));
+}
+
+.learned-composer {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 150px 180px minmax(200px, 0.7fr);
+  gap: 12px;
+}
+
+.learned-composer input:nth-of-type(3),
+.learned-composer textarea,
+.learned-composer .primary-button {
+  grid-column: 1 / -1;
+}
+
+.learned-composer textarea,
+.learned-edit textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.learned-composer .primary-button {
+  justify-self: start;
+}
+
+.learned-toolbar {
+  flex-wrap: wrap;
+}
+
+.learned-toolbar select {
+  min-width: 150px;
+}
+
+.learned-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.learned-item {
+  align-items: start;
+}
+
+.learned-list .personal-empty,
+.learned-item:has(.learned-edit) {
+  grid-column: 1 / -1;
+}
+
+.learned-content p {
+  margin: 4px 0;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.learned-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.learned-content a {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 5px;
+  color: var(--brand-strong);
+}
+
+.learned-edit {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 150px 180px minmax(200px, 0.7fr);
+  gap: 10px;
+}
+
+.learned-edit input:nth-of-type(3),
+.learned-edit textarea {
+  grid-column: 1 / -1;
+}
+
+.learned-actions .danger {
+  color: var(--danger);
+}
+
 .skincare-composer,
 .reward-composer {
   display: grid;
@@ -4199,6 +4378,35 @@ textarea:focus {
   .personal-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .learned-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .learned-type-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .learned-trend-chart {
+    overflow-x: auto;
+    grid-template-columns: repeat(12, minmax(54px, 1fr));
+  }
+
+  .learned-composer,
+  .learned-edit,
+  .learned-list {
+    grid-template-columns: 1fr;
+  }
+
+  .learned-composer input:nth-of-type(3),
+  .learned-composer textarea,
+  .learned-composer .primary-button,
+  .learned-edit input:nth-of-type(3),
+  .learned-edit textarea,
+  .learned-list .personal-empty,
+  .learned-item:has(.learned-edit) {
+    grid-column: auto;
   }
 
   .reward-summary-button {

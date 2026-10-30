@@ -13,6 +13,46 @@
 
 ---
 
+## [37.0.0] - 2026-10-30
+
+### 改了什么
+
+- 在“个人管理”下新增“个人已学习”页面，用于记录已完成的文章、课程、书籍、视频和其他学习成果。
+- 支持标题、完成日期、来源、外部链接和学习收获的新增、编辑、删除，并支持关键词、类型和完成月份联合筛选。
+- 新增历史累计、本月完成、内容类型分布和最近 12 个月学习趋势统计；统计始终基于全部学习记录。
+- `TodoData.version` 升级至 `37`，新增 `learnedContents` 数据，并同步前端归一化、本地保存和后端校验。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/learnedContents.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/learnedContents.test.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/storage.test.mjs`
+- `tests-web/sidebarNavigation.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，231/231。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧数据缺少 `learnedContents` 时会自动补为空数组，不影响既有记录。
+- 后端 Schema 已更新，正在运行旧版 `npm run dev` 时需要重启后再正式保存新数据。
+- 趋势图使用原生 CSS 实现，未引入新的图表依赖。
+
 ## [36.0.1] - 2026-10-30
 
 ### 改了什么

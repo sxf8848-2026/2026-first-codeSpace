@@ -213,9 +213,21 @@ const validRewardClaim = {
   claimed_at: "2026-10-27T07:30",
 };
 
+const validLearnedContent = {
+  id: "learned-content-1",
+  type: "article",
+  title: "高价值文章",
+  completed_on: "2026-10-30",
+  source: "公众号",
+  url: "https://example.com/article",
+  takeaway: "学会拆解复杂问题。",
+  created_at: "2026-10-30T08:00:00.000Z",
+  updated_at: "2026-10-30T08:00:00.000Z",
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 36,
+    version: 37,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -251,6 +263,7 @@ function makeTodosPayload(overrides = {}) {
     skincareProducts: [validSkincareProduct],
     rewardRules: [validRewardRule],
     rewardClaims: [validRewardClaim],
+    learnedContents: [validLearnedContent],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -262,6 +275,22 @@ test("validates todos payload with awesome records", () => {
 
 test("accepts old daily reading cursor fields for backward compatibility", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ dailyReadingCursorId: "legacy-reading" })), true);
+});
+
+test("validates personal learned content records", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [validLearnedContent] })), true);
+});
+
+test("rejects missing or invalid personal learned content records", () => {
+  const missing = makeTodosPayload();
+  delete missing.learnedContents;
+  assert.equal(isValidTodosPayload(missing), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, type: "podcast" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, title: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, takeaway: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, completed_on: "2026-02-30" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, created_at: "invalid" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, updated_at: false }] })), false);
 });
 
 test("rejects todos payload without awesomeRecords", () => {

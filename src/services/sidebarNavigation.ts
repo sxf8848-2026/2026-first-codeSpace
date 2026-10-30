@@ -12,6 +12,7 @@ export type SidebarIconName =
   | "studyGrowth"
   | "skincare"
   | "reward"
+  | "learnedContents"
   | "reflection"
   | "divorcePlan";
 
@@ -75,6 +76,7 @@ export const SIDEBAR_GROUPS = [
     items: [
       { view: "skincare", label: "个人护肤", icon: "skincare" },
       { view: "reward", label: "个人奖励", icon: "reward" },
+      { view: "learnedContents", label: "个人已学习", icon: "learnedContents" },
     ],
   },
 ] as const satisfies readonly SidebarGroup[];

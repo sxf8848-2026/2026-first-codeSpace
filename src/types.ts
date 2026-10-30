@@ -232,6 +232,20 @@ export type RewardClaimRecord = {
   claimed_at: string;
 };
 
+export type LearnedContentType = "article" | "course" | "book" | "video" | "other";
+
+export type LearnedContentRecord = {
+  id: string;
+  type: LearnedContentType;
+  title: string;
+  completed_on: string;
+  source: string;
+  url: string;
+  takeaway: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -255,6 +269,7 @@ export type TodoData = {
   skincareProducts: SkincareProductRecord[];
   rewardRules: RewardRuleRecord[];
   rewardClaims: RewardClaimRecord[];
+  learnedContents: LearnedContentRecord[];
   default_applied: string[];
 };
 
