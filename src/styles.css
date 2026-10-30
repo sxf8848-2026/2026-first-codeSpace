@@ -2163,6 +2163,24 @@ h1 {
   background: var(--panel-soft);
 }
 
+.reward-rule-item {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand);
+  border-radius: 6px;
+  background: var(--panel-subtle);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 7%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.reward-rule-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--text) 11%, transparent);
+  transform: translateY(-1px);
+}
+
 .reward-rule-item.inactive {
   border-left-color: var(--muted);
   opacity: 0.72;

@@ -225,3 +225,10 @@ test("shows the personal reward calculation start note below the page title", ()
   assert.match(component, /<h1>个人奖励<\/h1><p className="reward-start-note">个人奖励系统从2026-10-28开始计算<\/p>/);
   assert.match(styles, /\.reward-start-note\s*\{[^}]*color:\s*var\(--muted\)/s);
 });
+
+test("renders reward rules as elevated cards with valid theme tokens", () => {
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.reward-rule-item\s*\{[^}]*border:\s*1px solid var\(--border\);[^}]*border-left:\s*3px solid var\(--brand\);[^}]*border-radius:\s*6px;[^}]*background:\s*var\(--panel-subtle\);[^}]*box-shadow:/s);
+  assert.match(styles, /\.reward-rule-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*box-shadow:/s);
+  assert.match(styles, /\.reward-rule-item\.inactive\s*\{[^}]*border-left-color:\s*var\(--muted\);[^}]*opacity:\s*0\.72;/s);
+});
