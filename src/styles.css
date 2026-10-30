@@ -2165,6 +2165,9 @@ h1 {
 
 .reward-rule-item {
   position: relative;
+  overflow: hidden;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
   border: 1px solid var(--border);
   border-left: 3px solid var(--brand);
   border-radius: 6px;
@@ -2181,19 +2184,13 @@ h1 {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .reward-rule-item.can-drag {
-    padding-top: 48px;
-  }
-
   .reward-drag-handle {
-    position: absolute;
-    top: 10px;
-    left: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 28px;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
     padding: 0;
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -2226,6 +2223,101 @@ h1 {
 .reward-rule-item.inactive {
   border-left-color: var(--muted);
   opacity: 0.72;
+}
+
+.reward-rule-item .personal-content {
+  gap: 0;
+}
+
+.reward-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.reward-card-title-group {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 10px;
+}
+
+.reward-card-title {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.reward-card-title > strong {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.reward-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reward-card-tags span,
+.reward-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--panel);
+}
+
+.reward-card-tags .amount {
+  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--brand) 28%, var(--border));
+  background: color-mix(in srgb, var(--brand) 8%, var(--panel));
+}
+
+.reward-status-badge {
+  flex: 0 0 auto;
+}
+
+.reward-status-badge.ready {
+  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
+  background: color-mix(in srgb, var(--brand) 10%, var(--panel));
+}
+
+.reward-status-badge.claimed {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 35%, var(--border));
+  background: color-mix(in srgb, var(--green) 10%, var(--panel));
+}
+
+.reward-status-badge.pending,
+.reward-status-badge.inactive {
+  color: var(--muted);
+  background: var(--panel-subtle);
+}
+
+.reward-card-body {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.reward-rule-description {
+  line-height: 1.75 !important;
+}
+
+.reward-current-summary {
+  padding-top: 2px;
 }
 
 .personal-content {
@@ -2267,13 +2359,54 @@ h1 {
   gap: 8px;
 }
 
-.reward-tier-list span {
-  padding: 5px 8px;
-  color: var(--teal-dark);
+.reward-tier-list > span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 150px;
+  padding: 8px 10px;
+  color: var(--ink);
   font-size: 13px;
-  font-weight: 700;
   border: 1px solid var(--line);
+  border-radius: 5px;
   background: var(--panel);
+}
+
+.reward-tier-list > span > b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+  font-size: 12px;
+  border-radius: 50%;
+  background: var(--panel-subtle);
+}
+
+.reward-tier-list > span > span {
+  min-width: 0;
+}
+
+.reward-tier-list > span > strong {
+  color: var(--brand-strong);
+  white-space: nowrap;
+}
+
+.reward-tier-list > span.claimed {
+  border-color: color-mix(in srgb, var(--green) 32%, var(--border));
+}
+
+.reward-tier-list > span.selected {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 9%, var(--panel));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.reward-tier-list > span.selected > b {
+  color: white;
+  background: var(--brand);
 }
 
 .reward-week-range {
@@ -2304,6 +2437,12 @@ h1 {
   justify-content: flex-end;
 }
 
+.reward-rule-item:not(.editing) .reward-actions {
+  align-self: end;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
 .personal-actions button,
 .reward-actions button,
 .reward-claim-item button {
@@ -2313,12 +2452,50 @@ h1 {
 .reward-actions button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+  cursor: pointer;
 }
 
 .reward-actions select {
   min-height: 42px;
   min-width: 170px;
+}
+
+.reward-rule-item:not(.editing) .reward-actions select {
+  flex: 1 1 100%;
+}
+
+.reward-actions .reward-claim-button {
+  color: white;
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.reward-actions .reward-claim-button:not(:disabled):hover {
+  background: var(--brand-strong);
+}
+
+.reward-actions .reward-backfill-button {
+  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--border));
+  background: transparent;
+}
+
+.reward-actions .reward-icon-action {
+  width: 42px;
+  padding: 0;
+}
+
+.reward-actions .reward-toggle-button {
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
 }
 
 .reward-claim-item {
@@ -4069,6 +4246,19 @@ textarea:focus {
   .reward-actions {
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .reward-card-header {
+    flex-wrap: wrap;
+  }
+
+  .reward-tier-list > span {
+    width: 100%;
+  }
+
+  .reward-actions .reward-claim-button,
+  .reward-actions .reward-backfill-button {
+    flex: 1 1 auto;
   }
 
   .reward-claim-item {

@@ -280,10 +280,30 @@ test("shows the personal reward calculation start note below the page title", ()
 });
 
 test("renders reward rules as elevated cards with valid theme tokens", () => {
+  const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(styles, /\.reward-rule-item\s*\{[^}]*border:\s*1px solid var\(--border\);[^}]*border-left:\s*3px solid var\(--brand\);[^}]*border-radius:\s*6px;[^}]*background:\s*var\(--panel-subtle\);[^}]*box-shadow:/s);
   assert.match(styles, /\.reward-rule-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*box-shadow:/s);
   assert.match(styles, /\.reward-rule-item\.inactive\s*\{[^}]*border-left-color:\s*var\(--muted\);[^}]*opacity:\s*0\.72;/s);
+  assert.match(component, /className="reward-card-header"[\s\S]*?className="reward-card-tags"[\s\S]*?reward-status-badge \$\{statusTone\}/);
+  assert.match(component, /className=\{`\$\{index === selectedTierIndex \? "selected" : ""\}[^`]*`\.trim\(\)\}/);
+  assert.match(styles, /\.reward-card-header\s*\{[^}]*justify-content:\s*space-between;[^}]*border-bottom:\s*1px solid var\(--border\);/s);
+  assert.match(styles, /\.reward-card-tags span,[\s\S]*?\.reward-status-badge\s*\{[^}]*border-radius:\s*999px;/s);
+  assert.match(styles, /\.reward-tier-list > span\.selected\s*\{[^}]*border-color:\s*var\(--brand\);[^}]*background:/s);
+});
+
+test("uses hierarchical reward card actions and responsive tier layout", () => {
+  const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(component, /className="primary-button reward-claim-button"/);
+  assert.match(component, /className="reward-backfill-button"/);
+  assert.match(component, /className="reward-icon-action"[\s\S]*?aria-label=\{`编辑规则：\$\{rule\.name\}`\}/);
+  assert.match(component, /className="reward-toggle-button"/);
+  assert.match(styles, /\.reward-rule-item\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*grid-template-rows:\s*minmax\(0, 1fr\) auto;/s);
+  assert.match(styles, /\.reward-rule-item:not\(\.editing\) \.reward-actions\s*\{[^}]*border-top:\s*1px solid var\(--border\);/s);
+  assert.match(styles, /\.reward-actions \.reward-claim-button\s*\{[^}]*color:\s*white;[^}]*background:\s*var\(--brand\);/s);
+  assert.match(styles, /\.reward-actions \.reward-backfill-button\s*\{[^}]*color:\s*var\(--brand-strong\);[^}]*background:\s*transparent;/s);
+  assert.match(styles, /@media \(max-width: 720px\)\s*\{[\s\S]*?\.reward-tier-list > span\s*\{[^}]*width:\s*100%;/s);
 });
 
 test("uses a two-column reward rule grid only on wide screens", () => {

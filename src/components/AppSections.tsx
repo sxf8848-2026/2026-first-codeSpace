@@ -1666,6 +1666,14 @@ export function RewardPanel({
                 : rule.mode === "tiered" && selectedTier && selectedTier.amount_cents > currentClaim.amount_cents
                   ? `升级奖励（补 ${formatRewardAmount(selectedTier.amount_cents - currentClaim.amount_cents)}）`
                   : isWeekly ? "本周已领取" : "今日已领取";
+            const statusLabel = !rule.active
+              ? "已停用"
+              : modeChangedToday
+                ? isWeekly ? "下周生效" : "明日生效"
+                : currentClaim
+                  ? isWeekly ? "本周已领取" : "今日已领取"
+                  : "可领取";
+            const statusTone = !rule.active ? "inactive" : modeChangedToday ? "pending" : currentClaim ? "claimed" : "ready";
             return (
               <article
                 className={`reward-rule-item ${rule.active ? "" : "inactive"} ${editingRuleId === rule.id ? "editing" : ""} ${dragEnabled ? "can-drag" : ""} ${draggingRuleId === rule.id ? "dragging" : ""} ${dragOverRuleId === rule.id ? "drag-over" : ""}`}
@@ -1684,28 +1692,6 @@ export function RewardPanel({
                   setDragOverRuleId(null);
                 }}
               >
-                {dragEnabled ? (
-                  <button
-                    type="button"
-                    className="reward-drag-handle"
-                    draggable
-                    tabIndex={-1}
-                    aria-label={`拖动排序：${rule.name}`}
-                    title="拖动调整规则顺序"
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("text/plain", rule.id);
-                      setDraggingRuleId(rule.id);
-                      setDragOverRuleId(null);
-                    }}
-                    onDragEnd={() => {
-                      setDraggingRuleId(null);
-                      setDragOverRuleId(null);
-                    }}
-                  >
-                    <GripVertical size={18} />
-                  </button>
-                ) : null}
                 {editingRuleId === rule.id ? (
                   <div className="reward-edit">
                     <RewardRuleFields
@@ -1718,19 +1704,55 @@ export function RewardPanel({
                   </div>
                 ) : (
                   <div className="personal-content">
-                    <div className="personal-heading"><strong>{rule.name}</strong><span>{rule.mode === "fixed" ? `${formatRewardAmount(rule.amount_cents!)} · 每日` : rule.period === null ? "每日阶梯奖励 · 周期待确认" : isWeekly ? "每周阶梯奖励" : "每日阶梯奖励"}</span></div>
-                    {isWeekly ? <small className="reward-week-range">本周：{formatWeekRange(fromDateKey(todayDay))}</small> : null}
-                    {rule.mode === "tiered" ? <div className="reward-tier-list">{rule.tiers.map((tier, index) => <span key={`${tier.name}-${index}`}>{index + 1}. {tier.name} · {formatRewardAmount(tier.amount_cents)}</span>)}</div> : null}
-                    {rule.description ? <p>{rule.description}</p> : null}
-                    <small>{rule.active ? "启用中" : "已停用"}{currentClaim ? ` · ${isWeekly ? "本周" : "今日"}最终：${currentClaim.tier_name ? `${currentClaim.tier_name} · ` : ""}${formatRewardAmount(currentClaim.amount_cents)}` : ""}</small>
+                    <header className="reward-card-header">
+                      <div className="reward-card-title-group">
+                        {dragEnabled ? (
+                          <button
+                            type="button"
+                            className="reward-drag-handle"
+                            draggable
+                            tabIndex={-1}
+                            aria-label={`拖动排序：${rule.name}`}
+                            title="拖动调整规则顺序"
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("text/plain", rule.id);
+                              setDraggingRuleId(rule.id);
+                              setDragOverRuleId(null);
+                            }}
+                            onDragEnd={() => {
+                              setDraggingRuleId(null);
+                              setDragOverRuleId(null);
+                            }}
+                          >
+                            <GripVertical size={18} />
+                          </button>
+                        ) : null}
+                        <div className="reward-card-title">
+                          <strong>{rule.name}</strong>
+                          <div className="reward-card-tags">
+                            <span>{rule.mode === "fixed" ? "固定奖励" : "阶梯奖励"}</span>
+                            <span>{rule.period === null ? "周期待确认" : isWeekly ? "每周" : "每日"}</span>
+                            {rule.mode === "fixed" ? <span className="amount">{formatRewardAmount(rule.amount_cents!)}</span> : null}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`reward-status-badge ${statusTone}`}>{statusLabel}</span>
+                    </header>
+                    <div className="reward-card-body">
+                      {isWeekly ? <small className="reward-week-range">本周：{formatWeekRange(fromDateKey(todayDay))}</small> : null}
+                      {rule.mode === "tiered" ? <div className="reward-tier-list">{rule.tiers.map((tier, index) => <span className={`${index === selectedTierIndex ? "selected" : ""} ${currentClaim && tier.amount_cents <= currentClaim.amount_cents ? "claimed" : ""}`.trim()} key={`${tier.name}-${index}`}><b>{index + 1}</b><span>{tier.name}</span><strong>{formatRewardAmount(tier.amount_cents)}</strong></span>)}</div> : null}
+                      {rule.description ? <p className="reward-rule-description">{rule.description}</p> : null}
+                      {currentClaim ? <small className="reward-current-summary">{isWeekly ? "本周" : "今日"}最终：{currentClaim.tier_name ? `${currentClaim.tier_name} · ` : ""}{formatRewardAmount(currentClaim.amount_cents)}</small> : null}
+                    </div>
                   </div>
                 )}
                 <div className="reward-actions">
                   {editingRuleId === rule.id ? <><button type="button" onClick={() => onSaveRule(rule.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : <>
                     {rule.mode === "tiered" ? <select value={selectedTierIndex} onChange={(event) => setTierSelections((current) => ({ ...current, [rule.id]: Number(event.target.value) }))} aria-label={`${rule.name}达到的奖励档位`}>{rule.tiers.map((tier, index) => <option value={index} key={`${tier.name}-${index}`}>{tier.name} · {formatRewardAmount(tier.amount_cents)}</option>)}</select> : null}
-                    <button type="button" onClick={() => { onClaim(rule.id, rule.mode === "tiered" ? selectedTierIndex : undefined); if (rule.mode === "tiered" && selectedTierIndex < rule.tiers.length - 1) setTierSelections((current) => ({ ...current, [rule.id]: selectedTierIndex + 1 })); }} disabled={!canReceive}><CircleDollarSign size={16} />{claimLabel}</button>
-                    <button type="button" onClick={() => { setBackfillDate(isWeekly ? getPreviousWeeklyRewardKey(todayDay) : backfillMax); setBackfillRuleId(rule.id); }} disabled={!rule.active}><History size={16} />补领</button>
-                    <button type="button" onClick={() => onStartEditRule(rule)} title="编辑规则"><Pencil size={16} /></button><button type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button>
+                    <button className="primary-button reward-claim-button" type="button" onClick={() => { onClaim(rule.id, rule.mode === "tiered" ? selectedTierIndex : undefined); if (rule.mode === "tiered" && selectedTierIndex < rule.tiers.length - 1) setTierSelections((current) => ({ ...current, [rule.id]: selectedTierIndex + 1 })); }} disabled={!canReceive}><CircleDollarSign size={16} />{claimLabel}</button>
+                    <button className="reward-backfill-button" type="button" onClick={() => { setBackfillDate(isWeekly ? getPreviousWeeklyRewardKey(todayDay) : backfillMax); setBackfillRuleId(rule.id); }} disabled={!rule.active}><History size={16} />补领</button>
+                    <button className="reward-icon-action" type="button" onClick={() => onStartEditRule(rule)} title="编辑规则" aria-label={`编辑规则：${rule.name}`}><Pencil size={16} /></button><button className="reward-toggle-button" type="button" onClick={() => onToggleRule(rule.id)}>{rule.active ? "停用" : "重新启用"}</button>
                   </>}
                 </div>
               </article>
