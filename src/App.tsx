@@ -101,7 +101,7 @@ import {
   RewardRuleStatusFilter,
   toggleRewardRuleStatus,
 } from "./services/rewards";
-import { getCarryOverDeliveries } from "./services/weeklyDeliveries";
+import { findWeeklyDeliveryBySequence, getCarryOverDeliveries, sortWeeklyDeliveriesBySequence } from "./services/weeklyDeliveries";
 import {
   getLearnedContentMonths,
   getLearnedContentStats,
@@ -345,10 +345,10 @@ export function App() {
   const [monthlyDraft, setMonthlyDraft] = useState({ text: "", description: "" });
   const [editingMonthlyTaskId, setEditingMonthlyTaskId] = useState<string | null>(null);
   const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
-  const [deliveryDraft, setDeliveryDraft] = useState({ name: "", platform: "", note: "", purchased_at: "" });
+  const [deliveryDraft, setDeliveryDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
-  const [deliveryEditDraft, setDeliveryEditDraft] = useState({ name: "", platform: "", note: "", purchased_at: "" });
+  const [deliveryEditDraft, setDeliveryEditDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   const [habitDraft, setHabitDraft] = useState<HabitDraft>(blankHabitDraft);
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [habitEditDraft, setHabitEditDraft] = useState<HabitDraft>(blankHabitDraft);
@@ -458,7 +458,7 @@ export function App() {
     [allTasks, filters],
   );
   const visibleDeliveryTasks = useMemo(
-    () => deliveryTasks.filter((task) => matchesDeliveryFilter(task, deliveryFilter)),
+    () => sortWeeklyDeliveriesBySequence(deliveryTasks.filter((task) => matchesDeliveryFilter(task, deliveryFilter))),
     [deliveryTasks, deliveryFilter],
   );
   const doneCount = allTasks.filter((task) => task.status === STATUS_DONE).length;
@@ -672,7 +672,7 @@ export function App() {
       setEditingMonthlyTaskId(null);
       setMonthlyEditDraft({ text: "", description: "" });
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+      setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
       setEditingHabitId(null);
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
@@ -713,7 +713,7 @@ export function App() {
       setEditingMonthlyTaskId(null);
       setMonthlyEditDraft({ text: "", description: "" });
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+      setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
       setEditingHabitId(null);
       setHabitEditDraft(blankHabitDraft);
       setEditingInspirationId(null);
@@ -1060,9 +1060,19 @@ export function App() {
     event.preventDefault();
     const name = deliveryDraft.name.trim();
     const platform = deliveryDraft.platform.trim();
+    const sequence = parseDeliverySequence(deliveryDraft.sequence);
     if (!name || !platform) return;
-    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at), ...deliveryTasks]);
-    setDeliveryDraft({ name: "", platform: "", note: "", purchased_at: "" });
+    if (sequence === null) {
+      window.alert("请填写大于 0 的整数序号。");
+      return;
+    }
+    const conflict = findWeeklyDeliveryBySequence(activeData.weeklyDeliveries, sequence);
+    if (conflict) {
+      window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
+      return;
+    }
+    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at, sequence), ...deliveryTasks]);
+    setDeliveryDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
   function toggleWeeklyDelivery(deliveryId: string) {
@@ -1825,21 +1835,34 @@ export function App() {
 
   function startWeeklyDeliveryEdit(delivery: WeeklyDelivery) {
     setEditingDeliveryId(delivery.id);
-    setDeliveryEditDraft({ name: delivery.name, platform: delivery.platform, note: delivery.note, purchased_at: delivery.purchased_at });
+    setDeliveryEditDraft({ sequence: delivery.sequence === null ? "" : String(delivery.sequence), name: delivery.name, platform: delivery.platform, note: delivery.note, purchased_at: delivery.purchased_at });
   }
 
   function saveWeeklyDeliveryEdit(deliveryId: string) {
     const name = deliveryEditDraft.name.trim();
     const platform = deliveryEditDraft.platform.trim();
+    const sequenceText = deliveryEditDraft.sequence.trim();
+    const sequence = sequenceText ? parseDeliverySequence(sequenceText) : null;
     if (!name || !platform) return;
+    if (sequenceText && sequence === null) {
+      window.alert("快递序号只能填写大于 0 的整数。");
+      return;
+    }
+    if (sequence !== null) {
+      const conflict = findWeeklyDeliveryBySequence(activeData.weeklyDeliveries, sequence, deliveryId);
+      if (conflict) {
+        window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
+        return;
+      }
+    }
     replaceWeeklyDeliveries(
       currentDeliveryWeek,
       deliveryTasks.map((delivery) =>
-        delivery.id === deliveryId ? { ...delivery, name, platform, note: deliveryEditDraft.note.trim(), purchased_at: deliveryEditDraft.purchased_at } : delivery,
+        delivery.id === deliveryId ? { ...delivery, sequence, name, platform, note: deliveryEditDraft.note.trim(), purchased_at: deliveryEditDraft.purchased_at } : delivery,
       ),
     );
     setEditingDeliveryId(null);
-    setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+    setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
   function deleteWeeklyDelivery(deliveryId: string) {
@@ -1852,7 +1875,7 @@ export function App() {
     );
     if (editingDeliveryId === deliveryId) {
       setEditingDeliveryId(null);
-      setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+      setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
     }
   }
 
@@ -2695,7 +2718,7 @@ export function App() {
             onSaveEdit={saveWeeklyDeliveryEdit}
             onCancelEdit={() => {
               setEditingDeliveryId(null);
-              setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+              setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
             }}
             onDelete={deleteWeeklyDelivery}
           />
@@ -2742,7 +2765,7 @@ export function App() {
             setDeliveryDate(fromDateKey(week));
             setDeliveryFilter("all");
             setEditingDeliveryId(null);
-            setDeliveryEditDraft({ name: "", platform: "", note: "", purchased_at: "" });
+            setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
             setShowDeliveryHistory(false);
           }}
         />
@@ -2832,6 +2855,13 @@ function matchesDeliveryFilter(delivery: WeeklyDelivery, filter: DeliveryFilter)
   if (filter === "pending") return !delivery.picked;
   if (filter === "picked") return delivery.picked;
   return true;
+}
+
+function parseDeliverySequence(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^[1-9]\d*$/.test(normalized)) return null;
+  const sequence = Number(normalized);
+  return Number.isSafeInteger(sequence) ? sequence : null;
 }
 
 function isUndoRedoShortcut(event: KeyboardEvent): boolean {

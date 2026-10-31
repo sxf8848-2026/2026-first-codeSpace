@@ -78,10 +78,17 @@ export function isValidTodosPayload(payload) {
     if (!Array.isArray(tasks)) return false;
     return tasks.every(isValidMonthlyTask);
   });
+  const deliverySequences = new Set();
   const weeklyDeliveriesValid = Object.entries(payload.weeklyDeliveries).every(([week, deliveries]) => {
     if (!isDateKey(week)) return false;
     if (!Array.isArray(deliveries)) return false;
-    return deliveries.every(isValidWeeklyDelivery);
+    return deliveries.every((delivery) => {
+      if (!isValidWeeklyDelivery(delivery)) return false;
+      if (delivery.sequence === null) return true;
+      if (deliverySequences.has(delivery.sequence)) return false;
+      deliverySequences.add(delivery.sequence);
+      return true;
+    });
   });
   const habitChecksValid = Object.entries(payload.habitChecks).every(([day, checks]) => {
     if (!isDateKey(day)) return false;
@@ -145,6 +152,7 @@ function isValidMonthlyTask(task) {
 function isValidWeeklyDelivery(delivery) {
   if (!isPlainObject(delivery)) return false;
   if (!isNonEmptyString(delivery.id)) return false;
+  if (delivery.sequence !== null && (!Number.isInteger(delivery.sequence) || delivery.sequence <= 0)) return false;
   if (!isNonEmptyString(delivery.name)) return false;
   if (!isNonEmptyString(delivery.platform)) return false;
   if (typeof delivery.note !== "string") return false;

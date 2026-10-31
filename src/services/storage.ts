@@ -16,6 +16,7 @@ import { normalizeSkincareProducts } from "./skincareProducts";
 import { normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeLearnedContents } from "./learnedContents";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
+import { normalizeWeeklyDeliverySequence } from "./weeklyDeliveries";
 import {
   AppPrefs,
   AwesomeRecord,
@@ -261,9 +262,10 @@ export function createMonthlyTask(text: string, description: string): MonthlyTas
   };
 }
 
-export function createWeeklyDelivery(name: string, platform: string, note: string, purchasedAt = ""): WeeklyDelivery {
+export function createWeeklyDelivery(name: string, platform: string, note: string, purchasedAt = "", sequence: number | null = null): WeeklyDelivery {
   return {
     id: crypto.randomUUID(),
+    sequence,
     name: name.trim(),
     platform: platform.trim(),
     note: note.trim(),
@@ -785,6 +787,7 @@ function normalizeWeeklyDelivery(delivery: Partial<WeeklyDelivery>): WeeklyDeliv
   const picked = delivery.picked === true;
   return {
     id: typeof delivery.id === "string" ? delivery.id : crypto.randomUUID(),
+    sequence: normalizeWeeklyDeliverySequence(delivery.sequence),
     name: typeof delivery.name === "string" ? delivery.name.trim() : "",
     platform: typeof delivery.platform === "string" ? delivery.platform.trim() : "",
     note: typeof delivery.note === "string" ? delivery.note : "",

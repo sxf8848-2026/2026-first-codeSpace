@@ -38,6 +38,7 @@ const validMonthlyTask = {
 
 const validWeeklyDelivery = {
   id: "delivery-1",
+  sequence: 128,
   name: "技术书籍",
   platform: "京东",
   note: "到站后周末去取",
@@ -227,7 +228,7 @@ const validLearnedContent = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 37,
+    version: 38,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -449,6 +450,35 @@ test("rejects weekly delivery with invalid purchased_at", () => {
       makeTodosPayload({
         weeklyDeliveries: {
           "2026-09-07": [{ ...validWeeklyDelivery, purchased_at: false }],
+        },
+      }),
+    ),
+    false,
+  );
+});
+
+test("accepts unnumbered legacy delivery and rejects invalid sequence values", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ weeklyDeliveries: { "2026-09-07": [{ ...validWeeklyDelivery, sequence: null }] } })),
+    true,
+  );
+  for (const sequence of [0, -1, 1.5, "128", undefined]) {
+    const delivery = { ...validWeeklyDelivery, sequence };
+    if (sequence === undefined) delete delivery.sequence;
+    assert.equal(
+      isValidTodosPayload(makeTodosPayload({ weeklyDeliveries: { "2026-09-07": [delivery] } })),
+      false,
+    );
+  }
+});
+
+test("rejects duplicate delivery sequences across different weeks", () => {
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        weeklyDeliveries: {
+          "2026-09-07": [validWeeklyDelivery],
+          "2026-09-14": [{ ...validWeeklyDelivery, id: "delivery-2" }],
         },
       }),
     ),

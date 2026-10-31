@@ -55,6 +55,7 @@ export type MonthlyTask = {
 
 export type WeeklyDelivery = {
   id: string;
+  sequence: number | null;
   name: string;
   platform: string;
   note: string;

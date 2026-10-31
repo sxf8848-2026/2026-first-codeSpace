@@ -30,6 +30,7 @@ const baseMonthlyTask = {
 
 const baseWeeklyDelivery = {
   id: "delivery-1",
+  sequence: null,
   name: "默认快递",
   platform: "淘宝",
   note: "",

@@ -3145,19 +3145,19 @@ export function WeeklyDeliveryPanel({
   tasks: WeeklyDelivery[];
   visibleTasks: WeeklyDelivery[];
   filter: "all" | "pending" | "picked";
-  draft: { name: string; platform: string; note: string; purchased_at: string };
+  draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
-  editingDraft: { name: string; platform: string; note: string; purchased_at: string };
+  editingDraft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   platforms: string[];
   saveStatus: SaveStatus;
   onFilterChange: (filter: "all" | "pending" | "picked") => void;
-  onDraftChange: (draft: { name: string; platform: string; note: string; purchased_at: string }) => void;
+  onDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
   onShowHistory: () => void;
   onCarryOver: () => void;
   onToggle: (taskId: string) => void;
   onStartEdit: (task: WeeklyDelivery) => void;
-  onEditDraftChange: (draft: { name: string; platform: string; note: string; purchased_at: string }) => void;
+  onEditDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onSaveEdit: (taskId: string) => void;
   onCancelEdit: () => void;
   onDelete: (taskId: string) => void;
@@ -3195,6 +3195,16 @@ export function WeeklyDeliveryPanel({
 
       <section className="delivery-panel" aria-label="每周快递">
         <form className="delivery-composer" onSubmit={onAdd}>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            required
+            value={draft.sequence}
+            onChange={(event) => onDraftChange({ ...draft, sequence: event.target.value })}
+            placeholder="序号，必填"
+            aria-label="快递序号"
+          />
           <input value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="快递名称，例如：书籍" />
           <PlatformSelect value={draft.platform} platforms={platforms} onChange={(platform) => onDraftChange({ ...draft, platform })} />
           <input type="date" value={draft.purchased_at} onChange={(event) => onDraftChange({ ...draft, purchased_at: event.target.value })} aria-label="购买时间" />
@@ -3233,6 +3243,15 @@ export function WeeklyDeliveryPanel({
                     {editingTaskId === task.id ? (
                       <>
                         <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={editingDraft.sequence}
+                          onChange={(event) => onEditDraftChange({ ...editingDraft, sequence: event.target.value })}
+                          placeholder="序号，可暂不填"
+                          aria-label="编辑快递序号"
+                        />
+                        <input
                           value={editingDraft.name}
                           onChange={(event) => onEditDraftChange({ ...editingDraft, name: event.target.value })}
                           onKeyDown={(event) => {
@@ -3256,7 +3275,12 @@ export function WeeklyDeliveryPanel({
                       </>
                     ) : (
                       <>
-                        <strong title={task.name}>{task.name}</strong>
+                        <div className="delivery-title-row">
+                          <span className={`delivery-sequence-chip ${task.sequence === null ? "unassigned" : ""}`}>
+                            {task.sequence === null ? "未编号" : `#${task.sequence}`}
+                          </span>
+                          <strong title={task.name}>{task.name}</strong>
+                        </div>
                         <div className="delivery-meta">
                           <span className="platform-chip">{task.platform}</span>
                           <span className={task.picked ? "picked-chip" : "pending-chip"}>{task.picked ? "已取" : "未取"}</span>

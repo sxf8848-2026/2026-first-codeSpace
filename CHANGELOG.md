@@ -13,6 +13,44 @@
 
 ---
 
+## [38.0.0] - 2026-10-31
+
+### 改了什么
+
+- 每周快递新增全历史唯一的手动序号；新增快递时序号必填，编辑旧快递时允许补充或修改序号。
+- 当前周和历史周的快递均按序号从大到小展示，未编号的旧记录稳定排列在已编号记录之后。
+- 快递卡片新增序号徽标；继承的未取快递保持未编号，避免自动占用全局序号。
+- `TodoData.version` 升级至 `38`，同步更新前端归一化、项目文件保存和后端全历史唯一性校验。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/weeklyDeliveries.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/weeklyDeliveries.test.mjs`
+- `tests-web/history.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，237/237。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 旧快递不会自动编号，缺少序号时归一化为 `null`，可后续逐条编辑补充。
+- 删除快递后，其序号可以重新使用；序号允许跳号，但不能与任一历史快递重复。
+- 后端 Schema 已更新，正在运行旧版 `npm run dev` 时需要重启后再保存新数据。
+
 ## [37.0.0] - 2026-10-30
 
 ### 改了什么
