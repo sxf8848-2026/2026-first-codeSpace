@@ -4,7 +4,7 @@ export function normalizeWeeklyDeliverySequence(sequence: unknown): number | nul
   return typeof sequence === "number" && Number.isInteger(sequence) && sequence > 0 ? sequence : null;
 }
 
-export function sortWeeklyDeliveriesBySequence(deliveries: WeeklyDelivery[]): WeeklyDelivery[] {
+export function sortWeeklyDeliveriesBySequence<T extends WeeklyDelivery>(deliveries: T[]): T[] {
   return deliveries
     .map((delivery, index) => ({ delivery, index }))
     .sort((left, right) => {

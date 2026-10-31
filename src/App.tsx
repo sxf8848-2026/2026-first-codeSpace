@@ -2760,6 +2760,7 @@ export function App() {
           emptyTitle="还没有每周快递历史记录"
           emptyText="添加每周快递后，这里会出现历史周记录"
           deliveryEntries={deliveryHistoryEntries}
+          deliveryData={activeData}
           onClose={() => setShowDeliveryHistory(false)}
           onDeliveryJump={(week) => {
             setDeliveryDate(fromDateKey(week));

@@ -1,4 +1,5 @@
-import type { TodoData, TodoTask } from "../types";
+import type { TodoData, TodoTask, WeeklyDelivery } from "../types";
+import { sortWeeklyDeliveriesBySequence } from "./weeklyDeliveries.ts";
 
 const HISTORY_STATUS_DONE = 0;
 const HISTORY_STATUS_IN_PROGRESS = 2;
@@ -36,6 +37,10 @@ export type WeeklyDeliveryHistoryEntry = {
   pickedCount: number;
   totalCount: number;
   summary: string;
+};
+
+export type WeeklyDeliveryHistoryDetail = WeeklyDelivery & {
+  week: string;
 };
 
 export function getDailyHistoryEntries(data: Pick<TodoData, "todos" | "awesomeRecords">): DailyHistoryEntry[] {
@@ -161,6 +166,19 @@ export function getWeeklyDeliveryHistoryEntries(data: Pick<TodoData, "weeklyDeli
         summary,
       };
     });
+}
+
+export function getWeeklyDeliveryHistoryDetails(
+  data: Pick<TodoData, "weeklyDeliveries">,
+  query = "",
+): WeeklyDeliveryHistoryDetail[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const deliveries = Object.entries(data.weeklyDeliveries)
+    .sort(([left], [right]) => right.localeCompare(left))
+    .flatMap(([week, weekDeliveries]) => weekDeliveries.map((delivery) => ({ ...delivery, week })))
+    .filter((delivery) => !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery));
+
+  return sortWeeklyDeliveriesBySequence(deliveries);
 }
 
 function startOfCalendarMonth(month: string): Date {

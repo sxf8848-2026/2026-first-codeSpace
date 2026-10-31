@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { PRIORITIES, TAG_TONES } from "../constants";
 import { addMonths, dateKey, formatDisplayDate, formatMonthTitle, formatWeekRange, fromDateKey, fromMonthKey, monthKey } from "../date";
@@ -6,6 +6,7 @@ import {
   DailyHistoryEntry,
   getDailyHistoryCalendarDays,
   getDailyHistoryDetail,
+  getWeeklyDeliveryHistoryDetails,
   MonthlyHistoryEntry,
   WeeklyDeliveryHistoryEntry,
 } from "../services/history";
@@ -91,6 +92,7 @@ export function HistoryDialog({
   initialDailyDay,
   monthlyEntries,
   deliveryEntries,
+  deliveryData,
   onClose,
   onDailyJump,
   onMonthlyJump,
@@ -104,6 +106,7 @@ export function HistoryDialog({
   initialDailyDay?: string;
   monthlyEntries?: MonthlyHistoryEntry[];
   deliveryEntries?: WeeklyDeliveryHistoryEntry[];
+  deliveryData?: Pick<TodoData, "weeklyDeliveries">;
   onClose: () => void;
   onDailyJump?: (day: string) => void;
   onMonthlyJump?: (month: string) => void;
@@ -112,6 +115,8 @@ export function HistoryDialog({
   const entries = dailyEntries ?? monthlyEntries ?? deliveryEntries ?? [];
   const [selectedDay, setSelectedDay] = useState(initialDailyDay ?? dailyEntries?.[0]?.day ?? dateKey(new Date()));
   const [calendarMonth, setCalendarMonth] = useState(monthKey(fromDateKey(selectedDay)));
+  const [deliveryView, setDeliveryView] = useState<"weeks" | "all">("weeks");
+  const [deliveryQuery, setDeliveryQuery] = useState("");
 
   if (dailyEntries && dailyData) {
     const calendarDays = getDailyHistoryCalendarDays(dailyData, calendarMonth);
@@ -204,6 +209,95 @@ export function HistoryDialog({
               </div>
             </section>
           </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (deliveryEntries && deliveryData) {
+    const allDeliveries = getWeeklyDeliveryHistoryDetails(deliveryData);
+    const visibleDeliveries = getWeeklyDeliveryHistoryDetails(deliveryData, deliveryQuery);
+
+    return (
+      <div className="dialog-backdrop" role="presentation" onClick={onClose}>
+        <section className="dialog history-dialog delivery-history-dialog" onClick={(event) => event.stopPropagation()}>
+          <header>
+            <strong>{title}</strong>
+            <button type="button" className="icon-button compact" onClick={onClose}>
+              <X size={18} />
+            </button>
+          </header>
+
+          <div className="segmented history-tabs" aria-label="快递历史查看方式">
+            <button type="button" className={deliveryView === "weeks" ? "active" : ""} onClick={() => setDeliveryView("weeks")}>
+              按周查看
+            </button>
+            <button type="button" className={deliveryView === "all" ? "active" : ""} onClick={() => setDeliveryView("all")}>
+              全部快递
+            </button>
+          </div>
+
+          {deliveryView === "weeks" ? (
+            <div className="history-list">
+              {deliveryEntries.length ? (
+                deliveryEntries.map((entry) => (
+                  <button className="history-card" key={entry.week} onClick={() => onDeliveryJump?.(entry.week)}>
+                    <span>{formatWeekRange(fromDateKey(entry.week))}</span>
+                    <strong>
+                      {entry.pendingCount}/{entry.totalCount} 未取 · {entry.pickedCount} 已取
+                    </strong>
+                    <small>{entry.summary}</small>
+                  </button>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <strong>{emptyTitle}</strong>
+                  <span>{emptyText}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="delivery-history-all">
+              <div className="delivery-history-toolbar">
+                <div className="search-box">
+                  <Search size={16} />
+                  <input
+                    value={deliveryQuery}
+                    onChange={(event) => setDeliveryQuery(event.target.value)}
+                    placeholder="搜索快递名称"
+                    aria-label="搜索全部历史快递名称"
+                  />
+                </div>
+                <span>当前显示 {visibleDeliveries.length} 条</span>
+              </div>
+              <div className="delivery-history-detail-list">
+                {visibleDeliveries.length ? (
+                  visibleDeliveries.map((delivery) => (
+                    <article className="delivery-history-detail-card" key={`${delivery.week}-${delivery.id}`}>
+                      <div className="delivery-history-detail-title">
+                        <span className={`delivery-sequence-chip ${delivery.sequence === null ? "unassigned" : ""}`}>
+                          {delivery.sequence === null ? "未编号" : `#${delivery.sequence}`}
+                        </span>
+                        <strong>{delivery.name}</strong>
+                        <span className={delivery.picked ? "picked-chip" : "pending-chip"}>{delivery.picked ? "已取" : "未取"}</span>
+                      </div>
+                      <div className="delivery-history-detail-meta">
+                        <span className="platform-chip">{delivery.platform}</span>
+                        <span>购买时间：{delivery.purchased_at || "未填写"}</span>
+                        <span>所属周次：{formatWeekRange(fromDateKey(delivery.week))}</span>
+                      </div>
+                      {delivery.note && <p>备注：{delivery.note}</p>}
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <strong>{allDeliveries.length ? "没有匹配的快递" : "还没有历史快递"}</strong>
+                    <span>{allDeliveries.length ? "请尝试其他快递名称" : "添加快递后，这里会显示全部历史明细"}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </div>
     );

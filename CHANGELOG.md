@@ -13,6 +13,38 @@
 
 ---
 
+## [38.1.0] - 2026-10-31
+
+### 改了什么
+
+- “每周快递历史查询”新增“按周查看”和“全部快递”两个标签页，原有按周查询及跳转行为保持不变。
+- “全部快递”汇总全部历史周的快递明细，支持仅按快递名称即时搜索，并展示序号、平台、取件状态、购买时间、所属周次和备注。
+- 全部历史快递继续复用序号倒序规则，未编号记录稳定排列在末尾；新增无历史数据和无匹配结果空状态。
+- 本次仅扩展查询展示，不修改快递数据结构，也不升级 `TodoData.version`。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/dialogs.tsx`
+- `src/services/history.ts`
+- `src/services/weeklyDeliveries.ts`
+- `src/styles.css`
+- `tests-web/history.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，240/240。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 搜索仅匹配快递名称，不匹配平台、备注或序号。
+- 搜索结果为只读明细，不提供跳转、编辑或删除操作。
+- 无数据迁移和后端 Schema 变更，刷新前端页面即可生效。
+
 ## [38.0.0] - 2026-10-31
 
 ### 改了什么
