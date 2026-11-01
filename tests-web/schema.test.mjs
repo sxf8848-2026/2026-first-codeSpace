@@ -46,6 +46,7 @@ const validDelivery = {
   status: "pending",
   created_at: "2026-09-13 09:00",
   picked_at: null,
+  archived_at: null,
 };
 
 const validHabit = {
@@ -228,7 +229,7 @@ const validLearnedContent = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 41,
+    version: 42,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -403,6 +404,17 @@ test("accepts returned deliveries and rejects invalid delivery status", () => {
     if (status === undefined) delete delivery.status;
     assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), false);
   }
+});
+
+test("accepts delivery archive timestamps and rejects invalid archive values", () => {
+  assert.equal(
+    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, archived_at: "2026-11-01T08:00:00.000Z" }] })),
+    true,
+  );
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, archived_at: false }] })), false);
+  const delivery = { ...validDelivery };
+  delete delivery.archived_at;
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), true);
 });
 
 test("rejects delivery without purchased_at", () => {

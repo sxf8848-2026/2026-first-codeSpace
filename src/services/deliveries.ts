@@ -51,3 +51,17 @@ export function getDeliveryStatusColumns(deliveries: DeliveryRecord[], query: st
     returned: sortDeliveriesBySequence(matchedDeliveries.filter((delivery) => delivery.status === "returned")),
   };
 }
+
+export function getArchivedDeliveries(deliveries: DeliveryRecord[], query: string): DeliveryRecord[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  return deliveries
+    .map((delivery, index) => ({ delivery, index }))
+    .filter(({ delivery }) => Boolean(delivery.archived_at))
+    .filter(({ delivery }) => !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery))
+    .sort((left, right) => {
+      const leftArchivedAt = left.delivery.archived_at ?? "";
+      const rightArchivedAt = right.delivery.archived_at ?? "";
+      return rightArchivedAt.localeCompare(leftArchivedAt) || left.index - right.index;
+    })
+    .map(({ delivery }) => delivery);
+}

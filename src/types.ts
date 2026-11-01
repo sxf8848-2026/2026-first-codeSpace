@@ -65,6 +65,7 @@ export type DeliveryRecord = {
   status: DeliveryStatus;
   created_at: string;
   picked_at: string | null;
+  archived_at: string | null;
 };
 
 export type Habit = {

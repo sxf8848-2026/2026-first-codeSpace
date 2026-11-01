@@ -13,6 +13,42 @@
 
 ---
 
+## [42.0.0] - 2026-11-01
+
+### 改了什么
+
+- 快递管理增加“当前快递 / 已归档”双标签；已取和退货快递可确认归档，未取快递不提供归档入口。
+- 已归档页以单列展示归档记录，支持名称搜索与清空、按归档时间倒序查看，并可一键恢复到原来的已取或退货看板列。
+- 当前快递看板、侧栏数量和顶部统计均只统计未归档快递；归档仍保留序号、购买时间、平台、备注和状态。
+- 快递数据新增软归档字段 `archived_at`，旧数据自动补为空值，数据版本升级至 42。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/deliveries.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/deliveries.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：236/236 通过。
+- `npm run build`：通过。
+- `node --check server/index.mjs`、`node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 后端 Schema 已更新；如果开发服务正在运行，需要重启 `npm run dev` 后再保存归档数据。
+
+---
+
 ## [41.0.3] - 2026-11-01
 
 ### 改了什么

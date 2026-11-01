@@ -3125,12 +3125,16 @@ export function MonthlyPanel({
 export function DeliveryPanel({
   tasks,
   deliveryColumns,
+  archivedTasks,
+  archivedTotalCount,
+  tab,
   query,
   draft,
   editingTaskId,
   editingDraft,
   platforms,
   saveStatus,
+  onTabChange,
   onQueryChange,
   onDraftChange,
   onAdd,
@@ -3140,15 +3144,21 @@ export function DeliveryPanel({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  onArchive,
+  onRestore,
 }: {
   tasks: DeliveryRecord[];
   deliveryColumns: Record<DeliveryStatus, DeliveryRecord[]>;
+  archivedTasks: DeliveryRecord[];
+  archivedTotalCount: number;
+  tab: "current" | "archived";
   query: string;
   draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
   editingDraft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   platforms: string[];
   saveStatus: SaveStatus;
+  onTabChange: (tab: "current" | "archived") => void;
   onQueryChange: (query: string) => void;
   onDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
@@ -3158,6 +3168,8 @@ export function DeliveryPanel({
   onSaveEdit: (taskId: string) => void;
   onCancelEdit: () => void;
   onDelete: (taskId: string) => void;
+  onArchive: (taskId: string) => void;
+  onRestore: (taskId: string) => void;
 }) {
   const pendingCount = tasks.filter((task) => task.status === "pending").length;
   const pickedCount = tasks.filter((task) => task.status === "picked").length;
@@ -3191,6 +3203,16 @@ export function DeliveryPanel({
       </section>
 
       <section className="delivery-panel" aria-label="快递管理">
+        <Segmented
+          value={tab}
+          options={[
+            ["current", "当前快递"],
+            ["archived", `已归档（${archivedTotalCount}）`],
+          ]}
+          onChange={(value) => onTabChange(value as "current" | "archived")}
+        />
+        {tab === "current" ? (
+          <>
         <form className="delivery-composer" onSubmit={onAdd}>
           <input
             type="number"
@@ -3307,6 +3329,11 @@ export function DeliveryPanel({
                       <button onClick={() => onStartEdit(task)} title="编辑快递">
                         <Pencil size={16} />
                       </button>
+                      {task.status !== "pending" ? (
+                        <button onClick={() => onArchive(task.id)} title="归档快递">
+                          <Archive size={16} />
+                        </button>
+                      ) : null}
                       <button className="danger" onClick={() => onDelete(task.id)} title="删除快递">
                         <Trash2 size={16} />
                       </button>
@@ -3323,6 +3350,55 @@ export function DeliveryPanel({
             </section>
           ))}
         </div>
+          </>
+        ) : (
+          <>
+            <div className="delivery-toolbar">
+              <div className="search-box delivery-search-box">
+                <Search size={16} />
+                <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索已归档快递名称" aria-label="搜索已归档快递名称" />
+                {query ? (
+                  <button className="delivery-search-clear" type="button" onClick={() => onQueryChange("")} aria-label="清空快递搜索" title="清空搜索">
+                    <X size={16} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="delivery-archive-list" aria-label="已归档快递列表">
+              {archivedTasks.length ? archivedTasks.map((task) => (
+                <article className={`delivery-item ${task.status} archived`} key={task.id}>
+                  <div className="delivery-item-main">
+                    <span className={`delivery-status-label ${task.status}`}>{task.status === "picked" ? "已取" : "退货"}</span>
+                    <div>
+                      <div className="delivery-title-row">
+                        <span className={`delivery-sequence-chip ${task.sequence === null ? "unassigned" : ""}`}>
+                          {task.sequence === null ? "未编号" : `#${task.sequence}`}
+                        </span>
+                        <strong title={task.name}>{task.name}</strong>
+                      </div>
+                      <div className="delivery-meta">
+                        <span className="platform-chip">{task.platform}</span>
+                      </div>
+                      <small className="delivery-purchase-time">{task.purchased_at ? `购买时间：${task.purchased_at}` : "购买时间未填写"}</small>
+                      {task.note && <p>{task.note}</p>}
+                      <small className="delivery-archived-time">归档时间：{task.archived_at}</small>
+                    </div>
+                  </div>
+                  <div className="delivery-actions">
+                    <button onClick={() => onRestore(task.id)} title="恢复快递">
+                      <RotateCcw size={16} />
+                      恢复
+                    </button>
+                  </div>
+                </article>
+              )) : (
+                <div className="delivery-empty">
+                  {archivedTotalCount ? "没有匹配的归档快递" : "还没有归档快递"}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </>
   );

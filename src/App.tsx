@@ -101,7 +101,7 @@ import {
   RewardRuleStatusFilter,
   toggleRewardRuleStatus,
 } from "./services/rewards";
-import { findDeliveryBySequence, getDeliveryStatusColumns } from "./services/deliveries";
+import { findDeliveryBySequence, getArchivedDeliveries, getDeliveryStatusColumns } from "./services/deliveries";
 import {
   getLearnedContentMonths,
   getLearnedContentStats,
@@ -346,6 +346,7 @@ export function App() {
   const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
   const [deliveryDraft, setDeliveryDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   const [deliveryQuery, setDeliveryQuery] = useState("");
+  const [deliveryTab, setDeliveryTab] = useState<"current" | "archived">("current");
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
   const [deliveryEditDraft, setDeliveryEditDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   const [habitDraft, setHabitDraft] = useState<HabitDraft>(blankHabitDraft);
@@ -444,7 +445,9 @@ export function App() {
   const awesomeRecords = activeData.awesomeRecords[currentDay] ?? [];
   const monthlyTasks = activeData.monthlyTodos[currentMonth] ?? [];
   const todayMonthlyTasks = activeData.monthlyTodos[todayMonth] ?? [];
-  const deliveryTasks = activeData.deliveries;
+  const allDeliveries = activeData.deliveries;
+  const deliveryTasks = useMemo(() => allDeliveries.filter((delivery) => !delivery.archived_at), [allDeliveries]);
+  const archivedDeliveries = useMemo(() => getArchivedDeliveries(allDeliveries, deliveryQuery), [allDeliveries, deliveryQuery]);
   const weekRange = formatWeekRange(currentDate);
   const visibleTasks = useMemo(
     () => sortDailyTasksByStatus(allTasks.filter((task) => matchesFilters(task, filters))),
@@ -1050,18 +1053,18 @@ export function App() {
       window.alert("快递序号只能填写非 0 整数。");
       return;
     }
-    const conflict = findDeliveryBySequence(deliveryTasks, sequence);
+    const conflict = findDeliveryBySequence(allDeliveries, sequence);
     if (conflict) {
       window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
       return;
     }
-    replaceDeliveries([createDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at, sequence), ...deliveryTasks]);
+    replaceDeliveries([createDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at, sequence), ...allDeliveries]);
     setDeliveryDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
   function changeDeliveryStatus(deliveryId: string, status: DeliveryStatus) {
     replaceDeliveries(
-      deliveryTasks.map((delivery) => {
+      allDeliveries.map((delivery) => {
         if (delivery.id !== deliveryId) return delivery;
         return {
           ...delivery,
@@ -1831,14 +1834,14 @@ export function App() {
       return;
     }
     if (sequence !== null) {
-      const conflict = findDeliveryBySequence(deliveryTasks, sequence, deliveryId);
+      const conflict = findDeliveryBySequence(allDeliveries, sequence, deliveryId);
       if (conflict) {
         window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
         return;
       }
     }
     replaceDeliveries(
-      deliveryTasks.map((delivery) =>
+      allDeliveries.map((delivery) =>
         delivery.id === deliveryId ? { ...delivery, sequence, name, platform, note: deliveryEditDraft.note.trim(), purchased_at: deliveryEditDraft.purchased_at } : delivery,
       ),
     );
@@ -1847,16 +1850,31 @@ export function App() {
   }
 
   function deleteDelivery(deliveryId: string) {
-    const delivery = deliveryTasks.find((item) => item.id === deliveryId);
+    const delivery = allDeliveries.find((item) => item.id === deliveryId);
     if (!delivery) return;
     if (!window.confirm(`确定删除快递“${delivery.name}”吗？删除后可以用撤销恢复。`)) return;
     replaceDeliveries(
-      deliveryTasks.filter((item) => item.id !== deliveryId),
+      allDeliveries.filter((item) => item.id !== deliveryId),
     );
     if (editingDeliveryId === deliveryId) {
       setEditingDeliveryId(null);
       setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
     }
+  }
+
+  function archiveDelivery(deliveryId: string) {
+    const delivery = allDeliveries.find((item) => item.id === deliveryId);
+    if (!delivery || delivery.status === "pending") return;
+    if (!window.confirm(`确定归档快递“${delivery.name}”吗？归档后可在“已归档”中恢复。`)) return;
+    replaceDeliveries(allDeliveries.map((item) => item.id === deliveryId ? { ...item, archived_at: nowStamp() } : item));
+    if (editingDeliveryId === deliveryId) {
+      setEditingDeliveryId(null);
+      setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
+    }
+  }
+
+  function restoreDelivery(deliveryId: string) {
+    replaceDeliveries(allDeliveries.map((item) => item.id === deliveryId ? { ...item, archived_at: null } : item));
   }
 
   function toggleTask(taskId: string) {
@@ -2673,12 +2691,16 @@ export function App() {
           <DeliveryPanel
             tasks={deliveryTasks}
             deliveryColumns={deliveryStatusColumns}
+            archivedTasks={archivedDeliveries}
+            archivedTotalCount={allDeliveries.filter((delivery) => Boolean(delivery.archived_at)).length}
+            tab={deliveryTab}
             query={deliveryQuery}
             draft={deliveryDraft}
             editingTaskId={editingDeliveryId}
             editingDraft={deliveryEditDraft}
             platforms={deliveryPlatforms}
             saveStatus={projectSaveStatus}
+            onTabChange={setDeliveryTab}
             onQueryChange={setDeliveryQuery}
             onDraftChange={setDeliveryDraft}
             onAdd={addDelivery}
@@ -2691,6 +2713,8 @@ export function App() {
               setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
             }}
             onDelete={deleteDelivery}
+            onArchive={archiveDelivery}
+            onRestore={restoreDelivery}
           />
         )}
       </section>

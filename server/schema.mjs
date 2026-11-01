@@ -157,6 +157,7 @@ function isValidDelivery(delivery) {
   if (!["pending", "picked", "returned"].includes(delivery.status)) return false;
   if (typeof delivery.created_at !== "string") return false;
   if (typeof delivery.picked_at !== "string" && delivery.picked_at !== null) return false;
+  if (typeof delivery.archived_at !== "string" && delivery.archived_at !== null && delivery.archived_at !== undefined) return false;
   return true;
 }
 

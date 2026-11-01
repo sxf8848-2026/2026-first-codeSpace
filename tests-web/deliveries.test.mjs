@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   findDeliveryBySequence,
+  getArchivedDeliveries,
   getDeliveryStatusColumns,
   normalizeDeliverySequence,
   normalizeDeliveryStatus,
@@ -19,6 +20,7 @@ const baseDelivery = {
   status: "pending",
   created_at: "2026-10-01T00:00:00.000Z",
   picked_at: null,
+  archived_at: null,
 };
 
 test("sorts positive then negative sequences descending and keeps unnumbered deliveries stable at the end", () => {
@@ -94,14 +96,37 @@ test("normalizes invalid sequences and finds global conflicts", () => {
   assert.equal(findDeliveryBySequence(deliveries, 20, "current"), undefined);
 });
 
+test("lists archived deliveries by archive time and searches only their names", () => {
+  const deliveries = [
+    { ...baseDelivery, id: "active", name: "当前快递", status: "picked" },
+    { ...baseDelivery, id: "first", name: "旧书", status: "picked", archived_at: "2026-11-01T08:00:00.000Z" },
+    { ...baseDelivery, id: "latest", name: "新书", status: "returned", archived_at: "2026-11-02T08:00:00.000Z" },
+    { ...baseDelivery, id: "same-time", name: "相同时间", status: "picked", archived_at: "2026-11-02T08:00:00.000Z" },
+  ];
+
+  assert.deepEqual(getArchivedDeliveries(deliveries, "书").map((delivery) => delivery.id), ["latest", "first"]);
+  assert.deepEqual(getArchivedDeliveries(deliveries, "  新书 ").map((delivery) => delivery.id), ["latest"]);
+  assert.deepEqual(getArchivedDeliveries(deliveries, "当前").map((delivery) => delivery.id), []);
+  assert.deepEqual(getArchivedDeliveries(deliveries, "").map((delivery) => delivery.id), ["latest", "same-time", "first"]);
+  assert.deepEqual(deliveries.map((delivery) => delivery.id), ["active", "first", "latest", "same-time"]);
+});
+
 test("delivery management exposes a three-column status board, global search and missing purchase date text", () => {
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
   assert.match(app, /getDeliveryStatusColumns\(deliveryTasks, deliveryQuery\)/);
+  assert.match(app, /getArchivedDeliveries\(allDeliveries, deliveryQuery\)/);
+  assert.match(app, /function archiveDelivery\(deliveryId: string\)/);
+  assert.match(app, /function restoreDelivery\(deliveryId: string\)/);
   assert.doesNotMatch(app, /deliveryFilter/);
   assert.match(component, /<h1>快递管理<\/h1>/);
+  assert.match(component, /\["current", "当前快递"\]/);
+  assert.match(component, /\["archived", `已归档（\$\{archivedTotalCount\}）`\]/);
+  assert.match(component, /title="归档快递"/);
+  assert.match(component, /title="恢复快递"/);
+  assert.match(component, /归档时间：/);
   assert.match(component, /placeholder="搜索快递名称"/);
   assert.match(component, /\{query \? \(/);
   assert.match(component, /onClick=\{\(\) => onQueryChange\(""\)\} aria-label="清空快递搜索"/);
@@ -123,4 +148,6 @@ test("delivery management exposes a three-column status board, global search and
   assert.match(styles, /\.delivery-status-board\s*{[^}]*grid-template-columns:\s*repeat\(3, minmax\(320px, 1fr\)\);[^}]*overflow-x:\s*auto;/s);
   assert.match(styles, /\.delivery-status-column\s*{[^}]*align-content:\s*start;[^}]*min-width:\s*320px;/s);
   assert.match(styles, /\.delivery-item\.picked strong\s*{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*line-through;/s);
+  assert.match(styles, /\.delivery-archive-list\s*{[^}]*display:\s*grid;/s);
+  assert.match(styles, /\.delivery-status-label\.returned\s*{[^}]*color:\s*var\(--danger\);/s);
 });

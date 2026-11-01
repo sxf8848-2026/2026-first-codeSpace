@@ -1037,6 +1037,10 @@ h1 {
   gap: 14px;
 }
 
+.delivery-panel > .segmented {
+  justify-self: start;
+}
+
 .delivery-composer {
   display: grid;
   grid-template-columns: 110px minmax(160px, 1fr) minmax(140px, 0.8fr) 160px minmax(180px, 1.2fr) auto;
@@ -1147,6 +1151,15 @@ h1 {
   gap: 12px;
 }
 
+.delivery-archive-list {
+  display: grid;
+  gap: 12px;
+}
+
+.delivery-archive-list .delivery-item {
+  min-height: 0;
+}
+
 .delivery-item {
   display: grid;
   gap: 16px;
@@ -1191,6 +1204,29 @@ h1 {
 }
 
 .delivery-status-select.returned {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.delivery-status-label {
+  display: inline-flex;
+  flex: 0 0 82px;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  min-height: 38px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+
+.delivery-status-label.picked {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.delivery-status-label.returned {
   color: var(--danger);
   background: var(--danger-soft);
 }
@@ -1252,6 +1288,12 @@ h1 {
 .delivery-purchase-time {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 700;
+}
+
+.delivery-archived-time {
+  color: var(--faint);
+  font-size: 12px;
   font-weight: 700;
 }
 

@@ -273,6 +273,7 @@ export function createDelivery(name: string, platform: string, note: string, pur
     status: "pending",
     created_at: nowStamp(),
     picked_at: null,
+    archived_at: null,
   };
 }
 
@@ -793,6 +794,7 @@ function normalizeDelivery(delivery: Partial<DeliveryRecord> & { picked?: unknow
     status,
     created_at: typeof delivery.created_at === "string" ? delivery.created_at : nowStamp(),
     picked_at: typeof delivery.picked_at === "string" ? delivery.picked_at : status === "picked" ? nowStamp() : null,
+    archived_at: typeof delivery.archived_at === "string" ? delivery.archived_at : null,
   };
 }
 
