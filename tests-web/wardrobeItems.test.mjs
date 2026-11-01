@@ -48,9 +48,10 @@ test("renders wardrobe prices with the shared emphasis style", () => {
   assert.match(styles, /\.wardrobe-price\s*\{[^}]*color:\s*#dc2626;[^}]*font-weight:\s*700;/s);
 });
 
-test("uses bordered cards for both active and archived wardrobe records", () => {
+test("uses reward-style layered cards for both active and archived wardrobe records", () => {
   const panelSource = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(panelSource, /className="personal-item wardrobe-item"/);
-  assert.match(styles, /\.wardrobe-item\s*\{[^}]*border-color:\s*var\(--border\);[^}]*border-radius:\s*6px;[^}]*box-shadow:/s);
+  assert.match(styles, /\.wardrobe-item\s*\{[^}]*border-left:\s*3px solid var\(--brand\);[^}]*border-radius:\s*6px;[^}]*background:\s*var\(--panel-subtle\);[^}]*box-shadow:/s);
+  assert.match(styles, /\.wardrobe-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*transform:\s*translateY\(-1px\);/s);
 });

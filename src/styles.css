@@ -2440,10 +2440,21 @@ h1 {
 }
 
 .wardrobe-item {
+  position: relative;
   align-items: start;
-  border-color: var(--border);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand);
   border-radius: 6px;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 5%, transparent);
+  background: var(--panel-subtle);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 7%, transparent);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.wardrobe-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--text) 11%, transparent);
+  transform: translateY(-1px);
 }
 
 .wardrobe-meta {
