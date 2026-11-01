@@ -13,6 +13,30 @@
 
 ---
 
+## [41.0.1] - 2026-11-01
+
+### 改了什么
+
+- 快递管理的名称搜索框在存在关键词时显示“×”清空按钮，点击后立即清空搜索并恢复当前状态筛选下的全部快递。
+
+### 涉及文件
+
+- `src/components/AppSections.tsx`
+- `src/styles.css`
+- `tests-web/deliveries.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，234/234。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 本次仅增加前端交互与样式，不修改数据结构或 `TodoData.version`，无需重启后端。
+
 ## [41.0.0] - 2026-11-01
 
 ### 改了什么

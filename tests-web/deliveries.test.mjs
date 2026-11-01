@@ -99,6 +99,8 @@ test("delivery management exposes global search, totals and missing purchase dat
   assert.match(app, /getVisibleDeliveries\(deliveryTasks, deliveryFilter, deliveryQuery\)/);
   assert.match(component, /<h1>快递管理<\/h1>/);
   assert.match(component, /placeholder="搜索快递名称"/);
+  assert.match(component, /\{query \? \(/);
+  assert.match(component, /onClick=\{\(\) => onQueryChange\(""\)\} aria-label="清空快递搜索"/);
   assert.match(component, /<option value="returned">退货<\/option>/);
   assert.match(component, /task\.status === "pending"/);
   assert.match(component, /task\.status === "picked"/);
@@ -107,5 +109,6 @@ test("delivery management exposes global search, totals and missing purchase dat
   assert.match(component, /type="number"\s+step="1"\s+value=\{editingDraft\.sequence\}/);
   assert.match(app, /快递序号只能填写非 0 整数。/);
   assert.doesNotMatch(component, /继承未取快递|每周快递历史查询/);
+  assert.match(styles, /\.delivery-search-clear\s*{[^}]*min-height:\s*28px/s);
   assert.match(styles, /\.delivery-item\.picked strong\s*{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*line-through;/s);
 });

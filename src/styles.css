@@ -1058,6 +1058,28 @@ h1 {
   max-width: 520px;
 }
 
+.delivery-search-box input {
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-search-clear {
+  flex: 0 0 28px;
+  min-width: 28px;
+  min-height: 28px !important;
+  padding: 0 !important;
+  color: var(--faint) !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.delivery-search-clear:hover,
+.delivery-search-clear:focus-visible {
+  color: var(--text) !important;
+  background: var(--subtle) !important;
+  outline: none;
+}
+
 .delivery-toolbar button {
   display: inline-flex;
   align-items: center;

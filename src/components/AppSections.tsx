@@ -3213,6 +3213,11 @@ export function DeliveryPanel({
           <div className="search-box delivery-search-box">
             <Search size={16} />
             <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索快递名称" aria-label="搜索快递名称" />
+            {query ? (
+              <button className="delivery-search-clear" type="button" onClick={() => onQueryChange("")} aria-label="清空快递搜索" title="清空搜索">
+                <X size={16} />
+              </button>
+            ) : null}
           </div>
           <Segmented
             value={filter}
