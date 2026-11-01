@@ -2116,7 +2116,7 @@ export function WardrobePanel({
               ) : (
                 <div className="personal-content wardrobe-content">
                   <div className="personal-heading"><strong>{record.name}</strong><span>{record.category}</span></div>
-                  <div className="wardrobe-meta"><time>购买于 {record.purchased_on}</time>{record.price_cents !== null ? <span>价格：{(record.price_cents / 100).toFixed(2)} 元</span> : null}{record.source ? <span>来源：{record.source}</span> : null}</div>
+                  <div className="wardrobe-meta"><time>购买于 {record.purchased_on}</time>{record.price_cents !== null ? <span className="wardrobe-price">价格：{(record.price_cents / 100).toFixed(2)} 元</span> : null}{record.source ? <span>来源：{record.source}</span> : null}</div>
                   {record.note ? <p>{record.note}</p> : null}
                   {tab === "archived" && record.archived_at ? <small>归档于 {record.archived_at.replace("T", " ").slice(0, 16)}</small> : null}
                 </div>

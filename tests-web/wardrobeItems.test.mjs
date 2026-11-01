@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   getActiveWardrobeItems,
@@ -38,4 +39,11 @@ test("normalizes legacy missing wardrobe data and clears invalid optional values
   const normalized = normalizeWardrobeItems([{ ...records[0], price_cents: -1, archived_at: "invalid" }], () => "new", () => "2026-10-01T00:00:00.000Z", () => "2026-10-01");
   assert.equal(normalized[0].price_cents, null);
   assert.equal(normalized[0].archived_at, null);
+});
+
+test("renders wardrobe prices with the shared emphasis style", () => {
+  const panelSource = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(panelSource, /className="wardrobe-price"/);
+  assert.match(styles, /\.wardrobe-price\s*\{[^}]*color:\s*#dc2626;[^}]*font-weight:\s*700;/s);
 });
