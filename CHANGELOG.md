@@ -13,6 +13,30 @@
 
 ---
 
+## [40.0.1] - 2026-11-01
+
+### 改了什么
+
+- 已取快递名称继续保留文字中间的删除线，并由浅灰色恢复为正常深色字体，提升可读性。
+- 本次只调整展示样式，不修改快递状态、数据结构或 `TodoData.version`。
+
+### 涉及文件
+
+- `src/styles.css`
+- `tests-web/deliveries.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，234/234。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 这是纯前端样式调整，刷新页面即可生效，无需重启后端。
+
 ## [40.0.0] - 2026-11-01
 
 ### 改了什么

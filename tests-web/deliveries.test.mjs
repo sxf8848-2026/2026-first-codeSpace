@@ -72,6 +72,7 @@ test("normalizes invalid sequences and finds global conflicts", () => {
 test("delivery management exposes global search, totals and missing purchase date text", () => {
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
   assert.match(app, /getVisibleDeliveries\(deliveryTasks, deliveryFilter, deliveryQuery\)/);
   assert.match(component, /<h1>快递管理<\/h1>/);
@@ -81,4 +82,5 @@ test("delivery management exposes global search, totals and missing purchase dat
   assert.match(component, /task\.status === "picked"/);
   assert.match(component, /购买时间未填写/);
   assert.doesNotMatch(component, /继承未取快递|每周快递历史查询/);
+  assert.match(styles, /\.delivery-item\.picked strong\s*{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*line-through;/s);
 });

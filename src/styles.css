@@ -1088,7 +1088,7 @@ h1 {
 }
 
 .delivery-item.picked strong {
-  color: var(--faint);
+  color: var(--text);
   text-decoration: line-through;
 }
 
