@@ -2441,6 +2441,9 @@ h1 {
 
 .wardrobe-item {
   align-items: start;
+  border-color: var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 5%, transparent);
 }
 
 .wardrobe-meta {
