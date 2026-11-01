@@ -20,7 +20,7 @@ export function isValidTodosPayload(payload) {
   if (!isPlainObject(payload.weeklyTodos)) return false;
   if (!isPlainObject(payload.awesomeRecords)) return false;
   if (!isPlainObject(payload.monthlyTodos)) return false;
-  if (!isPlainObject(payload.weeklyDeliveries)) return false;
+  if (!Array.isArray(payload.deliveries)) return false;
   if (!Array.isArray(payload.habits)) return false;
   if (!isPlainObject(payload.habitChecks)) return false;
   if (!Array.isArray(payload.inspirations)) return false;
@@ -58,6 +58,15 @@ export function isValidTodosPayload(payload) {
   if (!payload.rewardClaims.every(isValidRewardClaim)) return false;
   if (!payload.learnedContents.every(isValidLearnedContent)) return false;
 
+  const deliverySequences = new Set();
+  if (!payload.deliveries.every((delivery) => {
+    if (!isValidDelivery(delivery)) return false;
+    if (delivery.sequence === null) return true;
+    if (deliverySequences.has(delivery.sequence)) return false;
+    deliverySequences.add(delivery.sequence);
+    return true;
+  })) return false;
+
   const dailyTodosValid = Object.entries(payload.todos).every(([day, tasks]) => {
     if (!isDateKey(day)) return false;
     if (!Array.isArray(tasks)) return false;
@@ -78,24 +87,12 @@ export function isValidTodosPayload(payload) {
     if (!Array.isArray(tasks)) return false;
     return tasks.every(isValidMonthlyTask);
   });
-  const deliverySequences = new Set();
-  const weeklyDeliveriesValid = Object.entries(payload.weeklyDeliveries).every(([week, deliveries]) => {
-    if (!isDateKey(week)) return false;
-    if (!Array.isArray(deliveries)) return false;
-    return deliveries.every((delivery) => {
-      if (!isValidWeeklyDelivery(delivery)) return false;
-      if (delivery.sequence === null) return true;
-      if (deliverySequences.has(delivery.sequence)) return false;
-      deliverySequences.add(delivery.sequence);
-      return true;
-    });
-  });
   const habitChecksValid = Object.entries(payload.habitChecks).every(([day, checks]) => {
     if (!isDateKey(day)) return false;
     if (!isPlainObject(checks)) return false;
     return Object.entries(checks).every(([habitId, checked]) => isNonEmptyString(habitId) && typeof checked === "boolean");
   });
-  return dailyTodosValid && weeklyTodosValid && awesomeRecordsValid && monthlyTodosValid && weeklyDeliveriesValid && habitChecksValid;
+  return dailyTodosValid && weeklyTodosValid && awesomeRecordsValid && monthlyTodosValid && habitChecksValid;
 }
 
 export function isValidPrefsPayload(payload) {
@@ -149,7 +146,7 @@ function isValidMonthlyTask(task) {
   return true;
 }
 
-function isValidWeeklyDelivery(delivery) {
+function isValidDelivery(delivery) {
   if (!isPlainObject(delivery)) return false;
   if (!isNonEmptyString(delivery.id)) return false;
   if (delivery.sequence !== null && (!Number.isInteger(delivery.sequence) || delivery.sequence <= 0)) return false;

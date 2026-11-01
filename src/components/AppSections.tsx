@@ -74,7 +74,7 @@ import {
   TodoTag,
   VideoInspirationRecord,
   VideoNoteRecord,
-  WeeklyDelivery,
+  DeliveryRecord,
   WeeklyTask,
   WorkExperienceRecord,
   DailyReadingRecord,
@@ -2526,6 +2526,7 @@ export function DashboardPanel({
   totalCount,
   progress,
   inProgressCount,
+  totalDeliveryCount,
   pendingDeliveryCount,
   openMonthlyCount,
   habitDoneCount,
@@ -2543,6 +2544,7 @@ export function DashboardPanel({
   totalCount: number;
   progress: number;
   inProgressCount: number;
+  totalDeliveryCount: number;
   pendingDeliveryCount: number;
   openMonthlyCount: number;
   habitDoneCount: number;
@@ -2573,7 +2575,7 @@ export function DashboardPanel({
       <section className="dashboard-overview" aria-label="今日概览">
         <DashboardStat label="今日任务" value={`${doneCount}/${totalCount}`} detail={`${progress}% 已完成`} />
         <DashboardStat label="进行中" value={String(inProgressCount)} detail="正在推进" />
-        <DashboardStat label="未取快递" value={String(pendingDeliveryCount)} detail="本周待处理" />
+        <DashboardStat label="快递记录" value={String(totalDeliveryCount)} detail={`${pendingDeliveryCount} 条未取`} />
         <DashboardStat label="月待办" value={String(openMonthlyCount)} detail="当月未完成" />
       </section>
 
@@ -3119,21 +3121,20 @@ export function MonthlyPanel({
   );
 }
 
-export function WeeklyDeliveryPanel({
-  weekRange,
+export function DeliveryPanel({
   tasks,
   visibleTasks,
   filter,
+  query,
   draft,
   editingTaskId,
   editingDraft,
   platforms,
   saveStatus,
   onFilterChange,
+  onQueryChange,
   onDraftChange,
   onAdd,
-  onShowHistory,
-  onCarryOver,
   onToggle,
   onStartEdit,
   onEditDraftChange,
@@ -3141,22 +3142,21 @@ export function WeeklyDeliveryPanel({
   onCancelEdit,
   onDelete,
 }: {
-  weekRange: string;
-  tasks: WeeklyDelivery[];
-  visibleTasks: WeeklyDelivery[];
+  tasks: DeliveryRecord[];
+  visibleTasks: DeliveryRecord[];
   filter: "all" | "pending" | "picked";
+  query: string;
   draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
   editingDraft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   platforms: string[];
   saveStatus: SaveStatus;
   onFilterChange: (filter: "all" | "pending" | "picked") => void;
+  onQueryChange: (query: string) => void;
   onDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
-  onShowHistory: () => void;
-  onCarryOver: () => void;
   onToggle: (taskId: string) => void;
-  onStartEdit: (task: WeeklyDelivery) => void;
+  onStartEdit: (task: DeliveryRecord) => void;
   onEditDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onSaveEdit: (taskId: string) => void;
   onCancelEdit: () => void;
@@ -3170,30 +3170,24 @@ export function WeeklyDeliveryPanel({
         <div>
           <div className="eyebrow">
             <Truck size={16} />
-            每周快递
+            日常计划
           </div>
-          <h1>{weekRange}</h1>
+          <h1>快递管理</h1>
         </div>
-        <button className="text-button" onClick={onShowHistory}>
-          <History size={16} />
-          历史查询
-        </button>
       </header>
 
       <section className="delivery-summary">
         <div>
-          <span>本周快递</span>
-          <strong>
-            {pendingCount}/{tasks.length} 未取
-          </strong>
-          <small>{pickedCount} 个已取</small>
+          <span>全部快递</span>
+          <strong>{tasks.length} 条</strong>
+          <small>{pendingCount} 条未取 · {pickedCount} 条已取</small>
         </div>
         <div className={`storage-status ${saveStatus.state}`} role="status">
           {saveStatus.message}
         </div>
       </section>
 
-      <section className="delivery-panel" aria-label="每周快递">
+      <section className="delivery-panel" aria-label="快递管理">
         <form className="delivery-composer" onSubmit={onAdd}>
           <input
             type="number"
@@ -3216,10 +3210,10 @@ export function WeeklyDeliveryPanel({
         </form>
 
         <div className="delivery-toolbar">
-          <button onClick={onCarryOver} title="从最近有未取快递的历史周继承">
-            <RotateCcw size={16} />
-            继承未取快递
-          </button>
+          <div className="search-box delivery-search-box">
+            <Search size={16} />
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索快递名称" aria-label="搜索快递名称" />
+          </div>
           <Segmented
             value={filter}
             options={[
@@ -3285,7 +3279,7 @@ export function WeeklyDeliveryPanel({
                           <span className="platform-chip">{task.platform}</span>
                           <span className={task.picked ? "picked-chip" : "pending-chip"}>{task.picked ? "已取" : "未取"}</span>
                         </div>
-                        {task.purchased_at && <small className="delivery-purchase-time">购买时间：{task.purchased_at}</small>}
+                        <small className="delivery-purchase-time">{task.purchased_at ? `购买时间：${task.purchased_at}` : "购买时间未填写"}</small>
                         {task.note && <p>{task.note}</p>}
                       </>
                     )}
@@ -3313,7 +3307,7 @@ export function WeeklyDeliveryPanel({
               </article>
             ))
           ) : (
-            <div className="delivery-empty">{tasks.length ? "没有匹配的快递记录" : "本周还没有快递记录"}</div>
+            <div className="delivery-empty">{tasks.length ? "没有匹配的快递记录" : "还没有快递记录"}</div>
           )}
         </div>
       </section>

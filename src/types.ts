@@ -53,7 +53,7 @@ export type MonthlyTask = {
   done_at: string | null;
 };
 
-export type WeeklyDelivery = {
+export type DeliveryRecord = {
   id: string;
   sequence: number | null;
   name: string;
@@ -253,7 +253,7 @@ export type TodoData = {
   weeklyTodos: Record<string, WeeklyTask[]>;
   awesomeRecords: Record<string, AwesomeRecord[]>;
   monthlyTodos: Record<string, MonthlyTask[]>;
-  weeklyDeliveries: Record<string, WeeklyDelivery[]>;
+  deliveries: DeliveryRecord[];
   habits: Habit[];
   habitChecks: Record<string, Record<string, boolean>>;
   inspirations: InspirationRecord[];

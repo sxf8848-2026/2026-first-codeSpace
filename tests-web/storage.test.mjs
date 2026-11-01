@@ -15,6 +15,33 @@ import { normalizeStudyGrowthRecords } from "../src/services/studyGrowthRecords.
 import { normalizeSkincareProducts } from "../src/services/skincareProducts.ts";
 import { normalizeRewardClaims, normalizeRewardRules } from "../src/services/rewards.ts";
 import { normalizeLearnedContents } from "../src/services/learnedContents.ts";
+import { migrateLegacyWeeklyDeliveries } from "../src/services/deliveries.ts";
+
+const legacyDelivery = {
+  id: "legacy-delivery",
+  sequence: null,
+  name: "旧快递",
+  platform: "淘宝",
+  note: "",
+  purchased_at: "",
+  picked: false,
+  created_at: "2026-09-01T00:00:00.000Z",
+  picked_at: null,
+};
+
+test("flattens legacy weekly deliveries using newest week first and stable order within each week", () => {
+  const migrated = migrateLegacyWeeklyDeliveries({
+    "2026-09-07": [
+      { ...legacyDelivery, id: "old-first", name: "旧周第一条", picked: true, picked_at: "2026-09-08T00:00:00.000Z" },
+      { ...legacyDelivery, id: "old-second", name: "旧周第二条" },
+    ],
+    "2026-09-21": [{ ...legacyDelivery, id: "new", name: "新周快递" }],
+  });
+
+  assert.deepEqual(migrated.map((delivery) => delivery.id), ["new", "old-first", "old-second"]);
+  assert.equal(migrated[1].picked, true);
+  assert.equal(migrated[0].purchased_at, "");
+});
 
 test("normalizes old todo data without inspirations", () => {
   assert.deepEqual(normalizeInspirations(undefined), []);

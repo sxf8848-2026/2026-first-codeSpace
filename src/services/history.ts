@@ -1,5 +1,4 @@
-import type { TodoData, TodoTask, WeeklyDelivery } from "../types";
-import { sortWeeklyDeliveriesBySequence } from "./weeklyDeliveries.ts";
+import type { TodoData, TodoTask } from "../types";
 
 const HISTORY_STATUS_DONE = 0;
 const HISTORY_STATUS_IN_PROGRESS = 2;
@@ -29,18 +28,6 @@ export type MonthlyHistoryEntry = {
   doneCount: number;
   totalCount: number;
   summary: string;
-};
-
-export type WeeklyDeliveryHistoryEntry = {
-  week: string;
-  pendingCount: number;
-  pickedCount: number;
-  totalCount: number;
-  summary: string;
-};
-
-export type WeeklyDeliveryHistoryDetail = WeeklyDelivery & {
-  week: string;
 };
 
 export function getDailyHistoryEntries(data: Pick<TodoData, "todos" | "awesomeRecords">): DailyHistoryEntry[] {
@@ -144,41 +131,6 @@ export function getMonthlyHistoryEntries(data: Pick<TodoData, "monthlyTodos">): 
         summary,
       };
     });
-}
-
-export function getWeeklyDeliveryHistoryEntries(data: Pick<TodoData, "weeklyDeliveries">): WeeklyDeliveryHistoryEntry[] {
-  return Object.entries(data.weeklyDeliveries)
-    .filter(([, deliveries]) => deliveries.length > 0)
-    .sort(([left], [right]) => right.localeCompare(left))
-    .map(([week, deliveries]) => {
-      const pending = deliveries.filter((delivery) => !delivery.picked);
-      const summary =
-        deliveries
-          .slice(0, 3)
-          .map((delivery) => delivery.name)
-          .join("、") || "这一周还没有快递记录";
-
-      return {
-        week,
-        pendingCount: pending.length,
-        pickedCount: deliveries.length - pending.length,
-        totalCount: deliveries.length,
-        summary,
-      };
-    });
-}
-
-export function getWeeklyDeliveryHistoryDetails(
-  data: Pick<TodoData, "weeklyDeliveries">,
-  query = "",
-): WeeklyDeliveryHistoryDetail[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const deliveries = Object.entries(data.weeklyDeliveries)
-    .sort(([left], [right]) => right.localeCompare(left))
-    .flatMap(([week, weekDeliveries]) => weekDeliveries.map((delivery) => ({ ...delivery, week })))
-    .filter((delivery) => !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery));
-
-  return sortWeeklyDeliveriesBySequence(deliveries);
 }
 
 function startOfCalendarMonth(month: string): Date {

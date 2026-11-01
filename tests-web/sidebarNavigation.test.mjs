@@ -20,6 +20,10 @@ test("groups sidebar views by user intent in the expected order", () => {
       { label: "个人管理", views: ["skincare", "reward", "learnedContents"] },
     ],
   );
+  assert.equal(
+    SIDEBAR_GROUPS.flatMap((group) => group.items).find((item) => item.view === "delivery")?.label,
+    "快递管理",
+  );
 });
 
 test("keeps dashboard independent and sidebar views unique", () => {

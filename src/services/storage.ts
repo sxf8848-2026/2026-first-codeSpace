@@ -16,7 +16,7 @@ import { normalizeSkincareProducts } from "./skincareProducts";
 import { normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeLearnedContents } from "./learnedContents";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
-import { normalizeWeeklyDeliverySequence } from "./weeklyDeliveries";
+import { migrateLegacyWeeklyDeliveries, normalizeDeliverySequence } from "./deliveries";
 import {
   AppPrefs,
   AwesomeRecord,
@@ -52,7 +52,7 @@ import {
   TodoTask,
   VideoInspirationRecord,
   VideoNoteRecord,
-  WeeklyDelivery,
+  DeliveryRecord,
   WeeklyTask,
   WorkExperienceRecord,
 } from "../types";
@@ -76,7 +76,7 @@ const initialData: TodoData = {
   weeklyTodos: {},
   awesomeRecords: {},
   monthlyTodos: {},
-  weeklyDeliveries: {},
+  deliveries: [],
   habits: [],
   habitChecks: {},
   inspirations: [],
@@ -262,7 +262,7 @@ export function createMonthlyTask(text: string, description: string): MonthlyTas
   };
 }
 
-export function createWeeklyDelivery(name: string, platform: string, note: string, purchasedAt = "", sequence: number | null = null): WeeklyDelivery {
+export function createDelivery(name: string, platform: string, note: string, purchasedAt = "", sequence: number | null = null): DeliveryRecord {
   return {
     id: crypto.randomUUID(),
     sequence,
@@ -528,12 +528,12 @@ export function seedToday(data: TodoData, defaultTasks: DefaultTask[] = DEFAULT_
 
 export function normalizeData(raw: unknown): TodoData {
   if (!raw || typeof raw !== "object") return initialData;
-  const value = raw as Partial<TodoData>;
+  const value = raw as Partial<TodoData> & { weeklyDeliveries?: unknown };
   const todos: TodoData["todos"] = {};
   const weeklyTodos: TodoData["weeklyTodos"] = {};
   const awesomeRecords: TodoData["awesomeRecords"] = {};
   const monthlyTodos: TodoData["monthlyTodos"] = {};
-  const weeklyDeliveries: TodoData["weeklyDeliveries"] = {};
+  const deliveries: TodoData["deliveries"] = [];
   const habits: TodoData["habits"] = [];
   const habitChecks: TodoData["habitChecks"] = {};
   const inspirations: TodoData["inspirations"] = normalizeInspirations(
@@ -651,17 +651,15 @@ export function normalizeData(raw: unknown): TodoData {
       .map(normalizeMonthlyTask)
       .filter((task) => task.text);
   }
-  const rawWeeklyDeliveries =
-    value.weeklyDeliveries && typeof value.weeklyDeliveries === "object"
-      ? (value.weeklyDeliveries as Record<string, unknown>)
-      : {};
-  for (const [week, deliveries] of Object.entries(rawWeeklyDeliveries)) {
-    if (!Array.isArray(deliveries)) continue;
-    weeklyDeliveries[week] = deliveries
-      .filter((delivery): delivery is Partial<WeeklyDelivery> => Boolean(delivery) && typeof delivery === "object")
-      .map(normalizeWeeklyDelivery)
-      .filter((delivery) => delivery.name && delivery.platform);
-  }
+  const rawDeliveries = Array.isArray(value.deliveries)
+    ? value.deliveries
+    : migrateLegacyWeeklyDeliveries(value.weeklyDeliveries);
+  deliveries.push(
+    ...rawDeliveries
+      .filter((delivery): delivery is Partial<DeliveryRecord> => Boolean(delivery) && typeof delivery === "object")
+      .map(normalizeDelivery)
+      .filter((delivery) => delivery.name && delivery.platform),
+  );
   const rawHabits = Array.isArray(value.habits) ? (value.habits as unknown[]) : [];
   habits.push(
     ...rawHabits
@@ -687,7 +685,7 @@ export function normalizeData(raw: unknown): TodoData {
     weeklyTodos,
     awesomeRecords,
     monthlyTodos,
-    weeklyDeliveries,
+    deliveries,
     habits,
     habitChecks,
     inspirations,
@@ -717,7 +715,7 @@ function hasTasks(data: TodoData): boolean {
     Object.values(data.weeklyTodos).some((tasks) => tasks.length > 0) ||
     Object.values(data.awesomeRecords).some((records) => records.length > 0) ||
     Object.values(data.monthlyTodos).some((tasks) => tasks.length > 0) ||
-    Object.values(data.weeklyDeliveries).some((deliveries) => deliveries.length > 0) ||
+    data.deliveries.length > 0 ||
     data.habits.length > 0 ||
     Object.values(data.habitChecks).some((checks) => Object.values(checks).some(Boolean)) ||
     data.inspirations.length > 0 ||
@@ -783,11 +781,11 @@ function normalizeMonthlyTask(task: Partial<MonthlyTask>): MonthlyTask {
   };
 }
 
-function normalizeWeeklyDelivery(delivery: Partial<WeeklyDelivery>): WeeklyDelivery {
+function normalizeDelivery(delivery: Partial<DeliveryRecord>): DeliveryRecord {
   const picked = delivery.picked === true;
   return {
     id: typeof delivery.id === "string" ? delivery.id : crypto.randomUUID(),
-    sequence: normalizeWeeklyDeliverySequence(delivery.sequence),
+    sequence: normalizeDeliverySequence(delivery.sequence),
     name: typeof delivery.name === "string" ? delivery.name.trim() : "",
     platform: typeof delivery.platform === "string" ? delivery.platform.trim() : "",
     note: typeof delivery.note === "string" ? delivery.note : "",

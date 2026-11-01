@@ -13,6 +13,49 @@
 
 ---
 
+## [39.0.0] - 2026-11-01
+
+### 改了什么
+
+- 将“每周快递”改造为“快递管理”，取消按周展示、历史查询和继承未取快递，所有历史快递统一进入全局列表。
+- 全局列表按序号从大到小展示，未编号旧记录排在末尾；支持名称即时搜索，并可与“全部 / 未取 / 已取”状态筛选组合使用。
+- 顶部和侧栏统计改为全局快递总数、未取数量和已取数量；总控台同步展示全部快递数量及未取数量。
+- `TodoData.version` 升级至 `39`，旧 `weeklyDeliveries` 会在加载时按周次由新到旧稳定合并到 `deliveries`，新格式保存后不再输出旧字段。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/components/dialogs.tsx`
+- `src/services/deliveries.ts`
+- `src/services/history.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/deliveries.test.mjs`
+- `tests-web/history.test.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/sidebarNavigation.test.mjs`
+- `tests-web/storage.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，233/233。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 当前项目数据文件无需手工修改；重启 `npm run dev` 后，前端首次加载会自动完成旧按周数据的兼容迁移并保存为全局数组。
+- 旧记录缺少序号时继续显示“未编号”，缺少购买日期时显示“购买时间未填写”，不会虚构数据。
+- 后端 Schema 已更新，正在运行旧版开发服务时必须重启后再保存新格式数据。
+
 ## [38.1.0] - 2026-10-31
 
 ### 改了什么

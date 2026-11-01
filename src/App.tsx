@@ -25,7 +25,7 @@ import {
   VideoInspirationPanel,
   VideoNotesPanel,
   WorkExperiencePanel,
-  WeeklyDeliveryPanel,
+  DeliveryPanel,
   WeeklyPanel,
   WorkspaceHeader,
 } from "./components/AppSections";
@@ -53,7 +53,7 @@ import {
   createTask,
   createVideoInspiration,
   createVideoNote,
-  createWeeklyDelivery,
+  createDelivery,
   createWeeklyTask,
   createWorkExperience,
   loadDataFromProject,
@@ -64,7 +64,7 @@ import {
   seedToday,
 } from "./services/storage";
 import { getHabitCompletion, getHabitViews, setHabitCheckForDay, toggleHabitCheckForDay } from "./services/habits";
-import { getDailyHistoryEntries, getMonthlyHistoryEntries, getWeeklyDeliveryHistoryEntries } from "./services/history";
+import { getDailyHistoryEntries, getMonthlyHistoryEntries } from "./services/history";
 import { getVisibleInspirations } from "./services/inspirations";
 import {
   getVisibleDailyReadings,
@@ -101,7 +101,7 @@ import {
   RewardRuleStatusFilter,
   toggleRewardRuleStatus,
 } from "./services/rewards";
-import { findWeeklyDeliveryBySequence, getCarryOverDeliveries, sortWeeklyDeliveriesBySequence } from "./services/weeklyDeliveries";
+import { DeliveryStatusFilter, findDeliveryBySequence, getVisibleDeliveries } from "./services/deliveries";
 import {
   getLearnedContentMonths,
   getLearnedContentStats,
@@ -133,7 +133,7 @@ import {
   TodoTask,
   VideoInspirationRecord,
   VideoNoteRecord,
-  WeeklyDelivery,
+  DeliveryRecord,
   WeeklyTask,
   AwesomeRecord,
   Habit,
@@ -177,8 +177,6 @@ type EditingTaskState = {
   day: string;
   task: TodoTask;
 };
-
-type DeliveryFilter = "all" | "pending" | "picked";
 
 type BookDraft = {
   title: string;
@@ -346,7 +344,8 @@ export function App() {
   const [editingMonthlyTaskId, setEditingMonthlyTaskId] = useState<string | null>(null);
   const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
   const [deliveryDraft, setDeliveryDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
-  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryStatusFilter>("all");
+  const [deliveryQuery, setDeliveryQuery] = useState("");
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
   const [deliveryEditDraft, setDeliveryEditDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   const [habitDraft, setHabitDraft] = useState<HabitDraft>(blankHabitDraft);
@@ -424,8 +423,6 @@ export function App() {
   const [editingTask, setEditingTask] = useState<EditingTaskState | null>(null);
   const [showDailyHistory, setShowDailyHistory] = useState(false);
   const [showMonthlyHistory, setShowMonthlyHistory] = useState(false);
-  const [showDeliveryHistory, setShowDeliveryHistory] = useState(false);
-  const [deliveryDate, setDeliveryDate] = useState(() => new Date());
   const [showSettings, setShowSettings] = useState(false);
   const dataHistory = useDataHistory();
 
@@ -440,8 +437,6 @@ export function App() {
   const todayDay = dateKey(todayDate);
   const habitDay = dateKey(habitDate);
   const todayMonth = monthKey(todayDate);
-  const todayDeliveryWeek = weekKey(todayDate);
-  const currentDeliveryWeek = weekKey(deliveryDate);
   const activeData = data ?? emptyData;
   const allTasks = activeData.todos[currentDay] ?? [];
   const todayTasks = activeData.todos[todayDay] ?? [];
@@ -449,17 +444,15 @@ export function App() {
   const awesomeRecords = activeData.awesomeRecords[currentDay] ?? [];
   const monthlyTasks = activeData.monthlyTodos[currentMonth] ?? [];
   const todayMonthlyTasks = activeData.monthlyTodos[todayMonth] ?? [];
-  const deliveryTasks = activeData.weeklyDeliveries[currentDeliveryWeek] ?? [];
-  const todayDeliveryTasks = activeData.weeklyDeliveries[todayDeliveryWeek] ?? [];
+  const deliveryTasks = activeData.deliveries;
   const weekRange = formatWeekRange(currentDate);
-  const deliveryWeekRange = formatWeekRange(deliveryDate);
   const visibleTasks = useMemo(
     () => sortDailyTasksByStatus(allTasks.filter((task) => matchesFilters(task, filters))),
     [allTasks, filters],
   );
   const visibleDeliveryTasks = useMemo(
-    () => sortWeeklyDeliveriesBySequence(deliveryTasks.filter((task) => matchesDeliveryFilter(task, deliveryFilter))),
-    [deliveryTasks, deliveryFilter],
+    () => getVisibleDeliveries(deliveryTasks, deliveryFilter, deliveryQuery),
+    [deliveryTasks, deliveryFilter, deliveryQuery],
   );
   const doneCount = allTasks.filter((task) => task.status === STATUS_DONE).length;
   const progress = allTasks.length ? Math.round((doneCount / allTasks.length) * 100) : 0;
@@ -467,7 +460,6 @@ export function App() {
   const todayDoneCount = todayTasks.filter((task) => task.status === STATUS_DONE).length;
   const todayProgress = todayTasks.length ? Math.round((todayDoneCount / todayTasks.length) * 100) : 0;
   const todayInProgressCount = todayTasks.filter((task) => task.status === STATUS_IN_PROGRESS).length;
-  const todayPendingDeliveryCount = todayDeliveryTasks.filter((task) => !task.picked).length;
   const todayOpenMonthlyCount = todayMonthlyTasks.filter((task) => !task.done).length;
   const activeHabits = useMemo(() => activeData.habits.filter((habit) => !habit.archived_at), [activeData.habits]);
   const habitViews = useMemo(() => getHabitViews(activeData.habits, activeData.habitChecks, habitDay), [activeData.habits, activeData.habitChecks, habitDay]);
@@ -829,16 +821,8 @@ export function App() {
     });
   }
 
-  function replaceWeeklyDeliveries(week: string, deliveries: WeeklyDelivery[]) {
-    updateData((value) => {
-      const weeklyDeliveries = { ...value.weeklyDeliveries };
-      if (deliveries.length) {
-        weeklyDeliveries[week] = deliveries;
-      } else {
-        delete weeklyDeliveries[week];
-      }
-      return { ...value, weeklyDeliveries };
-    });
+  function replaceDeliveries(deliveries: DeliveryRecord[]) {
+    updateData((value) => ({ ...value, deliveries }));
   }
 
   function replaceHabits(habits: Habit[]) {
@@ -1056,7 +1040,7 @@ export function App() {
     }
   }
 
-  function addWeeklyDelivery(event: FormEvent) {
+  function addDelivery(event: FormEvent) {
     event.preventDefault();
     const name = deliveryDraft.name.trim();
     const platform = deliveryDraft.platform.trim();
@@ -1066,18 +1050,17 @@ export function App() {
       window.alert("请填写大于 0 的整数序号。");
       return;
     }
-    const conflict = findWeeklyDeliveryBySequence(activeData.weeklyDeliveries, sequence);
+    const conflict = findDeliveryBySequence(deliveryTasks, sequence);
     if (conflict) {
       window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
       return;
     }
-    replaceWeeklyDeliveries(currentDeliveryWeek, [createWeeklyDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at, sequence), ...deliveryTasks]);
+    replaceDeliveries([createDelivery(name, platform, deliveryDraft.note, deliveryDraft.purchased_at, sequence), ...deliveryTasks]);
     setDeliveryDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
-  function toggleWeeklyDelivery(deliveryId: string) {
-    replaceWeeklyDeliveries(
-      currentDeliveryWeek,
+  function toggleDelivery(deliveryId: string) {
+    replaceDeliveries(
       deliveryTasks.map((delivery) => {
         if (delivery.id !== deliveryId) return delivery;
         const picked = !delivery.picked;
@@ -1833,12 +1816,12 @@ export function App() {
     }
   }
 
-  function startWeeklyDeliveryEdit(delivery: WeeklyDelivery) {
+  function startDeliveryEdit(delivery: DeliveryRecord) {
     setEditingDeliveryId(delivery.id);
     setDeliveryEditDraft({ sequence: delivery.sequence === null ? "" : String(delivery.sequence), name: delivery.name, platform: delivery.platform, note: delivery.note, purchased_at: delivery.purchased_at });
   }
 
-  function saveWeeklyDeliveryEdit(deliveryId: string) {
+  function saveDeliveryEdit(deliveryId: string) {
     const name = deliveryEditDraft.name.trim();
     const platform = deliveryEditDraft.platform.trim();
     const sequenceText = deliveryEditDraft.sequence.trim();
@@ -1849,14 +1832,13 @@ export function App() {
       return;
     }
     if (sequence !== null) {
-      const conflict = findWeeklyDeliveryBySequence(activeData.weeklyDeliveries, sequence, deliveryId);
+      const conflict = findDeliveryBySequence(deliveryTasks, sequence, deliveryId);
       if (conflict) {
         window.alert(`序号 #${sequence} 已被快递“${conflict.name}”占用。`);
         return;
       }
     }
-    replaceWeeklyDeliveries(
-      currentDeliveryWeek,
+    replaceDeliveries(
       deliveryTasks.map((delivery) =>
         delivery.id === deliveryId ? { ...delivery, sequence, name, platform, note: deliveryEditDraft.note.trim(), purchased_at: deliveryEditDraft.purchased_at } : delivery,
       ),
@@ -1865,25 +1847,17 @@ export function App() {
     setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
-  function deleteWeeklyDelivery(deliveryId: string) {
+  function deleteDelivery(deliveryId: string) {
     const delivery = deliveryTasks.find((item) => item.id === deliveryId);
     if (!delivery) return;
     if (!window.confirm(`确定删除快递“${delivery.name}”吗？删除后可以用撤销恢复。`)) return;
-    replaceWeeklyDeliveries(
-      currentDeliveryWeek,
+    replaceDeliveries(
       deliveryTasks.filter((item) => item.id !== deliveryId),
     );
     if (editingDeliveryId === deliveryId) {
       setEditingDeliveryId(null);
       setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
     }
-  }
-
-  function carryOverWeeklyDeliveries() {
-    const carried = getCarryOverDeliveries(activeData.weeklyDeliveries, currentDeliveryWeek, deliveryTasks)
-      .map((delivery) => createWeeklyDelivery(delivery.name, delivery.platform, delivery.note, delivery.purchased_at));
-    if (!carried.length) return;
-    replaceWeeklyDeliveries(currentDeliveryWeek, [...carried, ...deliveryTasks]);
   }
 
   function toggleTask(taskId: string) {
@@ -2204,7 +2178,6 @@ export function App() {
 
   const dailyHistoryEntries = useMemo(() => getDailyHistoryEntries(activeData), [activeData]);
   const monthlyHistoryEntries = useMemo(() => getMonthlyHistoryEntries(activeData), [activeData]);
-  const deliveryHistoryEntries = useMemo(() => getWeeklyDeliveryHistoryEntries(activeData), [activeData]);
 
   if (!storageReady || !data) {
     return <LoadingScreen />;
@@ -2214,10 +2187,10 @@ export function App() {
     <main className="app-shell">
       <Sidebar
         activeView={activeView}
-        dashboardCount={dashboardTasks.length + todayPendingDeliveryCount}
+        dashboardCount={dashboardTasks.length + pendingDeliveryCount}
         dailyCount={todayTasks.length}
         monthlyCount={monthlyTasks.length}
-        deliveryCount={todayPendingDeliveryCount}
+        deliveryCount={deliveryTasks.length}
         onViewChange={changeView}
         onShowSettings={() => setShowSettings(true)}
       />
@@ -2231,7 +2204,8 @@ export function App() {
             totalCount={todayTasks.length}
             progress={todayProgress}
             inProgressCount={todayInProgressCount}
-            pendingDeliveryCount={todayPendingDeliveryCount}
+            totalDeliveryCount={deliveryTasks.length}
+            pendingDeliveryCount={pendingDeliveryCount}
             openMonthlyCount={todayOpenMonthlyCount}
             habitDoneCount={todayHabitCompletion.done}
             habitTotalCount={todayHabitCompletion.total}
@@ -2697,30 +2671,29 @@ export function App() {
             onDelete={deleteLearnedContent}
           />
         ) : (
-          <WeeklyDeliveryPanel
-            weekRange={deliveryWeekRange}
+          <DeliveryPanel
             tasks={deliveryTasks}
             visibleTasks={visibleDeliveryTasks}
             filter={deliveryFilter}
+            query={deliveryQuery}
             draft={deliveryDraft}
             editingTaskId={editingDeliveryId}
             editingDraft={deliveryEditDraft}
             platforms={deliveryPlatforms}
             saveStatus={projectSaveStatus}
             onFilterChange={setDeliveryFilter}
+            onQueryChange={setDeliveryQuery}
             onDraftChange={setDeliveryDraft}
-            onAdd={addWeeklyDelivery}
-            onShowHistory={() => setShowDeliveryHistory(true)}
-            onCarryOver={carryOverWeeklyDeliveries}
-            onToggle={toggleWeeklyDelivery}
-            onStartEdit={startWeeklyDeliveryEdit}
+            onAdd={addDelivery}
+            onToggle={toggleDelivery}
+            onStartEdit={startDeliveryEdit}
             onEditDraftChange={setDeliveryEditDraft}
-            onSaveEdit={saveWeeklyDeliveryEdit}
+            onSaveEdit={saveDeliveryEdit}
             onCancelEdit={() => {
               setEditingDeliveryId(null);
               setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
             }}
-            onDelete={deleteWeeklyDelivery}
+            onDelete={deleteDelivery}
           />
         )}
       </section>
@@ -2754,23 +2727,6 @@ export function App() {
           }}
         />
       )}
-      {showDeliveryHistory && (
-        <HistoryDialog
-          title="每周快递历史查询"
-          emptyTitle="还没有每周快递历史记录"
-          emptyText="添加每周快递后，这里会出现历史周记录"
-          deliveryEntries={deliveryHistoryEntries}
-          deliveryData={activeData}
-          onClose={() => setShowDeliveryHistory(false)}
-          onDeliveryJump={(week) => {
-            setDeliveryDate(fromDateKey(week));
-            setDeliveryFilter("all");
-            setEditingDeliveryId(null);
-            setDeliveryEditDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
-            setShowDeliveryHistory(false);
-          }}
-        />
-      )}
       {showSettings && (
         <SettingsDialog
           tags={tags}
@@ -2798,7 +2754,7 @@ const emptyData: TodoData = {
   weeklyTodos: {},
   awesomeRecords: {},
   monthlyTodos: {},
-  weeklyDeliveries: {},
+  deliveries: [],
   habits: [],
   habitChecks: {},
   inspirations: [],
@@ -2850,12 +2806,6 @@ function matchesFilters(task: TodoTask, filters: Filters): boolean {
 
 function isUnfilteredTaskView(filters: Filters): boolean {
   return filters.status === "all" && filters.priority === "all" && filters.tag === -1 && !filters.query.trim();
-}
-
-function matchesDeliveryFilter(delivery: WeeklyDelivery, filter: DeliveryFilter): boolean {
-  if (filter === "pending") return !delivery.picked;
-  if (filter === "picked") return delivery.picked;
-  return true;
 }
 
 function parseDeliverySequence(value: string): number | null {

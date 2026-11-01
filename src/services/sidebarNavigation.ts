@@ -42,7 +42,7 @@ export const SIDEBAR_GROUPS = [
       { view: "habits", label: "习惯打卡", icon: "habits" },
       { view: "daily", label: "每日待办", icon: "calendar", count: "dailyCount" },
       { view: "monthly", label: "每月待办", icon: "calendar", count: "monthlyCount" },
-      { view: "delivery", label: "每周快递", icon: "delivery", count: "deliveryCount" },
+      { view: "delivery", label: "快递管理", icon: "delivery", count: "deliveryCount" },
     ],
   },
   {

@@ -36,7 +36,7 @@ const validMonthlyTask = {
   done_at: null,
 };
 
-const validWeeklyDelivery = {
+const validDelivery = {
   id: "delivery-1",
   sequence: 128,
   name: "技术书籍",
@@ -228,7 +228,7 @@ const validLearnedContent = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 38,
+    version: 39,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -241,9 +241,7 @@ function makeTodosPayload(overrides = {}) {
     monthlyTodos: {
       "2026-09": [validMonthlyTask],
     },
-    weeklyDeliveries: {
-      "2026-09-07": [validWeeklyDelivery],
-    },
+    deliveries: [validDelivery],
     habits: [validHabit],
     habitChecks: {
       "2026-09-13": {
@@ -371,117 +369,65 @@ test("rejects monthly todo with invalid done type", () => {
   );
 });
 
-test("rejects todos payload without weeklyDeliveries", () => {
+test("rejects todos payload without deliveries", () => {
   const payload = makeTodosPayload();
-  delete payload.weeklyDeliveries;
+  delete payload.deliveries;
   assert.equal(isValidTodosPayload(payload), false);
 });
 
-test("rejects weekly deliveries grouped by invalid week key", () => {
+test("rejects deliveries when the value is not an array", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          thisWeek: [validWeeklyDelivery],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: { current: [validDelivery] } })),
     false,
   );
 });
 
-test("rejects empty weekly delivery name", () => {
+test("rejects empty delivery name", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [{ ...validWeeklyDelivery, name: " " }],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, name: " " }] })),
     false,
   );
 });
 
-test("rejects empty weekly delivery platform", () => {
+test("rejects empty delivery platform", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [{ ...validWeeklyDelivery, platform: " " }],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, platform: " " }] })),
     false,
   );
 });
 
-test("rejects weekly delivery with invalid picked type", () => {
+test("rejects delivery with invalid picked type", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [{ ...validWeeklyDelivery, picked: "no" }],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, picked: "no" }] })),
     false,
   );
 });
 
-test("rejects weekly delivery without purchased_at", () => {
-  const delivery = { ...validWeeklyDelivery };
+test("rejects delivery without purchased_at", () => {
+  const delivery = { ...validDelivery };
   delete delivery.purchased_at;
-  assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [delivery],
-        },
-      }),
-    ),
-    false,
-  );
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), false);
 });
 
-test("rejects weekly delivery with invalid purchased_at", () => {
+test("rejects delivery with invalid purchased_at", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [{ ...validWeeklyDelivery, purchased_at: false }],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, purchased_at: false }] })),
     false,
   );
 });
 
 test("accepts unnumbered legacy delivery and rejects invalid sequence values", () => {
-  assert.equal(
-    isValidTodosPayload(makeTodosPayload({ weeklyDeliveries: { "2026-09-07": [{ ...validWeeklyDelivery, sequence: null }] } })),
-    true,
-  );
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, sequence: null }] })), true);
   for (const sequence of [0, -1, 1.5, "128", undefined]) {
-    const delivery = { ...validWeeklyDelivery, sequence };
+    const delivery = { ...validDelivery, sequence };
     if (sequence === undefined) delete delivery.sequence;
-    assert.equal(
-      isValidTodosPayload(makeTodosPayload({ weeklyDeliveries: { "2026-09-07": [delivery] } })),
-      false,
-    );
+    assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), false);
   }
 });
 
-test("rejects duplicate delivery sequences across different weeks", () => {
+test("rejects duplicate delivery sequences in the global list", () => {
   assert.equal(
-    isValidTodosPayload(
-      makeTodosPayload({
-        weeklyDeliveries: {
-          "2026-09-07": [validWeeklyDelivery],
-          "2026-09-14": [{ ...validWeeklyDelivery, id: "delivery-2" }],
-        },
-      }),
-    ),
+    isValidTodosPayload(makeTodosPayload({ deliveries: [validDelivery, { ...validDelivery, id: "delivery-2" }] })),
     false,
   );
 });

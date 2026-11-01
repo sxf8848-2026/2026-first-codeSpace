@@ -12,12 +12,12 @@ const prefsFile = join(dataDir, "prefs.json");
 const port = Number(process.env.TODO_API_PORT || 5174);
 
 const defaultTodos = {
-  version: 38,
+  version: 39,
   todos: {},
   weeklyTodos: {},
   awesomeRecords: {},
   monthlyTodos: {},
-  weeklyDeliveries: {},
+  deliveries: [],
   habits: [],
   habitChecks: {},
   inspirations: [],
