@@ -134,6 +134,7 @@ import {
   VideoInspirationRecord,
   VideoNoteRecord,
   DeliveryRecord,
+  DeliveryStatus,
   WeeklyTask,
   AwesomeRecord,
   Habit,
@@ -456,7 +457,7 @@ export function App() {
   );
   const doneCount = allTasks.filter((task) => task.status === STATUS_DONE).length;
   const progress = allTasks.length ? Math.round((doneCount / allTasks.length) * 100) : 0;
-  const pendingDeliveryCount = deliveryTasks.filter((task) => !task.picked).length;
+  const pendingDeliveryCount = deliveryTasks.filter((task) => task.status === "pending").length;
   const todayDoneCount = todayTasks.filter((task) => task.status === STATUS_DONE).length;
   const todayProgress = todayTasks.length ? Math.round((todayDoneCount / todayTasks.length) * 100) : 0;
   const todayInProgressCount = todayTasks.filter((task) => task.status === STATUS_IN_PROGRESS).length;
@@ -1059,15 +1060,14 @@ export function App() {
     setDeliveryDraft({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
   }
 
-  function toggleDelivery(deliveryId: string) {
+  function changeDeliveryStatus(deliveryId: string, status: DeliveryStatus) {
     replaceDeliveries(
       deliveryTasks.map((delivery) => {
         if (delivery.id !== deliveryId) return delivery;
-        const picked = !delivery.picked;
         return {
           ...delivery,
-          picked,
-          picked_at: picked ? nowStamp() : null,
+          status,
+          picked_at: status === "picked" ? (delivery.status === "picked" ? delivery.picked_at : nowStamp()) : null,
         };
       }),
     );
@@ -2685,7 +2685,7 @@ export function App() {
             onQueryChange={setDeliveryQuery}
             onDraftChange={setDeliveryDraft}
             onAdd={addDelivery}
-            onToggle={toggleDelivery}
+            onStatusChange={changeDeliveryStatus}
             onStartEdit={startDeliveryEdit}
             onEditDraftChange={setDeliveryEditDraft}
             onSaveEdit={saveDeliveryEdit}

@@ -1092,16 +1092,37 @@ h1 {
   text-decoration: line-through;
 }
 
-.delivery-item.picked .check-button {
-  border-color: var(--green);
-  background: var(--green);
-}
-
 .delivery-item-main {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
+}
+
+.delivery-status-select {
+  flex: 0 0 82px;
+  width: 82px;
+  min-height: 38px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.delivery-status-select.pending {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.delivery-status-select.picked {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.delivery-status-select.returned {
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .delivery-item-main > div {
@@ -1170,9 +1191,7 @@ h1 {
   gap: 8px;
 }
 
-.platform-chip,
-.pending-chip,
-.picked-chip {
+.platform-chip {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
@@ -1185,16 +1204,6 @@ h1 {
 .platform-chip {
   color: var(--blue);
   background: var(--blue-soft);
-}
-
-.pending-chip {
-  color: var(--amber);
-  background: var(--amber-soft);
-}
-
-.picked-chip {
-  color: var(--green);
-  background: var(--green-soft);
 }
 
 .delivery-actions {

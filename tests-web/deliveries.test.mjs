@@ -5,6 +5,7 @@ import {
   findDeliveryBySequence,
   getVisibleDeliveries,
   normalizeDeliverySequence,
+  normalizeDeliveryStatus,
   sortDeliveriesBySequence,
 } from "../src/services/deliveries.ts";
 
@@ -15,7 +16,7 @@ const baseDelivery = {
   platform: "淘宝",
   note: "",
   purchased_at: "2026-10-01",
-  picked: false,
+  status: "pending",
   created_at: "2026-10-01T00:00:00.000Z",
   picked_at: null,
 };
@@ -34,17 +35,26 @@ test("sorts numbered deliveries descending and keeps unnumbered deliveries stabl
   assert.deepEqual(deliveries.map((delivery) => delivery.id), ["unassigned-1", "numbered-8", "numbered-21", "unassigned-2"]);
 });
 
-test("filters by name and picked status before applying sequence order", () => {
+test("filters by name and delivery status before applying sequence order", () => {
   const deliveries = [
     { ...baseDelivery, id: "pending-low", sequence: 2, name: "USB Cable" },
-    { ...baseDelivery, id: "picked-high", sequence: 8, name: "usb hub", picked: true },
+    { ...baseDelivery, id: "picked-high", sequence: 8, name: "usb hub", status: "picked" },
+    { ...baseDelivery, id: "returned-middle", sequence: 6, name: "USB charger", status: "returned" },
     { ...baseDelivery, id: "note-only", sequence: 12, name: "纸巾", note: "USB" },
   ];
 
-  assert.deepEqual(getVisibleDeliveries(deliveries, "all", "  USB ").map((item) => item.id), ["picked-high", "pending-low"]);
+  assert.deepEqual(getVisibleDeliveries(deliveries, "all", "  USB ").map((item) => item.id), ["picked-high", "returned-middle", "pending-low"]);
   assert.deepEqual(getVisibleDeliveries(deliveries, "pending", "usb").map((item) => item.id), ["pending-low"]);
   assert.deepEqual(getVisibleDeliveries(deliveries, "picked", "usb").map((item) => item.id), ["picked-high"]);
-  assert.deepEqual(deliveries.map((item) => item.id), ["pending-low", "picked-high", "note-only"]);
+  assert.deepEqual(getVisibleDeliveries(deliveries, "returned", "usb").map((item) => item.id), ["returned-middle"]);
+  assert.deepEqual(deliveries.map((item) => item.id), ["pending-low", "picked-high", "returned-middle", "note-only"]);
+});
+
+test("normalizes legacy picked flags and keeps the returned status", () => {
+  assert.equal(normalizeDeliveryStatus(undefined, false), "pending");
+  assert.equal(normalizeDeliveryStatus(undefined, true), "picked");
+  assert.equal(normalizeDeliveryStatus("returned", false), "returned");
+  assert.equal(normalizeDeliveryStatus("invalid", true), "picked");
 });
 
 test("normalizes invalid sequences and finds global conflicts", () => {
@@ -66,6 +76,9 @@ test("delivery management exposes global search, totals and missing purchase dat
   assert.match(app, /getVisibleDeliveries\(deliveryTasks, deliveryFilter, deliveryQuery\)/);
   assert.match(component, /<h1>快递管理<\/h1>/);
   assert.match(component, /placeholder="搜索快递名称"/);
+  assert.match(component, /<option value="returned">退货<\/option>/);
+  assert.match(component, /task\.status === "pending"/);
+  assert.match(component, /task\.status === "picked"/);
   assert.match(component, /购买时间未填写/);
   assert.doesNotMatch(component, /继承未取快递|每周快递历史查询/);
 });

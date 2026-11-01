@@ -43,7 +43,7 @@ const validDelivery = {
   platform: "京东",
   note: "到站后周末去取",
   purchased_at: "2026-09-13",
-  picked: false,
+  status: "pending",
   created_at: "2026-09-13 09:00",
   picked_at: null,
 };
@@ -228,7 +228,7 @@ const validLearnedContent = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 39,
+    version: 40,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -396,11 +396,13 @@ test("rejects empty delivery platform", () => {
   );
 });
 
-test("rejects delivery with invalid picked type", () => {
-  assert.equal(
-    isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, picked: "no" }] })),
-    false,
-  );
+test("accepts returned deliveries and rejects invalid delivery status", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, status: "returned" }] })), true);
+  for (const status of ["returning", "", null, undefined]) {
+    const delivery = { ...validDelivery, status };
+    if (status === undefined) delete delivery.status;
+    assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), false);
+  }
 });
 
 test("rejects delivery without purchased_at", () => {

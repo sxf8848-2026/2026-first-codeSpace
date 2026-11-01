@@ -53,6 +53,8 @@ export type MonthlyTask = {
   done_at: string | null;
 };
 
+export type DeliveryStatus = "pending" | "picked" | "returned";
+
 export type DeliveryRecord = {
   id: string;
   sequence: number | null;
@@ -60,7 +62,7 @@ export type DeliveryRecord = {
   platform: string;
   note: string;
   purchased_at: string;
-  picked: boolean;
+  status: DeliveryStatus;
   created_at: string;
   picked_at: string | null;
 };

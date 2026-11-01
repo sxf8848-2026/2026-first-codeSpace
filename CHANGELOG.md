@@ -13,6 +13,43 @@
 
 ---
 
+## [40.0.0] - 2026-11-01
+
+### 改了什么
+
+- “快递管理”将原来的取件复选框改为状态下拉框，支持直接选择“未取 / 已取 / 退货”。
+- 新增快递默认状态为“未取”；状态筛选同步增加“退货”，名称搜索与状态筛选仍可组合使用。
+- 全部快递数量包含退货记录，未取和已取数量分别只统计对应状态，不新增退货数量统计。
+- `TodoData.version` 升级至 `40`；旧记录的 `picked` 布尔值会自动兼容迁移为三态状态，现有数据无需手工修改。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/deliveries.ts`
+- `src/services/storage.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/deliveries.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，234/234。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 本次没有直接修改 `todo-data/todos.json`；重启 `npm run dev` 后，旧快递状态会在加载时自动迁移并保存。
+- 后端 Schema 已升级，正在运行旧版开发服务时必须重启后再保存新格式数据。
+- 退货状态不记录单独时间，也不增加独立统计卡片。
+
 ## [39.0.0] - 2026-11-01
 
 ### 改了什么

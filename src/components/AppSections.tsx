@@ -75,6 +75,7 @@ import {
   VideoInspirationRecord,
   VideoNoteRecord,
   DeliveryRecord,
+  DeliveryStatus,
   WeeklyTask,
   WorkExperienceRecord,
   DailyReadingRecord,
@@ -3135,7 +3136,7 @@ export function DeliveryPanel({
   onQueryChange,
   onDraftChange,
   onAdd,
-  onToggle,
+  onStatusChange,
   onStartEdit,
   onEditDraftChange,
   onSaveEdit,
@@ -3144,26 +3145,26 @@ export function DeliveryPanel({
 }: {
   tasks: DeliveryRecord[];
   visibleTasks: DeliveryRecord[];
-  filter: "all" | "pending" | "picked";
+  filter: "all" | DeliveryStatus;
   query: string;
   draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
   editingDraft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   platforms: string[];
   saveStatus: SaveStatus;
-  onFilterChange: (filter: "all" | "pending" | "picked") => void;
+  onFilterChange: (filter: "all" | DeliveryStatus) => void;
   onQueryChange: (query: string) => void;
   onDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
-  onToggle: (taskId: string) => void;
+  onStatusChange: (taskId: string, status: DeliveryStatus) => void;
   onStartEdit: (task: DeliveryRecord) => void;
   onEditDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onSaveEdit: (taskId: string) => void;
   onCancelEdit: () => void;
   onDelete: (taskId: string) => void;
 }) {
-  const pendingCount = tasks.filter((task) => !task.picked).length;
-  const pickedCount = tasks.length - pendingCount;
+  const pendingCount = tasks.filter((task) => task.status === "pending").length;
+  const pickedCount = tasks.filter((task) => task.status === "picked").length;
   return (
     <>
       <header className="topbar delivery-topbar">
@@ -3220,19 +3221,27 @@ export function DeliveryPanel({
               ["all", "全部"],
               ["pending", "未取"],
               ["picked", "已取"],
+              ["returned", "退货"],
             ]}
-            onChange={(value) => onFilterChange(value as "all" | "pending" | "picked")}
+            onChange={(value) => onFilterChange(value as "all" | DeliveryStatus)}
           />
         </div>
 
         <div className="delivery-list">
           {visibleTasks.length ? (
             visibleTasks.map((task) => (
-              <article className={`delivery-item ${task.picked ? "picked" : ""}`} key={task.id}>
+              <article className={`delivery-item ${task.status}`} key={task.id}>
                 <div className="delivery-item-main">
-                  <button className="check-button" onClick={() => onToggle(task.id)} title="切换取件状态">
-                    {task.picked && <Check size={16} />}
-                  </button>
+                  <select
+                    className={`delivery-status-select ${task.status}`}
+                    value={task.status}
+                    onChange={(event) => onStatusChange(task.id, event.target.value as DeliveryStatus)}
+                    aria-label={`快递“${task.name}”状态`}
+                  >
+                    <option value="pending">未取</option>
+                    <option value="picked">已取</option>
+                    <option value="returned">退货</option>
+                  </select>
                   <div>
                     {editingTaskId === task.id ? (
                       <>
@@ -3277,7 +3286,6 @@ export function DeliveryPanel({
                         </div>
                         <div className="delivery-meta">
                           <span className="platform-chip">{task.platform}</span>
-                          <span className={task.picked ? "picked-chip" : "pending-chip"}>{task.picked ? "已取" : "未取"}</span>
                         </div>
                         <small className="delivery-purchase-time">{task.purchased_at ? `购买时间：${task.purchased_at}` : "购买时间未填写"}</small>
                         {task.note && <p>{task.note}</p>}

@@ -1,6 +1,11 @@
-import type { DeliveryRecord } from "../types";
+import type { DeliveryRecord, DeliveryStatus } from "../types";
 
-export type DeliveryStatusFilter = "all" | "pending" | "picked";
+export type DeliveryStatusFilter = "all" | DeliveryStatus;
+
+export function normalizeDeliveryStatus(status: unknown, legacyPicked: unknown): DeliveryStatus {
+  if (status === "pending" || status === "picked" || status === "returned") return status;
+  return legacyPicked === true ? "picked" : "pending";
+}
 
 export function normalizeDeliverySequence(sequence: unknown): number | null {
   return typeof sequence === "number" && Number.isInteger(sequence) && sequence > 0 ? sequence : null;
@@ -43,8 +48,7 @@ export function getVisibleDeliveries(
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return sortDeliveriesBySequence(
     deliveries.filter((delivery) => {
-      if (filter === "pending" && delivery.picked) return false;
-      if (filter === "picked" && !delivery.picked) return false;
+      if (filter !== "all" && delivery.status !== filter) return false;
       return !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery);
     }),
   );

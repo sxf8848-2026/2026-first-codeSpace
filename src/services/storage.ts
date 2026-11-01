@@ -16,7 +16,7 @@ import { normalizeSkincareProducts } from "./skincareProducts";
 import { normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeLearnedContents } from "./learnedContents";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
-import { migrateLegacyWeeklyDeliveries, normalizeDeliverySequence } from "./deliveries";
+import { migrateLegacyWeeklyDeliveries, normalizeDeliverySequence, normalizeDeliveryStatus } from "./deliveries";
 import {
   AppPrefs,
   AwesomeRecord,
@@ -270,7 +270,7 @@ export function createDelivery(name: string, platform: string, note: string, pur
     platform: platform.trim(),
     note: note.trim(),
     purchased_at: purchasedAt,
-    picked: false,
+    status: "pending",
     created_at: nowStamp(),
     picked_at: null,
   };
@@ -781,8 +781,8 @@ function normalizeMonthlyTask(task: Partial<MonthlyTask>): MonthlyTask {
   };
 }
 
-function normalizeDelivery(delivery: Partial<DeliveryRecord>): DeliveryRecord {
-  const picked = delivery.picked === true;
+function normalizeDelivery(delivery: Partial<DeliveryRecord> & { picked?: unknown }): DeliveryRecord {
+  const status = normalizeDeliveryStatus(delivery.status, delivery.picked);
   return {
     id: typeof delivery.id === "string" ? delivery.id : crypto.randomUUID(),
     sequence: normalizeDeliverySequence(delivery.sequence),
@@ -790,9 +790,9 @@ function normalizeDelivery(delivery: Partial<DeliveryRecord>): DeliveryRecord {
     platform: typeof delivery.platform === "string" ? delivery.platform.trim() : "",
     note: typeof delivery.note === "string" ? delivery.note : "",
     purchased_at: typeof delivery.purchased_at === "string" ? delivery.purchased_at : "",
-    picked,
+    status,
     created_at: typeof delivery.created_at === "string" ? delivery.created_at : nowStamp(),
-    picked_at: typeof delivery.picked_at === "string" ? delivery.picked_at : picked ? nowStamp() : null,
+    picked_at: typeof delivery.picked_at === "string" ? delivery.picked_at : status === "picked" ? nowStamp() : null,
   };
 }
 

@@ -154,7 +154,7 @@ function isValidDelivery(delivery) {
   if (!isNonEmptyString(delivery.platform)) return false;
   if (typeof delivery.note !== "string") return false;
   if (typeof delivery.purchased_at !== "string") return false;
-  if (typeof delivery.picked !== "boolean") return false;
+  if (!["pending", "picked", "returned"].includes(delivery.status)) return false;
   if (typeof delivery.created_at !== "string") return false;
   if (typeof delivery.picked_at !== "string" && delivery.picked_at !== null) return false;
   return true;
