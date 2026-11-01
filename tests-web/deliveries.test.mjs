@@ -121,6 +121,6 @@ test("delivery management exposes a three-column status board, global search and
   assert.doesNotMatch(component, /继承未取快递|每周快递历史查询/);
   assert.match(styles, /\.delivery-search-clear\s*{[^}]*min-height:\s*28px/s);
   assert.match(styles, /\.delivery-status-board\s*{[^}]*grid-template-columns:\s*repeat\(3, minmax\(320px, 1fr\)\);[^}]*overflow-x:\s*auto;/s);
-  assert.match(styles, /\.delivery-status-column\s*{[^}]*min-width:\s*320px;/s);
+  assert.match(styles, /\.delivery-status-column\s*{[^}]*align-content:\s*start;[^}]*min-width:\s*320px;/s);
   assert.match(styles, /\.delivery-item\.picked strong\s*{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*line-through;/s);
 });
