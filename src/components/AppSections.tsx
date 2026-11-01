@@ -3124,15 +3124,13 @@ export function MonthlyPanel({
 
 export function DeliveryPanel({
   tasks,
-  visibleTasks,
-  filter,
+  deliveryColumns,
   query,
   draft,
   editingTaskId,
   editingDraft,
   platforms,
   saveStatus,
-  onFilterChange,
   onQueryChange,
   onDraftChange,
   onAdd,
@@ -3144,15 +3142,13 @@ export function DeliveryPanel({
   onDelete,
 }: {
   tasks: DeliveryRecord[];
-  visibleTasks: DeliveryRecord[];
-  filter: "all" | DeliveryStatus;
+  deliveryColumns: Record<DeliveryStatus, DeliveryRecord[]>;
   query: string;
   draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   editingTaskId: string | null;
   editingDraft: { sequence: string; name: string; platform: string; note: string; purchased_at: string };
   platforms: string[];
   saveStatus: SaveStatus;
-  onFilterChange: (filter: "all" | DeliveryStatus) => void;
   onQueryChange: (query: string) => void;
   onDraftChange: (draft: { sequence: string; name: string; platform: string; note: string; purchased_at: string }) => void;
   onAdd: (event: FormEvent) => void;
@@ -3165,6 +3161,12 @@ export function DeliveryPanel({
 }) {
   const pendingCount = tasks.filter((task) => task.status === "pending").length;
   const pickedCount = tasks.filter((task) => task.status === "picked").length;
+  const returnedCount = tasks.filter((task) => task.status === "returned").length;
+  const statusColumns = [
+    { status: "pending" as const, title: "未取", tasks: deliveryColumns.pending },
+    { status: "picked" as const, title: "已取", tasks: deliveryColumns.picked },
+    { status: "returned" as const, title: "退货", tasks: deliveryColumns.returned },
+  ];
   return (
     <>
       <header className="topbar delivery-topbar">
@@ -3181,7 +3183,7 @@ export function DeliveryPanel({
         <div>
           <span>全部快递</span>
           <strong>{tasks.length} 条</strong>
-          <small>{pendingCount} 条未取 · {pickedCount} 条已取</small>
+          <small>{pendingCount} 条未取 · {pickedCount} 条已取 · {returnedCount} 条退货</small>
         </div>
         <div className={`storage-status ${saveStatus.state}`} role="status">
           {saveStatus.message}
@@ -3219,21 +3221,17 @@ export function DeliveryPanel({
               </button>
             ) : null}
           </div>
-          <Segmented
-            value={filter}
-            options={[
-              ["all", "全部"],
-              ["pending", "未取"],
-              ["picked", "已取"],
-              ["returned", "退货"],
-            ]}
-            onChange={(value) => onFilterChange(value as "all" | DeliveryStatus)}
-          />
         </div>
 
-        <div className="delivery-list">
-          {visibleTasks.length ? (
-            visibleTasks.map((task) => (
+        <div className="delivery-status-board" aria-label="按状态分组的快递列表">
+          {statusColumns.map((column) => (
+            <section className={`delivery-status-column ${column.status}`} key={column.status} aria-label={`${column.title}快递`}>
+              <header className="delivery-status-column-header">
+                <h2>{column.title}</h2>
+                <span>{column.tasks.length} 条</span>
+              </header>
+              <div className="delivery-list">
+                {column.tasks.length ? column.tasks.map((task) => (
               <article className={`delivery-item ${task.status}`} key={task.id}>
                 <div className="delivery-item-main">
                   <select
@@ -3316,10 +3314,14 @@ export function DeliveryPanel({
                   )}
                 </div>
               </article>
-            ))
-          ) : (
-            <div className="delivery-empty">{tasks.length ? "没有匹配的快递记录" : "还没有快递记录"}</div>
-          )}
+                )) : (
+                  <div className="delivery-empty">
+                    {tasks.length ? `没有匹配的${column.title}快递` : `还没有${column.title}快递`}
+                  </div>
+                )}
+              </div>
+            </section>
+          ))}
         </div>
       </section>
     </>

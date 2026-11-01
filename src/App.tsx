@@ -101,7 +101,7 @@ import {
   RewardRuleStatusFilter,
   toggleRewardRuleStatus,
 } from "./services/rewards";
-import { DeliveryStatusFilter, findDeliveryBySequence, getVisibleDeliveries } from "./services/deliveries";
+import { findDeliveryBySequence, getDeliveryStatusColumns } from "./services/deliveries";
 import {
   getLearnedContentMonths,
   getLearnedContentStats,
@@ -345,7 +345,6 @@ export function App() {
   const [editingMonthlyTaskId, setEditingMonthlyTaskId] = useState<string | null>(null);
   const [monthlyEditDraft, setMonthlyEditDraft] = useState({ text: "", description: "" });
   const [deliveryDraft, setDeliveryDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
-  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryStatusFilter>("all");
   const [deliveryQuery, setDeliveryQuery] = useState("");
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
   const [deliveryEditDraft, setDeliveryEditDraft] = useState({ sequence: "", name: "", platform: "", note: "", purchased_at: "" });
@@ -451,9 +450,9 @@ export function App() {
     () => sortDailyTasksByStatus(allTasks.filter((task) => matchesFilters(task, filters))),
     [allTasks, filters],
   );
-  const visibleDeliveryTasks = useMemo(
-    () => getVisibleDeliveries(deliveryTasks, deliveryFilter, deliveryQuery),
-    [deliveryTasks, deliveryFilter, deliveryQuery],
+  const deliveryStatusColumns = useMemo(
+    () => getDeliveryStatusColumns(deliveryTasks, deliveryQuery),
+    [deliveryTasks, deliveryQuery],
   );
   const doneCount = allTasks.filter((task) => task.status === STATUS_DONE).length;
   const progress = allTasks.length ? Math.round((doneCount / allTasks.length) * 100) : 0;
@@ -2673,15 +2672,13 @@ export function App() {
         ) : (
           <DeliveryPanel
             tasks={deliveryTasks}
-            visibleTasks={visibleDeliveryTasks}
-            filter={deliveryFilter}
+            deliveryColumns={deliveryStatusColumns}
             query={deliveryQuery}
             draft={deliveryDraft}
             editingTaskId={editingDeliveryId}
             editingDraft={deliveryEditDraft}
             platforms={deliveryPlatforms}
             saveStatus={projectSaveStatus}
-            onFilterChange={setDeliveryFilter}
             onQueryChange={setDeliveryQuery}
             onDraftChange={setDeliveryDraft}
             onAdd={addDelivery}

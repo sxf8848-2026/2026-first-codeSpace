@@ -13,6 +13,35 @@
 
 ---
 
+## [41.0.2] - 2026-11-01
+
+### 改了什么
+
+- 快递管理改为未取、已取、退货三列状态看板，搜索后的快递继续显示在所属状态列内。
+- 移除重复的状态筛选按钮，顶部统计补充退货数量；窄屏保留三列并支持横向滚动。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/deliveries.ts`
+- `src/styles.css`
+- `tests-web/deliveries.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，234/234。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 本次仅调整快递展示和搜索分组，不修改快递数据结构或保存格式。
+
+---
+
 ## [41.0.1] - 2026-11-01
 
 ### 改了什么

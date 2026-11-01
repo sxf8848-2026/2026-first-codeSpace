@@ -1,6 +1,6 @@
 import type { DeliveryRecord, DeliveryStatus } from "../types";
 
-export type DeliveryStatusFilter = "all" | DeliveryStatus;
+export type DeliveryStatusColumns = Record<DeliveryStatus, DeliveryRecord[]>;
 
 export function normalizeDeliveryStatus(status: unknown, legacyPicked: unknown): DeliveryStatus {
   if (status === "pending" || status === "picked" || status === "returned") return status;
@@ -40,16 +40,14 @@ export function findDeliveryBySequence(
   return deliveries.find((delivery) => delivery.sequence === sequence && delivery.id !== excludeId);
 }
 
-export function getVisibleDeliveries(
-  deliveries: DeliveryRecord[],
-  filter: DeliveryStatusFilter,
-  query: string,
-): DeliveryRecord[] {
+export function getDeliveryStatusColumns(deliveries: DeliveryRecord[], query: string): DeliveryStatusColumns {
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  return sortDeliveriesBySequence(
-    deliveries.filter((delivery) => {
-      if (filter !== "all" && delivery.status !== filter) return false;
-      return !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery);
-    }),
+  const matchedDeliveries = deliveries.filter(
+    (delivery) => !normalizedQuery || delivery.name.toLocaleLowerCase().includes(normalizedQuery),
   );
+  return {
+    pending: sortDeliveriesBySequence(matchedDeliveries.filter((delivery) => delivery.status === "pending")),
+    picked: sortDeliveriesBySequence(matchedDeliveries.filter((delivery) => delivery.status === "picked")),
+    returned: sortDeliveriesBySequence(matchedDeliveries.filter((delivery) => delivery.status === "returned")),
+  };
 }

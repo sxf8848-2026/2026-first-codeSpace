@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   findDeliveryBySequence,
-  getVisibleDeliveries,
+  getDeliveryStatusColumns,
   normalizeDeliverySequence,
   normalizeDeliveryStatus,
   sortDeliveriesBySequence,
@@ -51,7 +51,7 @@ test("sorts positive then negative sequences descending and keeps unnumbered del
   ]);
 });
 
-test("filters by name and delivery status before applying sequence order", () => {
+test("groups name search results into status columns and applies sequence order within each column", () => {
   const deliveries = [
     { ...baseDelivery, id: "pending-low", sequence: 2, name: "USB Cable" },
     { ...baseDelivery, id: "picked-high", sequence: 8, name: "usb hub", status: "picked" },
@@ -59,10 +59,13 @@ test("filters by name and delivery status before applying sequence order", () =>
     { ...baseDelivery, id: "note-only", sequence: 12, name: "纸巾", note: "USB" },
   ];
 
-  assert.deepEqual(getVisibleDeliveries(deliveries, "all", "  USB ").map((item) => item.id), ["picked-high", "returned-middle", "pending-low"]);
-  assert.deepEqual(getVisibleDeliveries(deliveries, "pending", "usb").map((item) => item.id), ["pending-low"]);
-  assert.deepEqual(getVisibleDeliveries(deliveries, "picked", "usb").map((item) => item.id), ["picked-high"]);
-  assert.deepEqual(getVisibleDeliveries(deliveries, "returned", "usb").map((item) => item.id), ["returned-middle"]);
+  const columns = getDeliveryStatusColumns(deliveries, "  USB ");
+
+  assert.deepEqual(columns.pending.map((item) => item.id), ["pending-low"]);
+  assert.deepEqual(columns.picked.map((item) => item.id), ["picked-high"]);
+  assert.deepEqual(columns.returned.map((item) => item.id), ["returned-middle"]);
+  assert.deepEqual(getDeliveryStatusColumns(deliveries, "不存在").pending, []);
+  assert.deepEqual(getDeliveryStatusColumns(deliveries, "").pending.map((item) => item.id), ["note-only", "pending-low"]);
   assert.deepEqual(deliveries.map((item) => item.id), ["pending-low", "picked-high", "returned-middle", "note-only"]);
 });
 
@@ -91,12 +94,13 @@ test("normalizes invalid sequences and finds global conflicts", () => {
   assert.equal(findDeliveryBySequence(deliveries, 20, "current"), undefined);
 });
 
-test("delivery management exposes global search, totals and missing purchase date text", () => {
+test("delivery management exposes a three-column status board, global search and missing purchase date text", () => {
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   const component = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
-  assert.match(app, /getVisibleDeliveries\(deliveryTasks, deliveryFilter, deliveryQuery\)/);
+  assert.match(app, /getDeliveryStatusColumns\(deliveryTasks, deliveryQuery\)/);
+  assert.doesNotMatch(app, /deliveryFilter/);
   assert.match(component, /<h1>快递管理<\/h1>/);
   assert.match(component, /placeholder="搜索快递名称"/);
   assert.match(component, /\{query \? \(/);
@@ -104,11 +108,19 @@ test("delivery management exposes global search, totals and missing purchase dat
   assert.match(component, /<option value="returned">退货<\/option>/);
   assert.match(component, /task\.status === "pending"/);
   assert.match(component, /task\.status === "picked"/);
+  assert.match(component, /task\.status === "returned"/);
+  assert.match(component, /delivery-status-board/);
+  assert.match(component, /title: "未取"/);
+  assert.match(component, /title: "已取"/);
+  assert.match(component, /title: "退货"/);
+  assert.match(component, /returnedCount/);
   assert.match(component, /购买时间未填写/);
   assert.match(component, /type="number"\s+step="1"\s+required\s+value=\{draft\.sequence\}/);
   assert.match(component, /type="number"\s+step="1"\s+value=\{editingDraft\.sequence\}/);
   assert.match(app, /快递序号只能填写非 0 整数。/);
   assert.doesNotMatch(component, /继承未取快递|每周快递历史查询/);
   assert.match(styles, /\.delivery-search-clear\s*{[^}]*min-height:\s*28px/s);
+  assert.match(styles, /\.delivery-status-board\s*{[^}]*grid-template-columns:\s*repeat\(3, minmax\(320px, 1fr\)\);[^}]*overflow-x:\s*auto;/s);
+  assert.match(styles, /\.delivery-status-column\s*{[^}]*min-width:\s*320px;/s);
   assert.match(styles, /\.delivery-item\.picked strong\s*{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*line-through;/s);
 });
