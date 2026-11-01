@@ -227,6 +227,19 @@ const validLearnedContent = {
   updated_at: "2026-10-30T08:00:00.000Z",
 };
 
+const validWardrobeItem = {
+  id: "wardrobe-1",
+  name: "白色上衣",
+  category: "上衣",
+  purchased_on: "2026-10-30",
+  price_cents: 1299,
+  source: "淘宝",
+  note: "秋季穿",
+  created_at: "2026-10-30T08:00:00.000Z",
+  updated_at: "2026-10-30T08:00:00.000Z",
+  archived_at: null,
+};
+
 function makeTodosPayload(overrides = {}) {
   return {
     version: 42,
@@ -264,6 +277,7 @@ function makeTodosPayload(overrides = {}) {
     rewardRules: [validRewardRule],
     rewardClaims: [validRewardClaim],
     learnedContents: [validLearnedContent],
+    wardrobeItems: [validWardrobeItem],
     default_applied: ["2026-09-12"],
     ...overrides,
   };
@@ -291,6 +305,18 @@ test("rejects missing or invalid personal learned content records", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, completed_on: "2026-02-30" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, created_at: "invalid" }] })), false);
   assert.equal(isValidTodosPayload(makeTodosPayload({ learnedContents: [{ ...validLearnedContent, updated_at: false }] })), false);
+});
+
+test("validates wardrobe item records", () => {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [validWardrobeItem] })), true);
+  const missing = makeTodosPayload();
+  delete missing.wardrobeItems;
+  assert.equal(isValidTodosPayload(missing), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [{ ...validWardrobeItem, name: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [{ ...validWardrobeItem, category: " " }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [{ ...validWardrobeItem, purchased_on: "2026-02-30" }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [{ ...validWardrobeItem, price_cents: 1.5 }] })), false);
+  assert.equal(isValidTodosPayload(makeTodosPayload({ wardrobeItems: [{ ...validWardrobeItem, archived_at: "invalid" }] })), false);
 });
 
 test("rejects todos payload without awesomeRecords", () => {

@@ -37,6 +37,7 @@ import {
   Video,
   Droplets,
   Gift,
+  Shirt,
   CircleDollarSign,
   GripVertical,
 } from "lucide-react";
@@ -93,6 +94,7 @@ import {
   RewardRulePeriod,
   LearnedContentRecord,
   LearnedContentType,
+  WardrobeItemRecord,
 } from "../types";
 import { BookStatusFilter } from "../services/books";
 import { SKINCARE_CATEGORY_OPTIONS, SkincareCategoryFilter, skincareCategoryLabel } from "../services/skincareProducts";
@@ -135,6 +137,7 @@ const sidebarIcons: Record<SidebarIconName, typeof LayoutDashboard> = {
   skincare: Droplets,
   reward: Gift,
   learnedContents: BookOpen,
+  wardrobe: Shirt,
   reflection: MessagesSquare,
   divorcePlan: ClipboardList,
 };
@@ -1994,6 +1997,135 @@ export function LearnedContentsPanel({
               </div>
             </article>
           )) : <div className="personal-empty">{totalCount && hasFilters ? "没有匹配的学习记录" : "还没有学习记录"}</div>}
+        </div>
+      </section>
+    </>
+  );
+}
+
+type WardrobeDraft = {
+  name: string;
+  category: string;
+  purchased_on: string;
+  price: string;
+  source: string;
+  note: string;
+};
+
+export function WardrobePanel({
+  records,
+  archivedRecords,
+  totalCount,
+  tab,
+  draft,
+  query,
+  categoryFilter,
+  monthFilter,
+  categories,
+  months,
+  editingRecordId,
+  editingDraft,
+  saveStatus,
+  onTabChange,
+  onDraftChange,
+  onAdd,
+  onQueryChange,
+  onCategoryFilterChange,
+  onMonthFilterChange,
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onArchive,
+  onRestore,
+}: {
+  records: WardrobeItemRecord[];
+  archivedRecords: WardrobeItemRecord[];
+  totalCount: number;
+  tab: "current" | "archived";
+  draft: WardrobeDraft;
+  query: string;
+  categoryFilter: string;
+  monthFilter: string;
+  categories: string[];
+  months: string[];
+  editingRecordId: string | null;
+  editingDraft: WardrobeDraft;
+  saveStatus: SaveStatus;
+  onTabChange: (tab: "current" | "archived") => void;
+  onDraftChange: (draft: WardrobeDraft) => void;
+  onAdd: (event: FormEvent) => void;
+  onQueryChange: (query: string) => void;
+  onCategoryFilterChange: (filter: string) => void;
+  onMonthFilterChange: (filter: string) => void;
+  onStartEdit: (record: WardrobeItemRecord) => void;
+  onEditDraftChange: (draft: WardrobeDraft) => void;
+  onSaveEdit: (recordId: string) => void;
+  onCancelEdit: () => void;
+  onArchive: (recordId: string) => void;
+  onRestore: (recordId: string) => void;
+}) {
+  const visibleRecords = tab === "current" ? records : archivedRecords;
+  const activeHasFilters = Boolean(query.trim()) || categoryFilter !== "all" || monthFilter !== "all";
+  const archiveHasFilters = Boolean(query.trim());
+  return (
+    <>
+      <header className="topbar personal-topbar">
+        <div><div className="eyebrow"><Shirt size={16} />个人管理</div><h1>个人衣柜</h1></div>
+        <div className={`storage-status ${saveStatus.state}`} role="status">{saveStatus.message}</div>
+      </header>
+
+      <section className="personal-summary wardrobe-summary"><span>{tab === "current" ? "当前物品" : "已归档物品"}</span><strong>{tab === "current" ? totalCount : archivedRecords.length} 条</strong></section>
+
+      <section className="personal-panel wardrobe-panel" aria-label="个人衣柜">
+        <Segmented value={tab} onChange={(value) => onTabChange(value as "current" | "archived")} options={[["current", "当前物品"], ["archived", "已归档"]]} />
+
+        {tab === "current" ? (
+          <form className="wardrobe-composer" onSubmit={onAdd}>
+            <input value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="物品名称，必填" required />
+            <input value={draft.category} onChange={(event) => onDraftChange({ ...draft, category: event.target.value })} placeholder="品类，必填，例如：上衣" required />
+            <input type="date" value={draft.purchased_on} onChange={(event) => onDraftChange({ ...draft, purchased_on: event.target.value })} aria-label="购买日期" required />
+            <input type="number" min="0" step="0.01" value={draft.price} onChange={(event) => onDraftChange({ ...draft, price: event.target.value })} placeholder="购买价格（元），可不填" />
+            <input value={draft.source} onChange={(event) => onDraftChange({ ...draft, source: event.target.value })} placeholder="来源，可不填" />
+            <textarea value={draft.note} onChange={(event) => onDraftChange({ ...draft, note: event.target.value })} placeholder="备注，可不填" />
+            <button className="primary-button" type="submit"><Plus size={18} />添加物品</button>
+          </form>
+        ) : null}
+
+        <div className="personal-toolbar wardrobe-toolbar">
+          <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索物品名称、来源或备注" />{query ? <button type="button" onClick={() => onQueryChange("")} title="清空搜索"><X size={15} /></button> : null}</div>
+          {tab === "current" ? <>
+            <select value={categoryFilter} onChange={(event) => onCategoryFilterChange(event.target.value)} aria-label="按品类筛选"><option value="all">全部品类</option>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select>
+            <select value={monthFilter} onChange={(event) => onMonthFilterChange(event.target.value)} aria-label="按购买月份筛选"><option value="all">全部月份</option>{months.map((month) => <option value={month} key={month}>{month.replace("-", " 年 ")} 月</option>)}</select>
+          </> : null}
+          <span>当前展示 <strong>{visibleRecords.length}</strong> 条</span>
+        </div>
+
+        <div className="personal-list wardrobe-list">
+          {visibleRecords.length ? visibleRecords.map((record) => (
+            <article className="personal-item wardrobe-item" key={record.id}>
+              {editingRecordId === record.id ? (
+                <div className="wardrobe-edit">
+                  <input value={editingDraft.name} onChange={(event) => onEditDraftChange({ ...editingDraft, name: event.target.value })} placeholder="物品名称，必填" required autoFocus />
+                  <input value={editingDraft.category} onChange={(event) => onEditDraftChange({ ...editingDraft, category: event.target.value })} placeholder="品类，必填" required />
+                  <input type="date" value={editingDraft.purchased_on} onChange={(event) => onEditDraftChange({ ...editingDraft, purchased_on: event.target.value })} required />
+                  <input type="number" min="0" step="0.01" value={editingDraft.price} onChange={(event) => onEditDraftChange({ ...editingDraft, price: event.target.value })} placeholder="购买价格（元），可不填" />
+                  <input value={editingDraft.source} onChange={(event) => onEditDraftChange({ ...editingDraft, source: event.target.value })} placeholder="来源，可不填" />
+                  <textarea value={editingDraft.note} onChange={(event) => onEditDraftChange({ ...editingDraft, note: event.target.value })} placeholder="备注，可不填" />
+                </div>
+              ) : (
+                <div className="personal-content wardrobe-content">
+                  <div className="personal-heading"><strong>{record.name}</strong><span>{record.category}</span></div>
+                  <div className="wardrobe-meta"><time>购买于 {record.purchased_on}</time>{record.price_cents !== null ? <span>价格：{(record.price_cents / 100).toFixed(2)} 元</span> : null}{record.source ? <span>来源：{record.source}</span> : null}</div>
+                  {record.note ? <p>{record.note}</p> : null}
+                  {tab === "archived" && record.archived_at ? <small>归档于 {record.archived_at.replace("T", " ").slice(0, 16)}</small> : null}
+                </div>
+              )}
+              <div className="personal-actions wardrobe-actions">
+                {editingRecordId === record.id ? <><button type="button" onClick={() => onSaveEdit(record.id)}>保存</button><button type="button" onClick={onCancelEdit} title="取消编辑"><X size={16} /></button></> : tab === "current" ? <><button type="button" onClick={() => onStartEdit(record)} title="编辑物品"><Pencil size={16} /></button><button type="button" onClick={() => onArchive(record.id)} title="归档物品"><Archive size={16} /></button></> : <button type="button" onClick={() => onRestore(record.id)} title="恢复物品"><RotateCcw size={16} />恢复</button>}
+              </div>
+            </article>
+          )) : <div className="personal-empty">{tab === "current" ? totalCount && activeHasFilters ? "没有匹配的物品" : "还没有当前物品" : archiveHasFilters ? "没有匹配的归档物品" : "还没有归档物品"}</div>}
         </div>
       </section>
     </>

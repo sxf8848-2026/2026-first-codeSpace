@@ -15,6 +15,7 @@ import {
   SkincarePanel,
   RewardPanel,
   LearnedContentsPanel,
+  WardrobePanel,
   LoadingScreen,
   MetaLearningPanel,
   MonthlyPanel,
@@ -47,6 +48,7 @@ import {
   createSkincareProduct,
   createRewardRule,
   createLearnedContent,
+  createWardrobeItem,
   createInspiration,
   createMetaLearningAbility,
   createMonthlyTask,
@@ -109,6 +111,7 @@ import {
   LearnedContentMonthFilter,
   LearnedContentTypeFilter,
 } from "./services/learnedContents";
+import { getActiveWardrobeItems, getArchivedWardrobeItems, getWardrobeCategories, getWardrobeMonths, WardrobeCategoryFilter, WardrobeMonthFilter } from "./services/wardrobeItems";
 import {
   canReorderDailyTasks,
   moveDailyTaskBeforeWithinStatus,
@@ -159,6 +162,7 @@ import {
   RewardTier,
   LearnedContentRecord,
   LearnedContentType,
+  WardrobeItemRecord,
 } from "./types";
 
 const blankDraft: TaskDraft = {
@@ -279,6 +283,7 @@ type SkincareDraft = { name: string; brand: string; category: SkincareCategory; 
 type RewardTierDraft = { name: string; amount: string };
 type RewardRuleDraft = { name: string; mode: RewardRuleMode; period: RewardRulePeriod; amount: string; tiers: RewardTierDraft[]; description: string };
 type LearnedContentDraft = { type: LearnedContentType; title: string; completed_on: string; source: string; url: string; takeaway: string };
+type WardrobeDraft = { name: string; category: string; purchased_on: string; price: string; source: string; note: string };
 
 const blankSkincareDraft: SkincareDraft = { name: "", brand: "", category: "cleanser", description: "" };
 
@@ -288,6 +293,10 @@ function createBlankRewardRuleDraft(): RewardRuleDraft {
 
 function createBlankLearnedContentDraft(): LearnedContentDraft {
   return { type: "article", title: "", completed_on: dateKey(new Date()), source: "", url: "", takeaway: "" };
+}
+
+function createBlankWardrobeDraft(): WardrobeDraft {
+  return { name: "", category: "", purchased_on: dateKey(new Date()), price: "", source: "", note: "" };
 }
 
 function createBlankArgumentReflectionDraft(): ArgumentReflectionDraft {
@@ -402,6 +411,13 @@ export function App() {
   const [learnedContentMonthFilter, setLearnedContentMonthFilter] = useState<LearnedContentMonthFilter>("all");
   const [editingLearnedContentId, setEditingLearnedContentId] = useState<string | null>(null);
   const [learnedContentEditDraft, setLearnedContentEditDraft] = useState<LearnedContentDraft>(createBlankLearnedContentDraft);
+  const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraft>(createBlankWardrobeDraft);
+  const [wardrobeTab, setWardrobeTab] = useState<"current" | "archived">("current");
+  const [wardrobeQuery, setWardrobeQuery] = useState("");
+  const [wardrobeCategoryFilter, setWardrobeCategoryFilter] = useState<WardrobeCategoryFilter>("all");
+  const [wardrobeMonthFilter, setWardrobeMonthFilter] = useState<WardrobeMonthFilter>("all");
+  const [editingWardrobeItemId, setEditingWardrobeItemId] = useState<string | null>(null);
+  const [wardrobeEditDraft, setWardrobeEditDraft] = useState<WardrobeDraft>(createBlankWardrobeDraft);
   const [videoInspirationDraft, setVideoInspirationDraft] = useState<VideoInspirationDraft>(blankVideoInspirationDraft);
   const [videoInspirationQuery, setVideoInspirationQuery] = useState("");
   const [videoInspirationChannelFilter, setVideoInspirationChannelFilter] = useState<VideoInspirationChannelFilter>("all");
@@ -539,6 +555,16 @@ export function App() {
     () => getLearnedContentStats(activeData.learnedContents, todayMonth),
     [activeData.learnedContents, todayMonth],
   );
+  const visibleWardrobeItems = useMemo(
+    () => getActiveWardrobeItems(activeData.wardrobeItems, wardrobeQuery, wardrobeCategoryFilter, wardrobeMonthFilter),
+    [activeData.wardrobeItems, wardrobeCategoryFilter, wardrobeMonthFilter, wardrobeQuery],
+  );
+  const archivedWardrobeItems = useMemo(
+    () => getArchivedWardrobeItems(activeData.wardrobeItems, wardrobeQuery),
+    [activeData.wardrobeItems, wardrobeQuery],
+  );
+  const wardrobeCategories = useMemo(() => getWardrobeCategories(activeData.wardrobeItems), [activeData.wardrobeItems]);
+  const wardrobeMonths = useMemo(() => getWardrobeMonths(activeData.wardrobeItems), [activeData.wardrobeItems]);
   const videoInspirationChannels = useMemo(
     () => getVideoInspirationChannels(activeData.videoInspirations),
     [activeData.videoInspirations],
@@ -870,6 +896,10 @@ export function App() {
 
   function replaceLearnedContents(learnedContents: LearnedContentRecord[]) {
     updateData((value) => ({ ...value, learnedContents }));
+  }
+
+  function replaceWardrobeItems(wardrobeItems: WardrobeItemRecord[]) {
+    updateData((value) => ({ ...value, wardrobeItems }));
   }
 
   function replaceVideoInspirations(videoInspirations: VideoInspirationRecord[]) {
@@ -1424,6 +1454,73 @@ export function App() {
       setEditingLearnedContentId(null);
       setLearnedContentEditDraft(createBlankLearnedContentDraft());
     }
+  }
+
+  function addWardrobeItem(event: FormEvent) {
+    event.preventDefault();
+    const name = wardrobeDraft.name.trim();
+    const category = wardrobeDraft.category.trim();
+    const priceCents = parseWardrobePrice(wardrobeDraft.price);
+    if (!name || !category || !wardrobeDraft.purchased_on) return;
+    if (priceCents === undefined) {
+      window.alert("购买价格最多保留两位小数。");
+      return;
+    }
+    replaceWardrobeItems([
+      createWardrobeItem(name, category, wardrobeDraft.purchased_on, priceCents, wardrobeDraft.source, wardrobeDraft.note),
+      ...activeData.wardrobeItems,
+    ]);
+    setWardrobeDraft(createBlankWardrobeDraft());
+  }
+
+  function startWardrobeItemEdit(record: WardrobeItemRecord) {
+    setEditingWardrobeItemId(record.id);
+    setWardrobeEditDraft({
+      name: record.name,
+      category: record.category,
+      purchased_on: record.purchased_on,
+      price: record.price_cents === null ? "" : (record.price_cents / 100).toFixed(2),
+      source: record.source,
+      note: record.note,
+    });
+  }
+
+  function saveWardrobeItemEdit(recordId: string) {
+    const name = wardrobeEditDraft.name.trim();
+    const category = wardrobeEditDraft.category.trim();
+    const priceCents = parseWardrobePrice(wardrobeEditDraft.price);
+    if (!name || !category || !wardrobeEditDraft.purchased_on) return;
+    if (priceCents === undefined) {
+      window.alert("购买价格最多保留两位小数。");
+      return;
+    }
+    replaceWardrobeItems(activeData.wardrobeItems.map((record) => record.id === recordId ? {
+      ...record,
+      name,
+      category,
+      purchased_on: wardrobeEditDraft.purchased_on,
+      price_cents: priceCents,
+      source: wardrobeEditDraft.source.trim(),
+      note: wardrobeEditDraft.note.trim(),
+      updated_at: nowStamp(),
+    } : record));
+    setEditingWardrobeItemId(null);
+    setWardrobeEditDraft(createBlankWardrobeDraft());
+  }
+
+  function archiveWardrobeItem(recordId: string) {
+    const record = activeData.wardrobeItems.find((item) => item.id === recordId);
+    if (!record || !window.confirm(`确定归档“${record.name}”吗？`)) return;
+    const stamp = nowStamp();
+    replaceWardrobeItems(activeData.wardrobeItems.map((item) => item.id === recordId ? { ...item, archived_at: stamp, updated_at: stamp } : item));
+    if (editingWardrobeItemId === recordId) {
+      setEditingWardrobeItemId(null);
+      setWardrobeEditDraft(createBlankWardrobeDraft());
+    }
+  }
+
+  function restoreWardrobeItem(recordId: string) {
+    replaceWardrobeItems(activeData.wardrobeItems.map((item) => item.id === recordId ? { ...item, archived_at: null, updated_at: nowStamp() } : item));
   }
 
   function startRewardRuleEdit(rule: RewardRuleRecord) {
@@ -2687,6 +2784,34 @@ export function App() {
             onCancelEdit={() => { setEditingLearnedContentId(null); setLearnedContentEditDraft(createBlankLearnedContentDraft()); }}
             onDelete={deleteLearnedContent}
           />
+        ) : activeView === "wardrobe" ? (
+          <WardrobePanel
+            records={visibleWardrobeItems}
+            archivedRecords={archivedWardrobeItems}
+            totalCount={activeData.wardrobeItems.filter((item) => !item.archived_at).length}
+            tab={wardrobeTab}
+            draft={wardrobeDraft}
+            query={wardrobeQuery}
+            categoryFilter={wardrobeCategoryFilter}
+            monthFilter={wardrobeMonthFilter}
+            categories={wardrobeCategories}
+            months={wardrobeMonths}
+            editingRecordId={editingWardrobeItemId}
+            editingDraft={wardrobeEditDraft}
+            saveStatus={projectSaveStatus}
+            onTabChange={setWardrobeTab}
+            onDraftChange={setWardrobeDraft}
+            onAdd={addWardrobeItem}
+            onQueryChange={setWardrobeQuery}
+            onCategoryFilterChange={setWardrobeCategoryFilter}
+            onMonthFilterChange={setWardrobeMonthFilter}
+            onStartEdit={startWardrobeItemEdit}
+            onEditDraftChange={setWardrobeEditDraft}
+            onSaveEdit={saveWardrobeItemEdit}
+            onCancelEdit={() => { setEditingWardrobeItemId(null); setWardrobeEditDraft(createBlankWardrobeDraft()); }}
+            onArchive={archiveWardrobeItem}
+            onRestore={restoreWardrobeItem}
+          />
         ) : (
           <DeliveryPanel
             tasks={deliveryTasks}
@@ -2793,8 +2918,17 @@ const emptyData: TodoData = {
   rewardRules: [],
   rewardClaims: [],
   learnedContents: [],
+  wardrobeItems: [],
   default_applied: [],
 };
+
+function parseWardrobePrice(value: string): number | null | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(trimmed)) return undefined;
+  const cents = Math.round(Number(trimmed) * 100);
+  return Number.isSafeInteger(cents) ? cents : undefined;
+}
 
 function parseRewardAmount(value: string): number | null {
   const normalized = value.trim();

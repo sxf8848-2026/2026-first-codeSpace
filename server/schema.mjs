@@ -38,6 +38,7 @@ export function isValidTodosPayload(payload) {
   if (!Array.isArray(payload.rewardRules)) return false;
   if (!Array.isArray(payload.rewardClaims)) return false;
   if (!Array.isArray(payload.learnedContents)) return false;
+  if (!Array.isArray(payload.wardrobeItems)) return false;
   if (!Array.isArray(payload.default_applied)) return false;
 
   if (!payload.default_applied.every(isDateKey)) return false;
@@ -57,6 +58,7 @@ export function isValidTodosPayload(payload) {
   if (!payload.rewardRules.every(isValidRewardRule)) return false;
   if (!payload.rewardClaims.every(isValidRewardClaim)) return false;
   if (!payload.learnedContents.every(isValidLearnedContent)) return false;
+  if (!payload.wardrobeItems.every(isValidWardrobeItem)) return false;
 
   const deliverySequences = new Set();
   if (!payload.deliveries.every((delivery) => {
@@ -368,6 +370,18 @@ function isValidLearnedContent(record) {
   if (!isDateTimeStamp(record.created_at)) return false;
   if (!isDateTimeStamp(record.updated_at)) return false;
   return true;
+}
+
+function isValidWardrobeItem(record) {
+  if (!isPlainObject(record)) return false;
+  if (!isNonEmptyString(record.id)) return false;
+  if (!isNonEmptyString(record.name)) return false;
+  if (!isNonEmptyString(record.category)) return false;
+  if (!isCalendarDateKey(record.purchased_on)) return false;
+  if (record.price_cents !== null && (!Number.isSafeInteger(record.price_cents) || record.price_cents < 0)) return false;
+  if (typeof record.source !== "string" || typeof record.note !== "string") return false;
+  if (!isDateTimeStamp(record.created_at) || !isDateTimeStamp(record.updated_at)) return false;
+  return record.archived_at === null || isDateTimeStamp(record.archived_at);
 }
 
 function isValidTag(tag) {

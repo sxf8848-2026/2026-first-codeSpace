@@ -2393,6 +2393,76 @@ h1 {
   color: var(--danger);
 }
 
+.wardrobe-panel > .segmented {
+  margin-bottom: 18px;
+}
+
+.wardrobe-composer,
+.wardrobe-edit {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, .75fr) 175px 190px;
+  gap: 12px;
+}
+
+.wardrobe-composer input:nth-of-type(5),
+.wardrobe-composer textarea,
+.wardrobe-composer .primary-button,
+.wardrobe-edit input:nth-of-type(5),
+.wardrobe-edit textarea {
+  grid-column: 1 / -1;
+}
+
+.wardrobe-composer textarea,
+.wardrobe-edit textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.wardrobe-composer .primary-button {
+  justify-self: start;
+}
+
+.wardrobe-toolbar {
+  flex-wrap: wrap;
+}
+
+.wardrobe-toolbar select {
+  min-width: 150px;
+}
+
+.wardrobe-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wardrobe-list .personal-empty,
+.wardrobe-item:has(.wardrobe-edit) {
+  grid-column: 1 / -1;
+}
+
+.wardrobe-item {
+  align-items: start;
+}
+
+.wardrobe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wardrobe-content p {
+  margin: 6px 0 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.wardrobe-content small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
 .skincare-composer,
 .reward-composer {
   display: grid;
@@ -4554,7 +4624,10 @@ textarea:focus {
 
   .learned-composer,
   .learned-edit,
-  .learned-list {
+  .learned-list,
+  .wardrobe-composer,
+  .wardrobe-edit,
+  .wardrobe-list {
     grid-template-columns: 1fr;
   }
 
@@ -4565,6 +4638,16 @@ textarea:focus {
   .learned-edit textarea,
   .learned-list .personal-empty,
   .learned-item:has(.learned-edit) {
+    grid-column: auto;
+  }
+
+  .wardrobe-composer input:nth-of-type(5),
+  .wardrobe-composer textarea,
+  .wardrobe-composer .primary-button,
+  .wardrobe-edit input:nth-of-type(5),
+  .wardrobe-edit textarea,
+  .wardrobe-list .personal-empty,
+  .wardrobe-item:has(.wardrobe-edit) {
     grid-column: auto;
   }
 

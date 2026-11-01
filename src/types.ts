@@ -250,6 +250,19 @@ export type LearnedContentRecord = {
   updated_at: string;
 };
 
+export type WardrobeItemRecord = {
+  id: string;
+  name: string;
+  category: string;
+  purchased_on: string;
+  price_cents: number | null;
+  source: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+};
+
 export type TodoData = {
   version: number;
   todos: Record<string, TodoTask[]>;
@@ -274,6 +287,7 @@ export type TodoData = {
   rewardRules: RewardRuleRecord[];
   rewardClaims: RewardClaimRecord[];
   learnedContents: LearnedContentRecord[];
+  wardrobeItems: WardrobeItemRecord[];
   default_applied: string[];
 };
 

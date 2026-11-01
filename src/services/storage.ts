@@ -15,6 +15,7 @@ import { normalizeStudyGrowthRecords } from "./studyGrowthRecords";
 import { normalizeSkincareProducts } from "./skincareProducts";
 import { normalizeRewardClaims, normalizeRewardRules } from "./rewards";
 import { normalizeLearnedContents } from "./learnedContents";
+import { normalizeWardrobeItems } from "./wardrobeItems";
 import { normalizeDeliveryPlatforms } from "./deliveryPlatforms";
 import { migrateLegacyWeeklyDeliveries, normalizeDeliverySequence, normalizeDeliveryStatus } from "./deliveries";
 import {
@@ -36,6 +37,7 @@ import {
   RewardTier,
   LearnedContentRecord,
   LearnedContentType,
+  WardrobeItemRecord,
   Habit,
   InspirationRecord,
   MetaLearningAbility,
@@ -94,6 +96,7 @@ const initialData: TodoData = {
   rewardRules: [],
   rewardClaims: [],
   learnedContents: [],
+  wardrobeItems: [],
   default_applied: [],
 };
 
@@ -501,6 +504,29 @@ export function createLearnedContent(
   };
 }
 
+export function createWardrobeItem(
+  name: string,
+  category: string,
+  purchased_on: string,
+  price_cents: number | null,
+  source: string,
+  note: string,
+): WardrobeItemRecord {
+  const stamp = nowStamp();
+  return {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    category: category.trim(),
+    purchased_on,
+    price_cents,
+    source: source.trim(),
+    note: note.trim(),
+    created_at: stamp,
+    updated_at: stamp,
+    archived_at: null,
+  };
+}
+
 export function applyDefaultTasks(data: TodoData, day: string, defaultTasks: DefaultTask[] = DEFAULT_TASKS): TodoData {
   if (data.default_applied.includes(day)) return data;
   const existing = new Set((data.todos[day] ?? []).map((task) => task.text));
@@ -608,6 +634,12 @@ export function normalizeData(raw: unknown): TodoData {
     nowStamp,
     () => dateKey(new Date()),
   );
+  const wardrobeItems: TodoData["wardrobeItems"] = normalizeWardrobeItems(
+    value.wardrobeItems,
+    () => crypto.randomUUID(),
+    nowStamp,
+    () => dateKey(new Date()),
+  );
   const rawTodos =
     value.todos && typeof value.todos === "object"
       ? (value.todos as Record<string, unknown>)
@@ -704,6 +736,7 @@ export function normalizeData(raw: unknown): TodoData {
     rewardRules,
     rewardClaims,
     learnedContents,
+    wardrobeItems,
     default_applied: Array.isArray(value.default_applied)
       ? value.default_applied.filter((day): day is string => typeof day === "string")
       : [],
@@ -733,7 +766,8 @@ function hasTasks(data: TodoData): boolean {
     data.skincareProducts.length > 0 ||
     data.rewardRules.length > 0 ||
     data.rewardClaims.length > 0 ||
-    data.learnedContents.length > 0
+    data.learnedContents.length > 0 ||
+    data.wardrobeItems.length > 0
   );
 }
 

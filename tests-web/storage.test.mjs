@@ -15,6 +15,7 @@ import { normalizeStudyGrowthRecords } from "../src/services/studyGrowthRecords.
 import { normalizeSkincareProducts } from "../src/services/skincareProducts.ts";
 import { normalizeRewardClaims, normalizeRewardRules } from "../src/services/rewards.ts";
 import { normalizeLearnedContents } from "../src/services/learnedContents.ts";
+import { normalizeWardrobeItems } from "../src/services/wardrobeItems.ts";
 import { migrateLegacyWeeklyDeliveries } from "../src/services/deliveries.ts";
 
 const legacyDelivery = {
@@ -92,6 +93,7 @@ test("normalizes old todo data without personal management records", () => {
   assert.deepEqual(normalizeRewardRules(undefined), []);
   assert.deepEqual(normalizeRewardClaims(undefined), []);
   assert.deepEqual(normalizeLearnedContents(undefined), []);
+  assert.deepEqual(normalizeWardrobeItems(undefined), []);
 });
 
 test("normalizes old prefs with default delivery platforms", () => {

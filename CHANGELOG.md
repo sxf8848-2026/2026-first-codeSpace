@@ -13,6 +13,45 @@
 
 ---
 
+## [43.0.0] - 2026-11-01
+
+### 改了什么
+
+- 在“个人管理”下新增“个人衣柜”，用于整理全部已购物品，重点支持衣物、裤子、鞋子等穿戴物品。
+- 支持物品名称、自由品类、购买日期、价格、来源和备注的新增与编辑；当前物品按购买日期倒序展示。
+- 增加“当前物品 / 已归档”标签：当前物品可按关键词、品类和购买月份联合查询；已归档物品可搜索、按归档时间倒序查看并恢复。
+- 数据新增 `wardrobeItems`，数据版本升级至 43；旧数据会自动补充空数组。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/services/wardrobeItems.ts`
+- `src/services/storage.ts`
+- `src/services/sidebarNavigation.ts`
+- `src/types.ts`
+- `src/constants.ts`
+- `src/styles.css`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/wardrobeItems.test.mjs`
+- `tests-web/schema.test.mjs`
+- `tests-web/sidebarNavigation.test.mjs`
+- `tests-web/storage.test.mjs`
+
+### 验证结果
+
+- `npm run test`：241/241 通过。
+- `npm run build`：通过。
+- `node --check server/index.mjs`、`node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 后端 Schema 已更新；如果开发服务正在运行，需要重启 `npm run dev` 后再保存个人衣柜数据。
+
+---
+
 ## [42.0.0] - 2026-11-01
 
 ### 改了什么
