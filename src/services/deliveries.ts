@@ -8,7 +8,7 @@ export function normalizeDeliveryStatus(status: unknown, legacyPicked: unknown):
 }
 
 export function normalizeDeliverySequence(sequence: unknown): number | null {
-  return typeof sequence === "number" && Number.isInteger(sequence) && sequence > 0 ? sequence : null;
+  return typeof sequence === "number" && Number.isSafeInteger(sequence) && sequence !== 0 ? sequence : null;
 }
 
 export function migrateLegacyWeeklyDeliveries(weeklyDeliveries: unknown): unknown[] {

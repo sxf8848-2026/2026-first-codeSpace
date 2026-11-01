@@ -149,7 +149,7 @@ function isValidMonthlyTask(task) {
 function isValidDelivery(delivery) {
   if (!isPlainObject(delivery)) return false;
   if (!isNonEmptyString(delivery.id)) return false;
-  if (delivery.sequence !== null && (!Number.isInteger(delivery.sequence) || delivery.sequence <= 0)) return false;
+  if (delivery.sequence !== null && (!Number.isSafeInteger(delivery.sequence) || delivery.sequence === 0)) return false;
   if (!isNonEmptyString(delivery.name)) return false;
   if (!isNonEmptyString(delivery.platform)) return false;
   if (typeof delivery.note !== "string") return false;

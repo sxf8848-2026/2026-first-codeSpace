@@ -3192,7 +3192,6 @@ export function DeliveryPanel({
         <form className="delivery-composer" onSubmit={onAdd}>
           <input
             type="number"
-            min="1"
             step="1"
             required
             value={draft.sequence}
@@ -3247,7 +3246,6 @@ export function DeliveryPanel({
                       <>
                         <input
                           type="number"
-                          min="1"
                           step="1"
                           value={editingDraft.sequence}
                           onChange={(event) => onEditDraftChange({ ...editingDraft, sequence: event.target.value })}

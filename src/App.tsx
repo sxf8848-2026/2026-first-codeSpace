@@ -1048,7 +1048,7 @@ export function App() {
     const sequence = parseDeliverySequence(deliveryDraft.sequence);
     if (!name || !platform) return;
     if (sequence === null) {
-      window.alert("请填写大于 0 的整数序号。");
+      window.alert("快递序号只能填写非 0 整数。");
       return;
     }
     const conflict = findDeliveryBySequence(deliveryTasks, sequence);
@@ -1828,7 +1828,7 @@ export function App() {
     const sequence = sequenceText ? parseDeliverySequence(sequenceText) : null;
     if (!name || !platform) return;
     if (sequenceText && sequence === null) {
-      window.alert("快递序号只能填写大于 0 的整数。");
+      window.alert("快递序号只能填写非 0 整数。");
       return;
     }
     if (sequence !== null) {
@@ -2810,7 +2810,7 @@ function isUnfilteredTaskView(filters: Filters): boolean {
 
 function parseDeliverySequence(value: string): number | null {
   const normalized = value.trim();
-  if (!/^[1-9]\d*$/.test(normalized)) return null;
+  if (!/^-?[1-9]\d*$/.test(normalized)) return null;
   const sequence = Number(normalized);
   return Number.isSafeInteger(sequence) ? sequence : null;
 }

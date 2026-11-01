@@ -13,6 +13,39 @@
 
 ---
 
+## [41.0.0] - 2026-11-01
+
+### 改了什么
+
+- 快递编号现在支持正整数和负整数，但禁止 `0`、小数、非数字及超出安全整数范围的值。
+- 快递继续按编号数值倒序展示，顺序为正数、`-1`、`-2`、`-3`……，未编号旧记录稳定排在最后。
+- 正负编号统一执行全局唯一校验；旧快递不会被系统自动补充负数编号，仍由用户手动填写。
+- `TodoData.version` 升级至 `41`，前端归一化和后端 Schema 同步支持负数编号。
+
+### 涉及文件
+
+- `src/App.tsx`
+- `src/components/AppSections.tsx`
+- `src/constants.ts`
+- `src/services/deliveries.ts`
+- `server/index.mjs`
+- `server/schema.mjs`
+- `tests-web/deliveries.test.mjs`
+- `tests-web/schema.test.mjs`
+
+### 验证结果
+
+- `npm run test`：通过，234/234。
+- `npm run build`：通过。
+- `node --check server/index.mjs`：通过。
+- `node --check server/schema.mjs`：通过。
+- `git diff --check`：通过。
+
+### 注意事项
+
+- 未直接修改 `todo-data/` 中的任何快递编号，未编号旧记录仍保持 `null`。
+- 后端 Schema 已更新，使用前需要重启 `npm run dev`。
+
 ## [40.0.1] - 2026-11-01
 
 ### 改了什么

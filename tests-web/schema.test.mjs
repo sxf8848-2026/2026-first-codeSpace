@@ -228,7 +228,7 @@ const validLearnedContent = {
 
 function makeTodosPayload(overrides = {}) {
   return {
-    version: 40,
+    version: 41,
     todos: {
       "2026-09-12": [validTodo],
     },
@@ -418,9 +418,10 @@ test("rejects delivery with invalid purchased_at", () => {
   );
 });
 
-test("accepts unnumbered legacy delivery and rejects invalid sequence values", () => {
+test("accepts negative and unnumbered delivery sequences and rejects invalid values", () => {
   assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, sequence: null }] })), true);
-  for (const sequence of [0, -1, 1.5, "128", undefined]) {
+  assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [{ ...validDelivery, sequence: -1 }] })), true);
+  for (const sequence of [0, 1.5, "128", Number.MAX_SAFE_INTEGER + 1, undefined]) {
     const delivery = { ...validDelivery, sequence };
     if (sequence === undefined) delete delivery.sequence;
     assert.equal(isValidTodosPayload(makeTodosPayload({ deliveries: [delivery] })), false);
@@ -430,6 +431,17 @@ test("accepts unnumbered legacy delivery and rejects invalid sequence values", (
 test("rejects duplicate delivery sequences in the global list", () => {
   assert.equal(
     isValidTodosPayload(makeTodosPayload({ deliveries: [validDelivery, { ...validDelivery, id: "delivery-2" }] })),
+    false,
+  );
+  assert.equal(
+    isValidTodosPayload(
+      makeTodosPayload({
+        deliveries: [
+          { ...validDelivery, id: "negative-1", sequence: -1 },
+          { ...validDelivery, id: "negative-2", sequence: -1 },
+        ],
+      }),
+    ),
     false,
   );
 });
