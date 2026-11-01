@@ -2439,7 +2439,7 @@ h1 {
   grid-column: 1 / -1;
 }
 
-.wardrobe-item {
+.personal-item.wardrobe-item {
   position: relative;
   align-items: start;
   overflow: hidden;
@@ -2451,7 +2451,7 @@ h1 {
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.wardrobe-item:hover {
+.personal-item.wardrobe-item:hover {
   border-color: var(--border-strong);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--text) 11%, transparent);
   transform: translateY(-1px);

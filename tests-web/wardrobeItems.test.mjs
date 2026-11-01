@@ -52,6 +52,6 @@ test("uses reward-style layered cards for both active and archived wardrobe reco
   const panelSource = readFileSync(new URL("../src/components/AppSections.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(panelSource, /className="personal-item wardrobe-item"/);
-  assert.match(styles, /\.wardrobe-item\s*\{[^}]*border-left:\s*3px solid var\(--brand\);[^}]*border-radius:\s*6px;[^}]*background:\s*var\(--panel-subtle\);[^}]*box-shadow:/s);
-  assert.match(styles, /\.wardrobe-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*transform:\s*translateY\(-1px\);/s);
+  assert.match(styles, /\.personal-item\.wardrobe-item\s*\{[^}]*border-left:\s*3px solid var\(--brand\);[^}]*border-radius:\s*6px;[^}]*background:\s*var\(--panel-subtle\);[^}]*box-shadow:/s);
+  assert.match(styles, /\.personal-item\.wardrobe-item:hover\s*\{[^}]*border-color:\s*var\(--border-strong\);[^}]*transform:\s*translateY\(-1px\);/s);
 });
